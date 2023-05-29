@@ -1,0 +1,227 @@
+ROUTINE %DCSAEG [Type=INT,LanguageMode=6]
+%DCSAEG	;V6.1;19-May-93  4:34 PM;HSCROLL Help for SCROLL attribute
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=5:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %dgA="" F %Z=0,5:1:23 S $P(%dgA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HSCROLL",%L(5)="%DCSAEG",%L(24)="",%MSG="",%dgD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "フォーマット（ Format ）                    （ 短縮形: SC/GL SC/NO",!
+	W "                                                       SC/AR SC/NRS ） ",!
+	W !
+	W "    SCROLL/修飾子<SP> 始まり,終わり",!
+	W !
+	W "        パラメータ",!
+	W !
+	W "          修飾子 ： DASLソフトウェアがスクロール領域データをどのように処理すべ",!
+	W "                    きかを指定する1つ以上の修飾子。次のいずれかです。",!
+	W !
+	W "                     /ARRAY",!
+	W "                     /GLOBAL",!
+	W "                     /NOKILL",!
+	W "                     /NORESET",!
+	W !
+	W "          始まり ： スクロール領域の先頭行",!
+	W !
+	W "          終わり ： スクロール領域の最終行",!
+	G RET
+2	;
+	W !
+	W !
+	W "       SCROLLスクリーン・アトリビュートは、スクロール領域の作成、スクロール領",!
+	W "     域の大きさの指定および収集されたデータを使用するためのアレイの定義を行い",!
+	W "     ます。",!
+	W !
+	W "       例（ Example ）            SCROLL/ARRAY=SEND  10,20",!
+	F %=8:1:18 W !
+	G RET
+3	;
+	W "       SCROLL修飾子",!
+	W !
+	W "          /ARRAY=名前   スクロール・アレイの名前を指定する",!
+	W !
+	W "          /GLOBAL     スクロール・アレイはグローバルであると指定する",!
+	W !
+	W "          /NOKILL     DASLソフトウェアに、終了時にスクロール・アレイ",!
+	W "                      を削除してはならないと指示する",!
+	W !
+	W "          /NORESET    スクロール領域内のフィールドから外部フィールド",!
+	W "                      へNXTFLDする際、スクロール領域ポインタをリセッ",!
+	W "                      ト/再設定しないようDASLソフトウェアに指示する",!
+	W !
+	F %=14:1:18 W !
+	G RET
+4	;
+	W "        デフォルトでは、DASLソフトウェアは、次の作業をスクロール領域において実",!
+	W "      行します。",!
+	W !
+	W "          o  DASLソフトウェアは、スクロール領域データをローカル・アレイ内に自",!
+	W "             動的に格納します。そしてアレイの名前として、スクリーンの名前を使",!
+	W "             用します。",!
+	W !
+	W "          o  スクリーンを初めて初期化する時（現スクリーンを再処理するための引",!
+	W "             数がないNXTSCNアクションを実行する時も含む）、およびスクリーンの",!
+	W "             終了時に、スクロール・アレイを再度初期化します。",!
+	W !
+	W "        /ARRAY=name修飾子",!
+	W !
+	W "            /ARRAY=名前修飾子を用いて、スクロール領域データ用に使用するローカ",!
+	W "          ルもしくはグローバル・アレイの名前を指定します。",!
+	F %=16:1:18 W !
+	G RET
+5	;
+	W !
+	W "        /GLOBAL修飾子",!
+	W !
+	W "            データ格納用のグローバル・スクロール・アレイを指定するために、",!
+	W "          /GLOBAL修飾子を用いて下さい。グローバル・スクロール・アレイは、アプ",!
+	W "          リケーション環境メニューのレポート・ディレクトリに見られるデータのよ",!
+	W "          うな大容量のデータの場合、特に便利です。",!
+	W !
+	W "        /NOKILL修飾子",!
+	W !
+	W "            スクリーン終了時にスクロール・アレイを削除しないよう、DASLソフトウ",!
+	W "          ェアに指示するには、/NOKILL修飾子を使用して下さい。",!
+	W !
+	F %=14:1:18 W !
+	G RET
+6	;
+	W "        /NORESET修飾子",!
+	W !
+	W "            通常ユーザがフィールドでの作業のためスクロール領域から退去する際、",!
+	W "          DASLソフトウェアは必ずスクロール領域ポインタを再設定します。しかし、",!
+	W "          /NORESET修飾子を用いて、スクロール領域ポインタを再設定しないようDASL",!
+	W "          ソフトウェアに指示すると、スクロール領域に戻ってくる際には、退去した",!
+	W "          位置と同じ位置へ戻ってくることができます。",!
+	W !
+	W "            SCROLL/NORESETスクリーン・アトリビュート使用時にはまた、",!
+	W "          SCROLL/RESETフィールド・アクションを用いて、指定のフィールドでスクロ",!
+	W "          ール領域ポインタを再設定するようにDASLソフトウェアに指示することも可",!
+	W "          能です。",!
+	F %=12:1:17 W !
+RET	S %dgC="6 ページ中 "_%dgD_" ページ; <RETURN> を押すと "_$S(%dgD=6:"終了",1:"続行")_"します。"
+	W %E,"[",40-($Zwidth(%dgC)+1\2),"C",%dgC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %dgE=%dgD
+READ	S %dgB=1,%dgB(0)="E",%W="1;23;"_(41+($Zwidth(%dgC)+1\2)+($Zwidth(%dgC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %dgD=$S(%dgD=1:1,1:%dgD-1)
+	E  I %RES?1N.N S %dgD=$S(%RES>6:6,+%RES=0:1,1:+%RES)
+	E  S %dgD=%dgD+1
+	I %dgD>6 G E
+	I %dgD=%dgE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%dgD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSAEG" G @("R^"_%L(%Z))
+	W %E,"[5;1H"
+	F %Z=5:1:23 S %O(0)=1
+	G @%dgD
+E	I %O W %E,"[5;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,5:1:23 S %O(%Z)=0,%L(%Z)=$P(%dgA,",",%Z+1)
+	K %dgA,%dgB,%dgE,%dgD,%dgC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l5;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="5;23"!($E(%SCN)'="l") W %E,"[5;23r"
+	S %SCN="l5;23",%LL=80 Q
+I	I $D(%dgB(%dgB-1)),%dgB(%dgB-1)=$P(%W,";",5) S %dgB=%dgB-1
+	E  S %dgB(%dgB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAEG" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%dgB(0)=%dgB(%dgB) %dgB(1)=%dgB(0),%dgB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %dgB=%dgB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%dgB(%dgB)=%dgB(0),@%dgB(0)
+	I %F="44"&%F S:%dgB>1 %dgB=%dgB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%dgB(%dgB)'="" @%dgB(%dgB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

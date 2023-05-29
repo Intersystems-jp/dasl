@@ -1,0 +1,214 @@
+ROUTINE %DCSAEY [Type=INT,LanguageMode=6]
+%DCSAEY	;V6.1;19-May-93  4:15 PM;HEXPR Print item expressions
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=3:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %dyA="" F %Z=0,3:1:23 S $P(%dyA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HEXPR",%L(3)="%DCSAEY",%L(24)="",%MSG="",%dyD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "レポート・ドライバの表現式（ Expressions in the Report Driver ）",!
+	W !
+	W "      出力項目として使用する表現式は、DSM WRITE文に対して有効でなければなりま",!
+	W "    せん。 ",!
+	W !
+	W "      DASLソフトウェアでは，次の例外があります。",!
+	W !
+	W "        o  ローカル変数名は、データネームまたはユーザ定義変数でなければなりま",!
+	W "           せん。",!
+	W !
+	W "        o  データネーム修飾子が指定可能です。",!
+	W !
+	W "        o  単価印(@)は、実行可能なDSM文であることを示します。",!
+	W !
+	W "        例（ Examples ）",!
+	W !
+	W "           NAME/PROMPT",!
+	W !
+	W "           @ D ^DISC",!
+	F %=20:1:20 W !
+	G RET
+2	;
+	W "      データネーム（ Data Names ）",!
+	W !
+	W "          通常、DASLソフトウェアは、レポートでの名前全てをデータネームとみなし",!
+	W "        ます。それぞれのデータネームは、出力項目として指定できます。または、従",!
+	W "        属データネームの値を検索するために、DASLソフトウェアが評価するポインタ",!
+	W "        ・チェーンも出力項目として指定できます。 ",!
+	W !
+	W "      ユーザ定義変数（ User-Defined Variables ）",!
+	W !
+	W "          ユーザ定義変数も出力項目として指定できます。データネームと違い、レポ",!
+	W "        ート・コンパイラは、ユーザ定義変数を評価しません。",!
+	W !
+	W "          DASL名をローカル変数として使用できるようにするには、まずレポート定義",!
+	W "        オプションでの変数ユーティリティを通じて、その名前がローカル変数である",!
+	W "        と宣言しなければなりません。レポート定義時にローカル変数を定義している",!
+	W "        場合、レポートの実行オプションを通じて実行する時には、それらの変数に値",!
+	W "        を割り当てます。",!
+	F %=18:1:20 W !
+	G RET
+3	;
+	W "      データネーム修飾子（ Data-Name Qualifiers ）",!
+	W !
+	W "          データネームと共に修飾子を用いて、特別な出力操作を実行することができ",!
+	W "        ます。",!
+	W !
+	W !
+	W "         修飾子              意味",!
+	W !
+	W "         /PROMPT             値と共にデータ・ディクショナリからデータネ",!
+	W "                             ームのデフォルトのプロンプトを出力 ",!
+	W !
+	W "         /PROMPT/STRIP       句読点を全て取り除いた（プロンプトの文の後",!
+	W "                             にコロンの無い）データネームのデフォルトの",!
+	W "                             プロンプトを出力",!
+	W !
+	W "         /PROMPT/NODATA      デフォルトのプロンプトを出力するが、データ",!
+	W "                             値は出力しません。",!
+	W !
+	W "         /EVAL               データネームの値を評価しますが、この時点で",!
+	W "                             それらの出力はしません。修飾子/EVALは、従",!
+	G RET
+4	;
+	W "                             属データネームとしか併用できません。",!
+	W !
+	F %=3:1:20 W !
+	G RET
+5	;
+	W "      実行可能なDSM文（ Executable VAX DSM Statements ）",!
+	W !
+	W "          DASLソフトウェアは、単価印(@)で始まる式を実行されるべきDSM文の1行と",!
+	W "        して解釈します。例えば、次の式はDISXと呼ばれるルーチンを呼び出します。",!
+	W !
+	W "            @ D ^DISX",!
+	W !
+	W "          @印とDの間には、空白を置かなければいけません。そうでなければ、DASLソ",!
+	W "        フトウェアはDをラインラベルとして、さらにその行の残りを適切なシンタッ",!
+	W "        クスではないとみなします。",!
+	F %=10:1:19 W !
+RET	S %dyC="5 ページ中 "_%dyD_" ページ; <RETURN> を押すと "_$S(%dyD=5:"終了",1:"続行")_"します。"
+	W %E,"[",40-($Zwidth(%dyC)+1\2),"C",%dyC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %dyE=%dyD
+READ	S %dyB=1,%dyB(0)="E",%W="1;23;"_(41+($Zwidth(%dyC)+1\2)+($Zwidth(%dyC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %dyD=$S(%dyD=1:1,1:%dyD-1)
+	E  I %RES?1N.N S %dyD=$S(%RES>5:5,+%RES=0:1,1:+%RES)
+	E  S %dyD=%dyD+1
+	I %dyD>5 G E
+	I %dyD=%dyE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%dyD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSAEY" G @("R^"_%L(%Z))
+	W %E,"[3;1H"
+	F %Z=3:1:23 S %O(0)=1
+	G @%dyD
+E	I %O W %E,"[3;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,3:1:23 S %O(%Z)=0,%L(%Z)=$P(%dyA,",",%Z+1)
+	K %dyA,%dyB,%dyE,%dyD,%dyC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l3;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="3;23"!($E(%SCN)'="l") W %E,"[3;23r"
+	S %SCN="l3;23",%LL=80 Q
+I	I $D(%dyB(%dyB-1)),%dyB(%dyB-1)=$P(%W,";",5) S %dyB=%dyB-1
+	E  S %dyB(%dyB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAEY" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%dyB(0)=%dyB(%dyB) %dyB(1)=%dyB(0),%dyB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %dyB=%dyB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%dyB(%dyB)=%dyB(0),@%dyB(0)
+	I %F="44"&%F S:%dyB>1 %dyB=%dyB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%dyB(%dyB)'="" @%dyB(%dyB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

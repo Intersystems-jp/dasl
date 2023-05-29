@@ -1,0 +1,199 @@
+ROUTINE %DCSAEM [Type=INT,LanguageMode=6]
+%DCSAEM	;V6.1;19-May-93  4:10 PM;HDATE Help for date validation
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=5:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %dmA="" F %Z=0,5:1:23 S $P(%dmA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HDATE",%L(5)="%DCSAEM",%L(24)="",%MSG="",%dmD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "フォーマット（ Format ）                               （ 短縮形: DT ）",!
+	W !
+	W "    DATE｛<SP>初め｛,終わり｝｝",!
+	W !
+	W "      パラメータ",!
+	W !
+	W "        初め   ： 受け入れることのできる最初（もしくは唯一）の日付を評価する式",!
+	W !
+	W "        終わり ： 受け入れることのできる最終の日付を評価する式",!
+	W !
+	W "        例（ Examples）DATEを用いての、完全な日付のフォーマットのチェック",!
+	W !
+	W "                  DATE ""1-Jan-1987"",""T"" ",!
+	W !
+	W "                    この例は、Jan 1, 1987から本日までの日付かどうかを調べます。",!
+	F %=16:1:18 W !
+	G RET
+2	;
+	W !
+	W "        引数なしの場合、DATEバリデーションは、DASL標準日付フォーマットの内の一",!
+	W "      つの形式で完全な日付（日、月、年）を入力するようアプリケーション・ユーザ",!
+	W "      に要求します。引数付きの場合は、引数が指定する範囲内で完全な日付を入力し",!
+	W "      なければなりません。",!
+	W !
+	W "        バリデーションが誤っていた場合、DASLソフトウェアは%MSG内の標準日付エラ",!
+	W "      ーを表示し、日付の再入力を促します。",!
+	F %=9:1:18 W !
+	G RET
+3	;
+	W !
+	W "        日付はDASLデータタイプの内1つです。DATEデータタイプであると指示すると、",!
+	W "      そのデータネームやテンプレートに対するバリデーションのデフォルト値が、",!
+	W "      DATEとなります。",!
+	W !
+	W "        DASLソフトウェアは次のいずれかを含んでいる場合、入力内容を有効であると",!
+	W "      認識します。",!
+	W !
+	W "          o  数字",!
+	W "          o  斜線(/)、ハイフン(-)、カンマ(,)、空白または、ピリオド（．）の記号",!
+	W "             文字",!
+	W "          o  月を表す3文字の文字列",!
+	W "          o  （本日を表わす）文字T、そして過去または未来の日を表わすオプション",!
+	W "             のオフセット（+または- n）",!
+	F %=15:1:18 W !
+	G RET
+4	;
+	W "        DASLソフトウェアは、日付を全て内部および外部フォーマットで扱います。",!
+	W "        デフォルトの外部フォーマットとは、次の通りです。",!
+	W !
+	W "                  DD-MMM-YY",!
+	W !
+	W "          例（ Example ）                03-JUN-90",!
+	W !
+	W "          o  DASLソフトウェアは、データ格納のために内部フォーマットを用います。",!
+	W "             DATEバリデーションが通過すると、DSMはDASL変数%DTI内に内部フォーマ",!
+	W "             ットで日付を格納します。",!
+	W !
+	W "          o  DASLソフトウェアは、表示のために外部フォーマットを用います。バリ",!
+	W "             デーションが通過すると、DASLソフトウェアはDASL変数%RESおよび%DTX",!
+	W "             内に外部フォーマットの日付を格納します。また、完全な外部フォーマ",!
+	W "             ットの日付をスクリーンに表示します。",!
+	W !
+	W "        環境メニューのサイト・パラメータ・オプションを用いて、アプリケーション",!
+	W "      の標準外部フォーマットを変更することができます。",!
+	F %=18:1:17 W !
+RET	S %dmC="4 ページ中 "_%dmD_" ページ; <RETURN> を押すと "_$S(%dmD=4:"終了",1:"続行")_"します。"
+	W %E,"[",40-($Zwidth(%dmC)+1\2),"C",%dmC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %dmE=%dmD
+READ	S %dmB=1,%dmB(0)="E",%W="1;23;"_(41+($Zwidth(%dmC)+1\2)+($Zwidth(%dmC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %dmD=$S(%dmD=1:1,1:%dmD-1)
+	E  I %RES?1N.N S %dmD=$S(%RES>4:4,+%RES=0:1,1:+%RES)
+	E  S %dmD=%dmD+1
+	I %dmD>4 G E
+	I %dmD=%dmE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%dmD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSAEM" G @("R^"_%L(%Z))
+	W %E,"[5;1H"
+	F %Z=5:1:23 S %O(0)=1
+	G @%dmD
+E	I %O W %E,"[5;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,5:1:23 S %O(%Z)=0,%L(%Z)=$P(%dmA,",",%Z+1)
+	K %dmA,%dmB,%dmE,%dmD,%dmC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l5;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="5;23"!($E(%SCN)'="l") W %E,"[5;23r"
+	S %SCN="l5;23",%LL=80 Q
+I	I $D(%dmB(%dmB-1)),%dmB(%dmB-1)=$P(%W,";",5) S %dmB=%dmB-1
+	E  S %dmB(%dmB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAEM" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%dmB(0)=%dmB(%dmB) %dmB(1)=%dmB(0),%dmB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %dmB=%dmB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%dmB(%dmB)=%dmB(0),@%dmB(0)
+	I %F="44"&%F S:%dmB>1 %dmB=%dmB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%dmB(%dmB)'="" @%dmB(%dmB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q
