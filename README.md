@@ -28,7 +28,7 @@ DASLの初期化時にアプリケーションパラメータにapplication-para
 
 ```>do ^%DAS```
 
-```>Screen: ADBOOK```
+```Screen: ADBOOK```
 
 表示されるスクリーンの名前の所に＊を入力すると、候補が複数でてくるので、適当に１つを選択
 
