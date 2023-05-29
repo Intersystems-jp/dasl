@@ -1,0 +1,187 @@
+ROUTINE %DCSAPZ [Type=INT,LanguageMode=6]
+%DCSAPZ	;V6.1;19-May-93  4:31 PM;HQWHO Query where opt help
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX  D OPGET I %NO=1 S %RES=1 G DO
+	N %ozA,%ozB,%ozC S %ozA="" F %Z=0,1:1:23 S $P(%ozA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HQWHO" S:%OP=99 %OP=0 F %Z=1,4,6:2:22 S %L(%Z)="%DCSAPZ"
+	S %L(24)="",%U=2,%TM=%TMO S %ozB="=== "_%OP(%OP)_" ==============================",%ozC=%OPN
+	I '%NO K %NO G Z
+	D CLEAR,Q
+READ	I $P(^DASY("PARM","MISC"),";",3)="Y",%USR]"",$D(^DAMC(%USR,"NMF")),^("NMF")]"" S %MSG=^%DAMSG(%FLANG,"NMF")_" "_^DAMC(%USR,"NMF") D M S ^("NMF")=""
+	S %FND=0,%XX=1,%XX(0)="E",%W="10;"_(%R*2+6)_";24;2;READ",%OLD=""
+	I '%OP U 0:(NOECHO:NOTYPE) R "",%RES:0 U 0:(ECHO:TYPE) W %E,"[",%R*2+6,";15H"
+	D I,P G OPF:%F,LIST:%RES="*" I %RES="" G E
+	F USR=%USR,"SYS" G:USR]"" COM:$D(^DASYU("U","CMD",USR,%RES))
+	K USR S:%RES?.AKZ %RES=+$P($P(%K," "_%RES,2)," ",2)
+	S %X=1,%Y=%NO D N I %MSG]"" D HLP,J1 G READ
+DO	S:%NO>1 %OP=%OP+1,%OP(%OP)=%OPN S %Z=%NO(%RES),%OPV=$P(%Z,"`"),%RPNAME=$P(%Z,"`",2),%X=$P(%Z,"`",4),%OPN=$P(%Z,"`",5)
+	S %Z=%NO K:%RES'>%NO %NO D JOB I %Z=1 D @%X Q
+	D CLEAR U 0:NOPACK F %Z=1,4,6:2:22 S %L(%Z)=""
+	D @%X S %OPN=%OP(%OP),%OP=%OP-1 D JOB I $G(%OQUIT) K %NO,%OQUIT G E
+	D OPGET I %NO<2 K %NO G E:%EX&%OP,Z
+	I %EX D CLEAR S %EX=0
+	F %Z=1,4,6:2:22 S %L(%Z)="%DCSAPZ",%O(%Z)=0,%RPNAME=""
+	D Q G READ
+COM	S %Z=^DASYU("U","CMD",USR,%RES),%XX=$P(%Z,";",4),%NAME=$P(%Z,";",2),%LABEL="COMCHK" K USR D SCREEN^%DARUN
+	I %MSG="" S %X=$P(%XX,"`") D Z2^%DASDLU1 E  S %MSG=^%DAMSG(%FLANG,"M")
+	I %MSG]"" D Q:'%O,J1 G READ
+	S %RES=%NO,%NO(%NO)=%XX G DO
+JOB	S %I=%OPN S:$P(%I," ",2,99)="" %I=%OP(%OP)_": "_%I
+	I '%PGMR,%USR]"" S ^($J)=$P(^DAJC($J),";",1,3)_";"_%I
+	Q
+OPF	I %EX&'%OP S %EX=0 G READ
+	G F
+OPGET	K %NO S %NO=0,%K="" Q:%EX&%OP  D Z1
+	S %NO=%NO+1,%NO(%NO)="@``%HQWH`^%DCSAPX`Where Clause`Where Clause"
+	S %NO=%NO+1,%NO(%NO)="@``%HQVEW`^%DCSAPU`Value Expression`Value Expression"
+	S %NO=%NO+1,%NO(%NO)="@``%HQP`^%DCSAPW`Search Conditions (Predicates)`Search Conditions (Predicates)"
+	Q
+COMCHK	I $P(%XX,"`",2,4)="`%HQWH`" S %XX="@``%HQWH`^%DCSAPX`Where Clause" Q
+	I $P(%XX,"`",2,4)="`%HQVEW`" S %XX="@``%HQVEW`^%DCSAPU`Value Expression" Q
+	I $P(%XX,"`",2,4)="`%HQP`" S %XX="@``%HQP`^%DCSAPW`Search Conditions (Predicates)" Q
+	S %MSG=^%DAMSG(%FLANG,"M") Q
+HLP	S %MSG="メニュー番号，"_$S(%K]"":" キーワード，",1:"")_" コマンド('*'でリスト表示) または <RETURN>（終了）を入力。" Q
+LIST	I "SYS"[%USR G LISTS
+	S USR=%USR
+	S %XS="S %X=$P($P(^DASYU(""U"",""CMD"",USR,USRCMD),""`""),"";"",4) D Z2^%DASDLU1 E  S %MSG=1"
+	S %CD="LP",%PR="User Command: ",%XL="^DASYU(""U"",""CMD"",USR);KEY",%XT="         Name            Description",%XD="USRCMD",%XA=""
+	S %XL(1)="??25,$P(^DASYU(""U"",""CMD"",USR,USRCMD),"";"")"
+	D ^%DASDLU K USRCMD G COM:%FND
+LISTS	S USR="SYS"
+	S %XS="S %X=$P($P(^DASYU(""U"",""CMD"",""SYS"",SYSCMD),""`""),"";"",4) D Z2^%DASDLU1 E  S %MSG=1"
+	S %CD="LP",%PR="System Command: ",%XL="^DASYU(""U"",""CMD"",""SYS"");KEY",%XT="         Name            Description",%XD="SYSCMD",%XA=""
+	S %XL(1)="??25,$P(^DASYU(""U"",""CMD"",""SYS"",SYSCMD),"";"")"
+	D ^%DASDLU K SYSCMD G COM:%FND
+	D Q,J1 G READ
+CLEAR	U 0:PACK W %E,"[1;1H",%E,"[J"
+	Q
+R	I %L(%Z)'="%DCSAPZ" G @("R^"_%L(%Z))
+	F %I=0,1 W %E,"[",1+%I,";2H",%E,"#",3+%I,"",%E,"[1m",$E(%U(1),1,$ZP(%U(1),36-$ZL(%ozC)\2)),%ozC,$E(%U(1),1,$ZP(%U(1),37-$ZL(%ozC)\2))
+	S %Z=%Z+2 I %L(%Z)]"",%L(%Z)'="%DCSAPZ" W %E,"[m" G @("R^"_%L(%Z))
+	W %E,"[4;1H",%E,"#6",$E(%ozB,1,$ZP(%ozB,40)),$S(40-$ZL(%ozB)'<1:$E(%U(1),1,40-$ZL(%ozB)),1:"")
+	W %E,"[0m" W %E,"[5H",!
+	I %NO<9 S %R=%NO F %I=1:1:%NO W ?15,%E,"[1m",$J(%I,2),%E,"[m. ",$P(%NO(%I),"`",6),!!
+	E  S %R=%NO+1\2 F %I=1:1:%NO\2 W %E,"[1m",$J(%I,2),%E,"[m. ",$P(%NO(%I),"`",6),%E,"[",%I*2+4,";40H",%E,"[1m",$J(%I+%R,2),%E,"[m. ",$P(%NO(%I+%R),"`",6),!!
+	E  I %NO#2 W %E,"[1m",$J(%R,2),%E,"[m. ",$P(%NO(%R),"`",6),!!
+	W ?4,"選択してください： __________"
+	F %X=1,4,6:2:22 S:%L(%X)="%DCSAPZ" %O(%X)=1 W:'%O(%X) %E,"[",%X,"H",%E,"[K"
+	Q
+E	I %O W %E,"[1;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	S %O=0 F %Z=0,1:1:23 S %O(%Z)=0,%L(%Z)=$P(%ozA,",",%Z+1)
+	K %ozA,%XX,%NO,%K,%ozB,%ozC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l;" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'=";"!($E(%SCN)'="l") W %E,"[;r"
+	S %SCN="l;",%LL=80 Q
+I	I $D(%XX(%XX-1)),%XX(%XX-1)=$P(%W,";",5) S %XX=%XX-1
+	E  S %XX(%XX)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAPZ" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$ZL(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$ZP(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$ZL(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPKZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$ZL(%RES)+1,$S(%W<$ZL(%OLD):%W,1:$ZL(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%XX(0)=%XX(%XX) %XX(1)=%XX(0),%XX=1
+	U 0:(ESC:CON:ECHO:CTRAP="")
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	S %HF=""
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0:CTRAP="" I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$ZL(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %XX=%XX+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZP(%,%W)),$S(%W-$ZL(%)'<1:$E(%U(%U),1,%W-$ZL(%)),1:"") Q
+J	S:$ZL(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$ZL(%MSG)),$E(%MSG,1,$ZP(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%XX(%XX)=%XX(0),@%XX(0)
+	I %F="44"&%F S:%XX>1 %XX=%XX-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%XX(%XX)'="" @%XX(%XX) G E
+N	I %RES?.1"-"1N.N,%RES'<%X,%RES'>%Y S %MSG="",%RES=+%RES Q
+	S %MSG=%X_" から "_%Y_" までの整数を入力して下さい。" S:%Y=1E25 %MSG=%X_" 以上の整数を入力して下さい。" Q
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q
+Z	S %MSG="システム ステータス : " D M H 2 G E
+Z1	S %SPV=$P(^DASY("STATUS"),";",4),%WRITE=$S(%SPV="=":0,1:1)
+	S %SPV=%SPV_"+",%FPV=$S(%SPV["@":%PPV,%PPV["@":%SPV,1:"")
+	I %FPV="" F %I=1:1:$L(%SPV) I %PPV[$E(%SPV,%I) S %FPV=%FPV_$E(%SPV,%I)
+	Q
+Z2	I %FPV_%X["@" Q
+	F %I=1:1:$L(%FPV) I %X[$E(%FPV,%I) Q
+	Q

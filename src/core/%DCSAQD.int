@@ -1,0 +1,230 @@
+ROUTINE %DCSAQD [Type=INT,LanguageMode=6]
+%DCSAQD	;V6.1;19-May-93  4:48 PM;QSCHEMA Display the query schema
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	S %pdB="" F %Z=0,1:1:23 S $P(%pdB,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="%QSCHEMA" F %Z=1,4:1:23 S %L(%Z)="%DCSAQD"
+	S %L(24)="",%U=2,%TM=%TMO W %E,"[1;1H",%E,"[J"
+U0	D U,Q
+W	S %MSG="",%pdA=1,%pdA(0)="E"
+	S %pdA(0)="AK" G AC
+U	K ^DATG($J,"S","%QSCHEMA") S %pdM=0,%pdL=%E_"[m",%pdO=0,%pdN="",%pdQ=0,%pdP="" Q
+SN	S GNDUM1="" Q
+SP	I %pdC>%pdE W %E,"[",4+%pdC-%pdD,";1H",%E,"[K" Q
+	I %SPS D SG,SU:%pdG
+	W %E,"["_(4+%pdC-%pdD)_";1H",GNDUM1,$E(%U(1),1,$Zposition(%U(1),132-$Zwidth(GNDUM1))) Q
+SF	S %SPS=1,%pdF=+$O(^DATG($J,"S","%QSCHEMA","")) I '%pdF D SN1 S %SPS=0 G SF1
+	S (%pdG,%pdI)=%pdF,%pdH=0 F %pdC=2:1 S %pdG=$O(^DATG($J,"S","%QSCHEMA",%pdG)) D S1 Q:%pdG=""
+	S %pdF=%pdI D XP S %pdE=$S(%pdC-1:%pdC-1,1:1),%pdD=1
+SF1	U 0:PACK F %pdC=1:1:18 D SP
+	U 0:NOPACK S %pdJ=$S('%pdH:1,%pdE<18:%pdF,1:%pdH),%pdK=%pdF
+SS	S %pdC=%pdD,%pdF=%pdI D SG,XP
+SV	S %SL=%pdE,%SP=%pdF,%SCX=%pdC=%pdE,%SN=%pdC Q
+SN1	S (%pdC,%pdD,%pdE,%pdF,%pdI,%pdJ,%pdK)=1,(%pdG,%pdH)=0,^DATG($J,"S","%QSCHEMA",1)="0;0" G SM2
+SG	S GNDUM1=^DATG($J,"S","%QSCHEMA",%pdF,"GNDUM1") Q
+SU	S %pdH=%pdF,%pdF=%pdG,%pdG=+^DATG($J,"S","%QSCHEMA",%pdF) Q
+S1	S ^DATG($J,"S","%QSCHEMA",%pdF)=+%pdG_";"_%pdH,%pdH=%pdF,%pdF=%pdG Q
+SM	S %Q=((%pdF+%pdH)/2)*1 I %Q=%pdH S %Q=-1 Q
+	S $P(^DATG($J,"S","%QSCHEMA",%pdF),";",2)=%Q
+SM1	S:%pdH $P(^DATG($J,"S","%QSCHEMA",%pdH),";",1)=%Q S ^DATG($J,"S","%QSCHEMA",%Q)=%pdF_";"_%pdH,%pdG=%pdF,%pdF=%Q
+SM2	D SN S ^DATG($J,"S","%QSCHEMA",%pdF,"GNDUM1")="" Q
+1	F %I=0,1 W %E,"[",1+%I,";23H",%E,"#",3+%I,"",%E,"[1mデータベース スキーマ",%E,"[0m"
+	Q
+4	S %pdC=%pdD G SP
+5	S %pdC=%pdD+1 G SP
+6	S %pdC=%pdD+2 G SP
+7	S %pdC=%pdD+3 G SP
+8	S %pdC=%pdD+4 G SP
+9	S %pdC=%pdD+5 G SP
+10	S %pdC=%pdD+6 G SP
+11	S %pdC=%pdD+7 G SP
+12	S %pdC=%pdD+8 G SP
+13	S %pdC=%pdD+9 G SP
+14	S %pdC=%pdD+10 G SP
+15	S %pdC=%pdD+11 G SP
+16	S %pdC=%pdD+12 G SP
+17	S %pdC=%pdD+13 G SP
+18	S %pdC=%pdD+14 G SP
+19	S %pdC=%pdD+15 G SP
+20	S %pdC=%pdD+16 G SP
+21	S %pdC=%pdD+17 G SP
+22	D AF,AN Q
+23	D AB Q
+	;BUILD
+AB	W:%pdM %E,"[23;112H",%pdL,"少々お待ち下さい ... ",%E,"[0m",%E,"[0m" Q
+AC	;
+	S %pdL=%E_"[5m",%pdM=1 D AB,SCREEN^%DAQSCH,SF W:%pdM %E,"[23;112H",$J("",21) S %pdM=0,%pdL=%E_"[m" G AO:18+%SN>%SL,AG
+	;CONT
+AF	W:%pdO %E,"[22;19H",%E,"#6<RETURN> を押すと続行します",$E(%U(1)) Q
+AG	I '%EX S %pdO=1_(%pdO#10) D AF:%pdO=10
+	D SS:%pdC'=%pdD S %W="1;22;46;0;AG;N;CONT;;59;1;",%OLD=%pdN U 0:NOECHO D I G F:%EX
+AH	I '%F D B
+	S %LE="" S %pdO=%pdO#10 W:'%pdO %E,"[22;19H",$J("",28)
+	G X26:%F="26",X25:%F="25",F:%F S %pdN=%RES ;
+	D XF:%pdD+17<%pdE G AO:(18+%SN>%SL),AG
+	;EXIT
+AK	;
+	K GNDUM1,GNWAIT G E
+	;QUIT
+AN	W:%pdQ %E,"[22;19H",%E,"#6<RETURN> を押すと終了します",$E(%U(1)) Q
+AO	I '%EX S %pdQ=1_(%pdQ#10) D AN:%pdQ=10
+	D SS:%pdC'=%pdD S %W="1;22;46;0;AO;N;QUIT;;59;1;",%OLD=%pdP U 0:NOECHO D I G F:%EX
+AP	I '%F D B
+	S %LE="" S %pdQ=%pdQ#10 W:'%pdQ %E,"[22;19H",$J("",28)
+	G X26:%F="26",X25:%F="25",F:%F S %pdP=%RES ;
+	G AK:18+%SN>%SL,AG
+	;SCROLL
+AR	W %E,"["_(4+%pdC-%pdD)_";1H",GNDUM1,$E(%U(1),1,$Zposition(%U(1),132-$Zwidth(GNDUM1))) Q
+	;TITLE
+E	I %O W %E,"[1;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	S %O=0 F %Z=0,1:1:23 S %O(%Z)=0,%L(%Z)=$P(%pdB,",",%Z+1)
+	K %pdB,%pdE,%pdD,%pdC,%pdH,%pdF,%pdK,%pdG,%pdA,%pdJ,%pdI,%pdL,%pdM,%pdO,%pdN,%pdQ,%pdP,^DATG($J,"S","%QSCHEMA") Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="h4;21" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="h" W %E,"[2J",%E,"[?3h" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="4;21"!($E(%SCN)'="h") W %E,"[4;21r"
+	S %SCN="h4;21",%LL=132 Q
+R	I %L(%Z)'="%DCSAQD" G @("R^"_%L(%Z))
+	S %SPS=1 I '+$O(^DATG($J,"S","%QSCHEMA","")) S %SPS=0 D SN1
+	D SV S %=%pdC,%S=%pdF,%pdF=%pdI I %SPS D XP I %Z>4,%Z<22 F %T=4:1:%Z-1 Q:'%pdG  D SU
+	F %X=1,4:1:23 I '%O(%X),%L(%X)="%DCSAQD" S %O(%X)=1 D @%X
+	S %pdC=%,%pdF=%S D:%SPS SG,XP Q
+I	I $D(%pdA(%pdA-1)),%pdA(%pdA-1)=$P(%W,";",5) S %pdA=%pdA-1
+	E  S %pdA(%pdA)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAQD" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>131):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%pdA(0)=%pdA(%pdA) %pdA(1)=%pdA(0),%pdA=1
+	U 0:(ESC:CON:ECHO:CTRAP="")
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	S:%RES'="" %LE=%RES
+	S %=^%DASDH("QSCHEMA",%pdA(%pdA)),%HF=$P(%,$C(0)),%MSG=$P(%,$C(0),2)
+	I %MSG="" G I7:%HF]"" S %MSG="ヘルプ情報はありません。"
+	D M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0:CTRAP="" I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %pdA=%pdA+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%pdA(%pdA)=%pdA(0),@%pdA(0)
+	I %F="44"&%F S:%pdA>1 %pdA=%pdA-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%pdA(%pdA)'="" @%pdA(%pdA) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q
+XMB	Q:%pdC=1  S %pdC=%pdC-1,%SPS=0
+	S %pdG=%pdF,%pdF=%pdH,%pdH=$P(^DATG($J,"S","%QSCHEMA",%pdF),";",2)
+	D SG G XM2
+XM	I %F G @%pdA(%pdA):%F=17&(%pdC=1)!(%F=18&(%pdC=%pdE))
+	S %pdC=%pdC+$S(%F=17:-1,1:1),%SPS=0
+	I %pdC>%pdE S %pdE=%pdE+1,(%pdK,%pdJ,%Q)=%pdF+1\1,%pdH=%pdF,%pdF=0 D SM1,SP:%pdD+17'<%pdC G XM2
+	I %F=17 S %pdG=%pdF,%pdF=%pdH,%pdH=$P(^DATG($J,"S","%QSCHEMA",%pdF),";",2)
+	E  S %pdH=%pdF,%pdF=%pdG,%pdG=+^DATG($J,"S","%QSCHEMA",%pdF)
+	D SG
+XM2	I %pdD>%pdC S %pdD=%pdD-1,%=4,%pdI=%pdF D XW,XT
+	I %pdD+17<%pdC S %pdD=%pdD+1,%=4,%pdJ=%pdF,%pdI=+^DATG($J,"S","%QSCHEMA",%pdI) D XB
+XQ	S %SPS=1 D SV G:%F&(%F'="41") @%pdA(%pdA) Q
+XI	D SM I %Q=-1 S %F=0,%MSG="挿入の限界です。" D M G @%pdA(%pdA)
+	S %pdE=%pdE+1,%I=-1 S:%pdC=%pdD %pdI=%pdF S %S=%pdF,%SPS=0 D XS S %pdF=%S D XW G XQ
+XS	S %=%pdC-%pdD+4 W %E,"[",%,";21r" D XB:%I>0,XT:%I<0 W %E,"[4;21r" Q
+XD	I %pdC=%pdE S %S=%pdE,%pdE=%pdC-1 D SM2,SP S %pdE=%S G XQ
+	S:%pdC=%pdD %pdI=+^DATG($J,"S","%QSCHEMA",%pdI) S %Q=(%pdD+17<%pdE) I %Q S %pdJ=+^DATG($J,"S","%QSCHEMA",%pdJ)
+	S %pdE=%pdE-1,%I=1,%SPS=0 S:%pdH $P(^DATG($J,"S","%QSCHEMA",%pdH),";",1)=%pdG S $P(^DATG($J,"S","%QSCHEMA",%pdG),";",2)=%pdH
+	K ^DATG($J,"S","%QSCHEMA",%pdF) S %pdF=%pdG,%pdG=+^DATG($J,"S","%QSCHEMA",%pdF) I '%Q D XS,SG G XQ
+	S %S=%pdF,%pdF=%pdJ D SG,XS S %pdF=%S D SG G XQ
+XT	W %E,"[",%,";1H",%E,$S(%=21:"[K",1:"M") D @% Q
+XB	W %E,"[21;1H",%E,$S(%=21:"[K",1:"D") Q:%pdD+17>%pdE  S %=%pdC D 21 S %pdC=% Q
+XP	S %Q=^DATG($J,"S","%QSCHEMA",%pdF),%pdG=+%Q,%pdH=$P(%Q,";",2) Q
+XW	S:%pdD+17<%pdE %pdJ=$P(^DATG($J,"S","%QSCHEMA",%pdJ),";",2) Q
+X26	D XF:%pdD+17<%pdE G @%pdA(%pdA)
+XF	S (%S,%pdF)=+^DATG($J,"S","%QSCHEMA",%pdJ),%X=%pdE-%pdD-17 D XP
+	F %pdD=%pdD+1:1:%pdD+17+1 S %=4 D XB Q:%pdD+17=%pdE
+	I %pdD+17<%pdE S %pdJ=%pdH,%pdI=%S G SS
+	F %=1:1:%X S %pdI=+^DATG($J,"S","%QSCHEMA",%pdI)
+	S %pdJ=%pdF G SS
+X25	D XU:%pdD>1 G @%pdA(%pdA)
+XU	S %pdG=0,(%S,%pdF)=$P(^DATG($J,"S","%QSCHEMA",%pdI),";",2),%X=%pdD-1
+	F %pdD=%pdD-1:-1:%pdD-18 S %=4 D XT Q:%pdD=1  S %pdF=$P(^DATG($J,"S","%QSCHEMA",%pdF),";",2)
+	I %pdD>1 S %pdI=+^DATG($J,"S","%QSCHEMA",%pdF),%pdJ=%S G SS
+	S %pdJ=%pdF F %=1:1:17 S %pdJ=$O(^DATG($J,"S","%QSCHEMA",%pdJ))
+	S %pdI=%pdF G SS
