@@ -1,0 +1,88 @@
+ROUTINE %DASDCP [Type=INT,LanguageMode=6]
+DASDCP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	;
+	I DB W " ; *** Top New and initalize *** - INIT^%DASDCP",!
+	S X=^DASD(%SDNM,"P","S"),%SDPX=$P(X,";"),%SDPY=$P(X,";",2),%SDPW=$P(X,";",3),%SDPH=$P(X,";",4),%SDPBX=($P(X,";",5)="Y")
+	I %SDPH'="" S %NAME=%SDPH,%PROGRAM="" D SCREEN^%DANAME S %SDPH=$E(%PROGRAM,2,255)
+	I %SDLL>23 S %MSG="ポプップ アップ スクリーンが画面に入りません。ライン数、カラム数またはウィンドウサイズを変更して下さい。"  ;;%%Z3-T
+	I %MSG]"" ZT %MSG
+	I '$D(KD) N KD D KD^%DASDC
+	W " Q:%EX",!
+	W " N %RES,%OLD,%P,%POPX,%POPY,%POPW,%POPF,%POPS"
+	W " S (%POPD,%POPK)="""",%FND=0 S:'$D(%POPA) %POPA="""""
+	W " S %POPX=$P(%POPA,"";""),%POPY=$P(%POPA,"";"",2),%POPW=$P(%POPA,"";"",3),%POPS=$P(%POPA,"";"",4),%POPF=$P(%POPA,"";"",5)",!
+	W " S:%POPX<1 %POPX=",%SDPX," S:%POPY<1 %POPY=",%SDPY," S:%POPW<1 %POPW=",%SDPW," S:%POPS'=80&(%POPS'=132) %POPS=80",!
+	I $G(^DASD(%SDNM,"P","O",1))="" S SUB("POPDDN")="" D ^%DASDCPD G PREVP
+	E  S SUB("NPOPDDN")=""
+POPT	;
+	I DB W " ; ***  *** - POPT^%DASDCP",!
+	I '$D(^DASD(%SDNM,"P","O")) S %MSG="ポップアップ・スクリーンの選択項目がありません。" ZT %MSG  ;;%%Z3-T
+	S PN=-1 F PNO=0:1 S PN=$O(^DASD(%SDNM,"P","O",PN)) Q:PN=""
+	F VN=".PBXL",".PFL",".PLL",".PMX",".PN",".PN2",".PNO",".PXX",".PXXO",".PXXB",".PXXT",".PXW",".PXWO",".PXF",".PSPC",".PDATA",".PDATAL" D SG
+	I '%SDPBX W " S %POPX=%POPX-1,%POPY=%POPY-1"
+	W " D OPGET",!
+	S TMOSCN=$S(TMO]"":TMO,1:"%TMO")
+	W " S %U=2,%TM=",TMOSCN
+	I %SDPBX W " S:%POPX+",SM(".PMX"),"+5>%POPS %POPX=%POPS-",SM(".PMX"),"-5 S:%POPY+%POPW+1>23 %POPY=23-%POPW-1 S ",SM(".PFL"),"=%POPY,",SM(".PLL"),"=%POPY+%POPW+1",!
+	E  W " S:%POPX+",SM(".PMX"),"+3>%POPS %POPX=%POPS-",SM(".PMX"),"-3 S:%POPY+%POPW'<23 %POPY=23-%POPW S ",SM(".PFL"),"=%POPY+1,",SM(".PLL"),"=%POPY+%POPW",!
+	W " S (",SM(".PXX"),",",SM(".PXW"),")=1,(",SM(".PXWO"),",",SM(".PXXO"),")=0,",SM(".PXF"),"=""""",!
+	W " D CLEAR,RP,PDSP(1),DSP",!
+READ	;
+	I DB W " ; ***  *** - READ^%DASDCP",!
+	W "READ S %FND=0,%OLD=""""",!
+	W " D I I '%F G:%RES="""" E G READ",!
+	W " I (%F=""",KD("EX"),"""&%F)!%EX S ",SM(".PXX"),"=0 G E",!
+	W " I %F=""",KD("H"),""" D CDSP,^@%RES,Q,CLEAR,RP,PDSP(",SM(".PXX"),"-",SM(".PXW"),"+1),DSP G READ",!
+	W " I %POPW=1 S:%F=""",KD("PS"),""" %F=""17"" S:%F=""",KD("NX"),""" %F=18",!
+	W " I %F=""17""!(%F=""18"") D DO G READ",!
+	W " I %F=""",KD("PS"),""" D PREVP G READ",!
+	W " I %F=""",KD("NX"),""" D NEXTP G READ",!
+	W " S %MSG=""不適当な文字が入力されました。"",%F=0 D M G READ",!  ;;%%Z3-T
+OPGET	;
+	I DB W " ; ***  *** - OPGET^%DASDCP",!
+	W "OPGET K ",SM(".PNO")," S (",SM(".PNO"),",",SM(".PMX"),")=0 Q:%EX",!
+	S PN=-1,COM="",PMX=0 F PNO=1:1 S PN=$O(^DASD(%SDNM,"P","O",PN)) Q:PN=""  S CM="S",ARG=SM(".PNO")_"("_PNO_")="""_^DASD(%SDNM,"P","O",PN)_"""" D COM S PWK=$Zwidth($P(^DASD(%SDNM,"P","O",PN),";",2)) S:PMX<PWK PMX=PWK
+	S ARG=(SM(".PNO")_"="_(PNO-1)) D COM
+	S ARG=(SM(".PMX")_"="_PMX) D COM
+	I %SDPX+PMX+$S(%SDPBX:6,1:4)-1>132 S %MSG="スクリーンが画面に入りません。カラム番号を変更して下さい。"  ;;%%Z3-T
+	I %MSG]"" ZT %MSG
+	S CM="K",ARG=SM(".PSPC") D COM
+	S CM="S",ARG="$P("_SM(".PSPC")_","" "","_SM(".PMX")_"+5)=""""" D COM,ENDL
+	W " S:%POPW>",SM(".PNO")," %POPW=",SM(".PNO")," Q",!
+PREVP	;
+	I DB W " ; *** Previous Screen *** - PREVP^%DASDCP",!
+	W "PREVP S %MSG="""" D M S ",SM(".PXWO"),"=",SM(".PXW"),",",SM(".PXXO"),"=",SM(".PXX"),!
+	W " D  I %MSG="""" D ERS,PDSP(",SM(".PXXT"),"),DSP",!
+	W " .S ",SM(".PXXT"),"=",SM(".PXXO"),"-",SM(".PXWO"),"+1",!
+	W " .I ",SM(".PXXT"),"=1 S %F=0,%MSG=""最初のページにいます。"" D M Q",!  ;;%%Z3-T
+	W " .I ",SM(".PXXT"),"-%POPW+1>0 S ",SM(".PXXB"),"=",SM(".PXXT"),",",SM(".PXXT"),"=",SM(".PXXT"),"-%POPW+1,",SM(".PXW"),"=%POPW",",",SM(".PXX"),"=",SM(".PXXB")," Q",!
+	W " .S ",SM(".PXXT"),"=1 I ",SM(".PXXO"),"'>%POPW S ",SM(".PXX"),"=",SM(".PXXO"),",",SM(".PXW"),"=",SM(".PXXO")," Q",!
+	W " .S ",SM(".PXX"),"=%POPW,",SM(".PXW"),"=%POPW",!
+	W " Q",!
+NEXTP	;
+	I DB W " ; *** Next Screen *** - NEXTP^%DASDCP",!
+	W "NEXTP S %MSG="""" D M S ",SM(".PXWO"),"=",SM(".PXW"),",",SM(".PXXO"),"=",SM(".PXX"),!
+	W " D  I %MSG="""" D ERS,PDSP(",SM(".PXXT"),"),DSP",!
+	W " .S ",SM(".PXXB"),"=%POPW-",SM(".PXWO"),"+",SM(".PXXO"),!
+	W " .I " W:$D(SUB("POPDDN")) SM(".PNO"),"," W SM(".PNO"),"=",SM(".PXXB")," S %F=0,%MSG=""最終ページにいます。"" D M Q",!  ;;%%Z3-T
+	W:$D(SUB("POPDDN")) " .I ",SM(".PXXB"),"+%POPW-1>",SM(".PCURRENT")," D OPGET(%POPW)",!
+	W " .I ",SM(".PXXB"),"+%POPW-1'>" W $S($D(SUB("POPDDN")):SM(".PCURRENT"),1:SM(".PNO"))," S ",SM(".PXW"),"=1,(",SM(".PXX"),",",SM(".PXXT"),")=",SM(".PXXB")," Q",!
+	W " .S ",SM(".PXXT"),"=",$S($D(SUB("POPDDN")):SM(".PCURRENT"),1:SM(".PNO")),"-%POPW+1",!
+	W " .I ",SM(".PXXO"),">",SM(".PXXT")," S ",SM(".PXX"),"=",SM(".PXXO"),",",SM(".PXW"),"=",SM(".PXXO"),"-",SM(".PXXT"),"+1",!
+	W " .E  S ",SM(".PXX"),"=",SM(".PXXT"),",",SM(".PXW"),"=1",!
+	W " Q",!
+	G ^%DASDCP2
+COM	I $X+$L(ARG)>150 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	G:V2 SG2 S V1=V1+1 I V1>26 S V1=0,V2=1 G SG2
+	S SM=SCNV_$C(V1+64),SM(VN)=SM
+	Q
+SG2	S V1=V1+1 I V1>26 S V1=1,V2=V2+1
+	S SM=SCNV_$C(V2+64)_$C(V1+64),SM(VN)=SM
+	Q

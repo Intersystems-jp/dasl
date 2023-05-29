@@ -1,0 +1,164 @@
+ROUTINE %DASAVE [Type=INT,LanguageMode=6]
+%DASAVE	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	S $ZT="ERROR^%DASAVE"
+	N (%FLANG,%NAME) S (%MSG,$ZE)=""
+	S %X=^DASS(%NAME,"F"),%MUMPS=$P(%X,";",1),%FORMAT=$P(%X,";",2)
+	S %FNAME=$P(%X,";",3),%DESC=$P(%X,";",4),%PRTD=1
+	S %TEMP="DSM_DASL"_+$H_$P($H,",",2)_".TMP"
+	D NOW^%DAUDTTM S %TDATE=%DTX
+	I %FORMAT="G" D  
+	. S %GNAME=$S($E(%FNAME)="^":"",1:"^")_%FNAME
+	. S %FNAME="DSM_DASLTEMP"_$P($H,",",2)
+%GLO	;
+	;	%DAMSG  - DASL error messages
+	S $ZT="ERRLG^%DASAVE"
+	S FILE=%FNAME_".GL"
+	O FILE:NEW U FILE W %TDATE,!,%DESC,!
+	S %GL="%DAMSG" D GTO
+	W "**END**",!,"**END**",! C FILE
+	I %FORMAT="G" O FILE U FILE D  
+	. U FILE R X,X 
+	. F N=1:1 U FILE R X Q:X="**END**"  S @(%GNAME_"(""GL"","_N_")")=X
+	. C FILE:DEL
+	Q:%MSG'=""
+%ROU	;
+	;	%DARUN    -  Used to run screens
+	;	%DALOGIN  -  Setup DASL variables 
+	;	%DARPRD   -  Report Read subroutine
+	;	%DASDFED  -  Field edit subroutine
+	;	%DASDLU   -  Lookup routine
+	;	%DASDLU1  -  Part 2 lookup routine
+	;	%DAUDTTM  -  Date and time utility
+	;	%DASL     -  Setup DASL variables
+	;	%DAIO     -  I/O routine
+	S $ZT="ERRLR^%DASAVE"
+	; 	Note: 	the order is important to do DIF on the 
+	;		output file, for new versions.
+	S FILE=%FNAME_".RL" D NOW^%DAUDTTM O FILE:NEW 
+	U FILE W %DTX," ",%TMX,!,"Run Time DASL Library Routines",!
+	S %RNAME="%DAIO",%ONAME="%DAIO",%FLAG=0 D RTO
+	S %RNAME="%DALOGIN",%ONAME="%DMLOGIN",%FLAG=0 D RTO
+	Q:%MSG'=""
+	S %OFILE=FILE,FILE=%TEMP O FILE:NEW U FILE
+	K SUB D @("GEN^%DMRPRD")
+	C %TEMP S FILE=%OFILE,%RNAME="%DARPRD",%ONAME="%DMRPRD" D RTOX
+	I %MSG'="" C FILE Q
+	S %RNAME="%DARUN",%ONAME="%DMRUN",%FLAG=0 D RTO
+	Q:%MSG'=""
+	S %RNAME="%DASDFED",%ONAME="%DMSDFED",%FLAG=0 D RTO
+	I %MSG'="" C FILE Q
+	S %OFILE=FILE,FILE=%TEMP O FILE:NEW U FILE
+	K SUB D @("GEN^%DMSDLU")
+	C %TEMP S FILE=%OFILE,%RNAME="%DASDLU",%ONAME="%DMSDLU" D RTOX
+	I %MSG'="" C FILE Q
+	S %OFILE=FILE,FILE=%TEMP O FILE:NEW U FILE
+	K SUB D @("GEN^%DMSDLU1")
+	C %TEMP S FILE=%OFILE,%RNAME="%DASDLU1",%ONAME="%DMSDLU1" D RTOX
+	I %MSG'="" C FILE Q
+	S %OFILE=FILE,FILE=%TEMP O FILE:NEW U FILE
+	K SUB D @("GEN^%DMSDLU2")
+	C %TEMP S FILE=%OFILE,%RNAME="%DASDLU2",%ONAME="%DMSDLU2" D RTOX
+	I %MSG'="" C FILE Q
+	S %RNAME="%DASL",%ONAME="%DMSL",%FLAG=0 D RTO
+	I %MSG'="" C FILE Q
+	S %OFILE=FILE,FILE=%TEMP O FILE:NEW U FILE
+	K SUB D @("GEN^%DMUDTTM")
+	C %TEMP S FILE=%OFILE,%RNAME="%DAUDTTM",%ONAME="%DMUDTTM" D RTOX
+	I %MSG'="" C FILE Q
+	U FILE W !,"**END**",! C FILE
+	I %FORMAT="G" O FILE U FILE D  
+	. U FILE R X,X 
+	. F N=1:1 U FILE R X Q:X="**END**"  S @(%GNAME_"(""RL"","_N_")")=X
+	. C FILE:DEL
+GLO	;
+	;		^DASY   -  Appliction parameters
+	;		^DANX   -  Routine names
+	;		^DASDH  -  Screen help text
+	S $ZT="ERRG^%DASAVE"
+	S FILE=%FNAME_".G"
+	O FILE:NEW U FILE W %TDATE,!,"DASL Application Globals - ",%DESC,!
+	F %GL="DASY","DANX","DASDH" D GTO
+	F N=1:1 Q:'$D(^DASS(%NAME,"G",N))  S %GL=^(N) D GTO
+	U FILE W "**END**",!,"**END**",! C FILE
+	Q:%MSG'=""
+	I %FORMAT="G" O FILE U FILE D  
+	. U FILE R X,X 
+	. F N=1:1 U FILE R X Q:X="**END**"  S @(%GNAME_"(""G"","_N_")")=X
+	. C FILE:DEL
+	Q:%MSG'=""
+ROU	;
+	S $ZT="ERRR^%DASAVE"
+	K %DUM S %TYPE="S",%GBL="^DASD",%VAR("SDTYPE")=""
+	F N=1:1 Q:'$D(^DASS(%NAME,"S",N))  S %WILD=^(N) D EXPAND^%DAUDMP
+	S FILE=%FNAME_".R" O FILE:NEW U FILE W %TDATE,!,%DESC,!
+	S SDNM="",%MSG=""
+	F  S SDNM=$O(%DUM(SDNM)) Q:SDNM=""  D  Q:%MSG'=""
+	. N %DUM,%NAME,%DESC,%TDATE U FILE D ^%DASDC 
+	I %MSG]"" C FILE G ERRR
+	K %DUM S %TYPE="R",%GBL="^DARD"
+	F N=1:1 Q:'$D(^DASS(%NAME,"R",N))  S %WILD=^(N) D EXPAND^%DAUDMP
+	S RPNM="",%MSG=""
+	F  S RPNM=$O(%DUM(RPNM)) Q:RPNM=""  D  Q:%MSG'=""
+	. N %DUM,%NAME,%DESC,%TDATE U FILE D ^%DARPC 
+	F N=1:1 Q:'$D(^DASS(%NAME,"RO",N))  S X=^(N) D
+	. S %ONAME=$P(X,";",1),%RNAME=$P(X,";",2),%FLAG=0 D RTO
+	U FILE W !,"**END**",! C FILE
+	Q:%MSG'=""
+	I %FORMAT="G" O FILE U FILE D  
+	. U FILE R X,X 
+	. F N=1:1 U FILE R X Q:X="**END**"  S @(%GNAME_"(""R"","_N_")")=X
+	. C FILE:DEL
+	Q:%MSG'=""
+EXIT	;
+	Q
+ERROR	S:%MSG="" %MSG="Error in save set, opening files." G EXIT
+ERRLG	S:%MSG="" %MSG="Error saving % globals." G EXIT
+ERRLR	S:%MSG="" %MSG="Error saving % routines." G EXIT
+ERRG	S:%MSG="" %MSG="Error saving global "_%GL_"." G EXIT
+ERRR	S:%MSG="" %MSG="Error saving rouintes." G EXIT
+GTO	;
+	S:$E(%GL)'="^" %GL="^"_%GL
+	S %RF=%GL I $D(@%RF)#2 W %RF,!,@%RF,!
+	F  S %RF=$Q(@%RF) Q:%RF=""  W %RF,!,@%RF,!
+	Q
+RTO	;
+	O %TEMP:NEW
+	S X="ZL @%ONAME F N=0:1 S T=$T(@%ONAME+N) Q:T=""""  U %TEMP W T,!"
+	X X C %TEMP 
+RTOX	;
+	S $ZT="RTERR^%DASAVE"
+	O %TEMP U FILE W %RNAME,!
+	F I=1:1 U %TEMP R T Q:T=""  D RTO1 Q:%MSG'=""  I T'="" U FILE W T,!
+	;**TM**; ZQの変更、ENDOFFILEエラーの変更; RTERR	I $ZE'="",$ZE'["ENDOFILE" ZQ 
+RTERR	I $ZE'="",$ZE'["ENDOFFILE" ZQ 1 G @$ZT 
+	C %TEMP:DEL U FILE W !
+	I %MSG'="" C FILE
+	Q
+RTO1	;
+	S $ZT="RTO1ERR^%DASAVE"
+	I T["; Run-time","VAX DSM/ULTRIX"'[%MUMPS S %FLAG=%FLAG+1,T="" Q
+	I %FLAG#2=1 S T="" Q
+	I T[%ONAME&(%RNAME'=%ONAME) S T=$P(T,%ONAME,1)_%RNAME_$P(T,%ONAME,2,255) G RTO1
+	Q:T'["??"   S FUNC=$P(T,"??",2),T1=""
+	S $ZT="INDERR"
+	S T1=@FUNC 
+SKIP	S T=$P(T,"??",1)_T1_$P(T,"??",3,255) 
+	S:T?1"  ".E T=$E(T,2,255) S:T=" " T=""
+	G RTO1
+INDERR	;
+	S $ZE="",$ZT="RTO1ERR"
+	S FUNC="S T1="_FUNC X FUNC
+	G SKIP
+RTO1ERR	;
+	S %MSG="Unable to Xecute or indirect "_$ZR_" in %DASAVE"
+	S $ZE=""
+	Q
+GETFILE	;
+	I $ZV["VAX DSM" S TFILE="DSM_DASL_QD"_($H#7)_$P($H,",",2)_".TMP"
+	I $ZSE(TFILE)]"" G GETFILE
+	S $ZT="ERROPN^%DAQC"
+	C TFILE O TFILE:NEW:10
+	E  S %MSG=^%DAMSG(%FLANG,"QOPEN") 
+	Q

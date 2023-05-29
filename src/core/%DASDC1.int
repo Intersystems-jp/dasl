@@ -1,0 +1,193 @@
+ROUTINE %DASDC1 [Type=INT,LanguageMode=6]
+%DASDC1	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	S (F,FN)="",(F0,F0(0))=%SDFL_","_%SDLL I 'DB S $ZT="ERROR^%DASDC1" 
+	F I="NSAME","DONP","EVALS" S FLAG(I)=0
+FLDDAT	S F="" 
+	F I=1:1 S F=$O(^DASD(%SDNM,"D","F",F)) Q:F=""  D FIELD I DB=1 W F,"  "
+	D ADATA^%DADDLD 
+	S F=0 F I=1:1 S F=$O(F0(F)) Q:F=""  D FLDDF:FN(F)]"",FLDXY
+	D ALL^%DASDPAR S F="" F I=1:1 S F=$O(F0(F)) Q:F=""  D FCHECK
+LVGEN	;
+	S VN=".S" D SG S SMS=SM,VN=".1" D SG S S1=SM
+	I $$ATT^%DASDC9("{BA") S VN=".B" D SG S BATV=SM
+	I $$ATT^%DASDC9("{SC") D SCROLL
+	S NN="" 
+	F I=1:1 S NN=$O(NEV(NN)) Q:NN=""  S LN=NN_".EV" D LG S NEV(NN)=LB
+	S F="" 
+	F I=1:1 S F=$O(TR(F)) Q:F=""  S %DDNM=FN(F),LN=".TR-"_%DDNM D LG
+	S F="%" 
+	F I=1:1 S F=$O(FN(F)) Q:F'["%"  S LN=F_".F" D LG
+	S F=0 
+	F I=1:1 S F=$O(F0(F)) Q:F=""  F J="F","P","R","S" S LN=F_"."_J D LG
+	S F=0 
+	F I=1:1 S F=$O(F0(F)) Q:F=""  D FVAR
+	S %COMPHL="^"_$S(FLAG("DASL"):"%",1:"")_"DASDH"
+	K @%COMPHL@(%SDNM) S $ZT="ERRFLD^%DASDC1"
+	S F=0 F I=1:1 S F=$O(NF(F)) Q:F=""  I FL(F) S %NAME=FS(F),%PROGRAM="" D SCREEN^%DANAME:%NAME]"" S @%COMPHL@(%SDNM,LB(F_".R"))=$E(%PROGRAM,2,99)_$C(0)_FH(F)
+	I 'DB K FH,FS S %DDNM="" F I=1:1 S %DDNM=$O(%DN(%DDNM)) Q:%DDNM=""  F K="HT","HS","V","AT" K %DN(%DDNM,K)
+	S $ZT="ERROR^%DASDC1" G ^%DASDC2
+FIELD	S F0=^DASD(%SDNM,"D","F",F,"P"),FH(F)=^("H","T"),FS(F)=^("S")
+	S FV(F)=^DASD(%SDNM,"D","F",F,"VA",1),FL(F)=$P(F0,";",3)
+	S FP(F)=$P(F0,";",6),(FN(F),D)=$P(F0,";",4)
+	;**TM**; ZQの変更; I D'="",'$D(^DADD(D)) S %MSG="Undefined Data Name "_D_" in Field "_F ZQ
+	I D'="",'$D(^DADD(D)) S %MSG="Undefined Data Name "_D_" in Field "_F ZQ 1 G @$ZT
+	I D]"" S %DN(D)="" 
+	S F0(F)=$P(F0,";",1,2)_";"_$P(F0,";",5)
+	Q
+FLDDF	;
+	S D=FN(F) S:FL(F)="" FL(F)=%DN(D,"L") S:FH(F)="" FH(F)=%DN(D,"HT")
+	S:FH(F)="_" FH(F)=""  ;;%%Z3-I
+	S:FV(F)="" FV(F)=%DN(D,"V") S:FP(F)="" FP(F)=%DN(D,"P")
+	S:FP(F)="_" FP(F)="" S:FS(F)="" FS(F)=%DN(D,"HS") S:FS(F)="_" FS(F)=""  ;;%%Z1-I
+	I %DN(D,"IT")]"" S TR(F)="I"
+	I %DN(D,"OT")]"" S TR(F)=$S('$D(TR(F)):"O",1:"IO")
+	Q
+FLDXY	;
+	S F0=F0(F)
+	S Y=+F0
+	S X=$P(F0,";",2)
+	I X["," D 
+	. N BLANKS,DP
+	. S $P(BLANKS," ",132)=" "
+	. S DP=$P(X,",",2) 
+	. S X=$P(X,",") 
+	. S FP(F)=FP(F)_$E(BLANKS,1,DP-X-$Zwidth(FP(F)))  ;;%%Z3-G
+	S J=$P(F0,";",3) I Y S Y=Y+%SDFL-1
+	I X S K=FL(F)+$Zwidth(FP(F)),X=$S(J="R":X-K+1,J="C":X-(K\2),1:X) S:X<1 X=1  ;;%%Z1-G
+	S F0(F)=Y_";"_X_";"_J
+	Q
+DDN1	S D=$E(FN,2,99),FN(FN)=D
+DDN	S %DDNM=D D DATA^%DADDLD
+	Q
+FCHECK	;
+	F ACTLIN=1:1 Q:'$D(FC(F,ACTLIN))  I FC(F,ACTLIN)["{FI}" D FOPT
+	F ACTLIN=1:1 Q:'$D(FC(F,ACTLIN))  S S=FC(F,ACTLIN) F I=2:1 S AC=$P(S,"{",I),A=$P(AC,"}",2,99),AC=$E(AC,1,2) Q:AC=""  D FCHK2
+	I F=0 F %=1:1 Q:'$D(FT(0,%))  S ST=FT(0,%) D FCHEC2
+	Q:F=0 
+	S S=FT(F)
+FCHEC2	F I=2:1 S AC=$P(S,"{",I),A=$P(AC,"}",2,99),AC=$E(AC,1,2) Q:AC=""  I AC="EX" S FN=$S(A="":F,1:A) G ERRNF:'$D(F0(FN)) S NF(FN)="",EX(FN)=""
+	Q:F=0  Q:FN(F)="" 
+	S S=%DN(FN(F),"AT") I S]"" F I=2:1 S AC=$P(S,"{",I) Q:AC=""  I FT(F)'[("{"_$E(AC,1,2)) S FT(F)=FT(F)_"{"_AC
+	Q:$D(TR(F)) 
+	I %DN(FN(F),"T")="TIME" S CV(F)="TM" Q
+	I %DN(FN(F),"T")="DATE" S CV(F)="DT" Q
+	Q
+FOPT	;
+	S FLAG=0,AC="" F I=2:1 S A=$P(FC(F,ACTLIN),"{",I) Q:A=""  D FOPT2
+	S FC(F,ACTLIN)=AC
+	Q
+FOPT2	I $E(A,1,3)'="FI}" S AC=AC_"{"_A,FLAG=0 Q
+	I FLAG=0 S AC=AC_"{"_A,FLAG=1 Q
+	S AC=AC_":"_$E(A,4,255)
+	Q
+FCHK2	;
+	D EVAL:AC="EV",EVALS:AC="ES",FILE:AC="FI",FILES:AC="FS",COUNT:AC="CN",KILL:AC="KL"
+	I ",DS,ER,"[AC D DISPLAY
+	I ",NF,EX,"[AC S FN=$S(A="":F,1:A) G ERRNF:'$D(F0(FN)) S NF(FN)="" S:AC="EX" EX(FN)=""
+	I AC="NS"&(A=%SDNM!(A="")) S FLAG("NSAME")=1 
+	I AC="DP",A'["^" S FLAG("DONP")=1 
+	Q
+DISPLAY	;
+	S AT=$P(A,"$",2,99),A=$P(A,"$") I A="" S A=F 
+	F K=1:1:$L(A,":") S FN=$P(A,":",K) D DS2
+	Q
+DS2	;
+	S NSAME(FN)=$S('$D(NSAME(FN)):AC,NSAME(FN)'[AC:NSAME(FN)_","_AC,1:NSAME(FN))
+	S DM(FN)="" I AT]"",AT'="BE" S DS(FN)=""
+	Q
+COUNT	;
+	S FN="%"_A D DDN1,DRSET,CKREF S %DN(%DDNM,"EVAL")=""
+	Q
+FILE	;
+	F K=1:1:$L(A,":") S FN=$P(A,":",K) D DDN1:FN["%",DRSET,FIXT,CKREF S FI(FN)=FLAG
+	Q
+FIXT	;
+	S FLAG=$S($P(%DN(FN(FN),"R"),";",4)]"":1,$P(%DN(FN(FN),"R"),";",8)]"":1,1:"")
+	Q
+FILES	;
+	D SREF F K=1:1:$L(A,":") S FN=$P(A,":",K) D CKREF
+	Q
+EVALS	;
+	D SREF S FLAG=0,FLAG("EVALS")=1
+	F K=1:1:$L(A,":") S FN=$P(A,":",K) D EVP,CKREF
+	Q
+KILL	;
+	Q:A'["$XREF"
+	S A=$P(A,"$",1)
+	F K=1:1:$L(A,":") S FN="%"_$P(A,":",K) D DDN1,DRSET
+	Q
+SREF	;
+	S FN=$P(A,"$",2),A=$P(A,"$",1)
+	I FN["%" S D=$E(FN,2,99),K="#"
+	E  I '$D(FN(FN)) G ERRNF
+	E  S D=FN(FN),K="*" I D="" G ERRNDN
+	D DDN I $P(%DN(D,"R"),";",1)'[K S %MSG=$S(AC="FS":"FILES",1:"EVALS")_"が制御するDDNは"_K_"キータイプです。" ZT %MSG  ;;%%Z1-T
+	Q
+EVAL	;
+	S FLAG=0 F K=1:1:$L(A,":") S FN=$P(A,":",K) D EVP,DDN1:FN["%",DRSET:'FLAG&(PLIST=""),CKREF I FN["%" S %DN(%DDNM,"EVAL")=""
+	Q
+EVP	;
+	S:FN?1"(".E FN=$E(FN,2,99),FLAG=1
+	S PLIST=$S(FN["<":$P(FN,"<",2,99),1:"") Q:PLIST=""
+	S FN=$P(FN,"<",1),FLAG=0
+	F J=1:1 D EVP1 I $P(PLIST,"<",J+1)="" S:AC="EV"&(P'="#") NEV($P(%DN(D,"R"),";"))="" Q
+	Q
+EVP1	;
+	S P=$P(PLIST,"<",J),D=$P(P,"#",P["#"+1),FN("<"_P)=D D DDN
+	I $P(%DN(D,"R"),";",7)="" G ERRPTR
+	Q
+DRSET	;
+	G ERRNF:'$D(FN(FN)),ERRNDN:FN(FN)="" S %DDREF=$P(%DN(FN(FN),"R"),";",1)
+	I %DDREF="" S %MSG="データネーム"_FN(FN)_"にはグローバルリファレンスがありません。" ZT %MSG  ;;%%Z1-T
+	S NEV(%DDREF)=""
+	Q
+CKREF	;
+	G:'$D(FN(FN)) ERRNF G:FN(FN)="" ERRNDN
+	G:$P(%DN(FN(FN),"R"),";")="" ERRGR S %DDREF=$P(%DN(FN(FN),"R"),";")
+	I %DDREF]"",("#*"'[$E(%DDREF,$L(%DDREF)-1)) Q
+	S %MSG=$S(F=0:"スクリーンアクション",1:"フィールド'"_F_"'")_"のアクション'"_$S(AC="EV":"EVAL",AC="FI":"FILE",AC="ES":"EVALS",AC="FS":"FILES",AC="CN":"COUNT",1:"")_"'の"  ;;%%Z1-T
+	I FN'["%" S %MSG=%MSG_"フィールドネーム'"_FN_"'で使用されている"  ;;%%Z1-T
+	S %MSG=%MSG_"データネーム'"_FN(FN)_"'は'"_$S(%DDREF["#":"#",1:"*")_"'キーデータネームです。"  ;;%%Z1-T
+	ZT %MSG
+SCROLL	;
+	I 'DB F J="P","O","L","PC","PF","PB","WT","WB","PE" S VN="."_J D SG S @("S"_J)=SM
+	I DB S SPC="%SPCUR",SPF="%SPFWD",SPB="%SPBCK",SWT="%SPWTOP",SWB="%SPWBOT",SPE="%SPLAST",SP="%SICUR",SO="%SIWTOP",SL="%SINLIN"
+	Q
+FVAR	;
+	I $S($D(CV(F)):1,$D(TR(F)):1,FN(F)=""&FL(F):1,1:0) S VN=F_".V" D SG
+	I $D(DS(F)) S VN=F_".A" D SG
+	I FT(F)["{DM"!$D(DM(F)) S VN=F_".F",DM(F)=FT(F)["{DM" D SG
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	G:V2 SG2 S V1=V1+1 I V1>26 S V1=0,V2=1 G SG2
+	S SM=SCNV_$C(V1+64),SM(VN)=SM
+	Q
+SG2	S V1=V1+1 I V1>26 S V1=1,V2=V2+1
+	S SM=SCNV_$C(V2+64)_$C(V1+64),SM(VN)=SM
+	Q
+LG	;
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S L1=L1+1 I L1>26 S L1=1,L2=L2+1 I L2>18 S (L1,L2)=1,L3=L3+1
+	S LB=$C(L2+64)_$C(L1+64) S:L3 LB=$C(L3+64)_LB S LB(LN)=LB
+	Q
+ERRNDN	;
+	S %MSG=$S(F=0:"スクリーンアクション",1:"フィールド'"_F_"'")_"のアクション'"_$S(AC="EV":"EVAL",AC="FI":"FILE",AC="FS":"FILES",1:"EVALS")_"'の引数のフィールド'"_FN_"にデータネームが未定義です。" ZT %MSG  ;;%%Z1-T
+ERRPTR	S %MSG=$S(F=0:"スクリーン定義",1:"フィールド'"_F_"'")_"のデータネーム'"_D_"'にはポインタ定義がありません。" ZT %MSG  ;;%%Z1-T
+ERRGR	S %MSG="フィールド'"_FN_"'のデータネーム'"_FN(FN)_"'はグローバルリファレンスを持っていません。" ZT %MSG  ;;%%Z3-T
+ERRNF	S %MSG=$S(F=0:"スクリーン定義",1:"フィールド'"_F_"'")_"のアクション'"_$S(AC="NF":"NXTFLD",AC="EX":"EXIT",AC="FF":"FSTFLD",AC="ES":"EVALS",AC="FS":"FILES",1:AC)_"'の引数フィールド'"_FN_"'は未定義です。" ZT %MSG  ;;%%Z1-T
+	;**TM**; ZQの変更; ERRDDN	S %MSG=$S(F=0:"スクリーン定義",1:"フィールド'"_F_"'")_"のデータネーム'"_D_"'は未定義です。" ZQ  ;;%%Z1-T
+ERRDDN	S %MSG=$S(F=0:"スクリーン定義",1:"フィールド'"_F_"'")_"のデータネーム'"_D_"'は未定義です。" ZQ 1 G @$ZT ;;%%Z1-T
+	;**TM**; エラーコード変更
+	;ERRFLD	I $ZE["-UNDEF" S %MSG="FSTFLD, NXTFLD or EXIT の引数であるフィールド'"_F_"'は未定義です。"  ;;%%Z1-T
+ERRFLD	I $ZE["UNDEF" S %MSG="FSTFLD, NXTFLD or EXIT の引数であるフィールド'"_F_"'は未定義です。"  ;;%%Z1-T
+	;**TM**; エラーコード変更
+	;ERROR	U 0 I %MSG="",$ZE["-UNDEF" S %MSG="コンパイル中断，"_$S(F=0:"スクリーン定義",1:"フィールド'"_F_"'")_"のフィールド'"_FN_"'は未定義です。"_$ZE  ;;%%Z3-T
+ERROR	U 0 I %MSG="",$ZE["UNDEF" S %MSG="コンパイル中断，"_$S(F=0:"スクリーン定義",1:"フィールド'"_F_"'")_"のフィールド'"_FN_"'は未定義です。"_$ZE  ;;%%Z3-T
+	I $D(DB),DB=1 W !,%MSG Q
+	I %MSG["%DSM" S %MSG=$P(%MSG,"%DSM",1)_"%DSM"_$P($P(%MSG,"%DSM",2),",",1)_"."
+	;S %MSG=$E(%MSG,1,80) S:%MSG="" %MSG=$S($ZE]"":$ZE,1:"Unknown Error - Compile Aborted")
+	S:%MSG="" %MSG=$S($ZE]"":$ZE,1:"システムエラーが発生しました。"_$ZE)
+	Q

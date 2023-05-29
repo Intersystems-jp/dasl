@@ -1,0 +1,166 @@
+ROUTINE %DASDFED [Type=INT,LanguageMode=6]
+%DASDFED	;JEB,,SCREEN,DASL;4-Mar-92;V6.1 screen driver field edit
+	;DASL;Y;SCREEN
+	;
+	;;     Copyright {・・} Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;********************************************************************
+	;*                     !WARNING to Developers!                      *
+	;*   The master copy of this routine is stored under the %DM####    *
+	;*   name.  If any edits are made to this routine the edits MUST    *
+	;*   be made to the %DM routine as well.  Failure to do this will   *
+	;*   lead to errors in Portable Run-time DASL!                      *
+	;*                                                                  *
+	;********************************************************************
+	;
+	S %Y=+$E(%P,2,99),%X=+$P(%P,";",2)-1,%MSG="" D MSG
+	N KD S KD=$G(%KD) ;	;%%Z3-patch(term)
+	;
+	;I '%ZT G INITJ ;	;%%Z3-PATC(TERM)
+	; Above code and new routine only need in Japanese patch version 
+	; because we can't replace all DASL routines that are compiled again.
+	; 
+INIT	;**TM**; S $ZT="TRAP^%DASDFED" U 0:(NOECHO:CTRAP=%ESC)
+	S $ZT="TRAP^%DASDFED" U 0:(NOECHO:TERM=%ESC_%TRM)
+	S %EF=0
+READ	R %I#1:%TMO E  S %F=$P(KD,";",5),%ET=0 ;	;%%Z3-patch(term)
+	I  S %ZB=$ZB,%ET=$ZB#256,%F=$ZB\256 I '%F S:%ET=8 %F=$P(KD,";",9) ;	;%%Z3-PATCH(TERM)
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%ET=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	S:%F=17 %F=$P(KD,";",7) S:%F=18 %ET=13,%F=0
+	S:$A(%I)=9 %ET=13,%F=0 ;tab 
+	G RIGHT:%F=19,LEFT:%F=20,DEL:%ET=127,QUIT:%ET=13!%F
+	;I %I'?1ANPC S %MSG=^%DAMSG(%FLANG,"I") D MSG G READ
+	I %I'?1ANP S %MSG=^%DAMSG(%FLANG,"I") D MSG G READ
+	;  Insert at %CP
+	I $Zwidth(%RES)=+%W S %MSG="S %MSG="_^%DAMSG(%FLANG,"L") X %MSG D MSG G READ  ;;%%Z1-G
+	S %RES=$E(%RES,0,%CP-1)_%I_$E(%RES,%CP,999),%CP=%CP+1
+	S:+%W'>%CP %EF=1 I +%W<%CP S %CP=%CP-1 W %E_"[D"
+	W:%U $E(%RES,%CP-1,999)
+	D POS
+CLEAR	I %MSG]"" S %MSG="" D MSG
+	G READ
+DEL	;delete
+	I %CP=1 G CLEAR
+	I %EF=1 S %CP=%CP+1,%EF=0 W %E_"[C"
+	S %RES=$E(%RES,0,%CP-2)_$E(%RES,%CP,999),%CP=%CP-1
+	;W:%U %E,"[D",$E(%RES,%CP,999),$E(%U(%U))
+	W $S(%U&($P(%W,";",3)+%CP>%LL):$E(%U(%U)),%U:%E_"[D"_$E(%RES,%CP,999)_$E(%U(%U)),1:"")
+	D POS G CLEAR
+LEFT	I %CP>1 W:%U %E,"[D" S %CP=%CP-1 S:%EF=1 %EF=0
+	G CLEAR
+RIGHT	I %CP'>$Zwidth(%RES)&(%EF=0) W:%U %E,"[C" S %CP=%CP+1 S:+%W=%CP %EF=1
+	G CLEAR
+QUIT	W %E,"[24;1H",%E,"[K" S %MSG="",%Z=2
+	U 0:ECHO
+	K %CP,%ET Q
+MSG	I %MSG="" W %E,"[24;1H",$J("",%LL-$Zwidth(^%DAMSG(%FLANG,"CUR"))),$E(^%DAMSG(%FLANG,"CUR"),1,$ZPosition(^%DAMSG(%FLANG,"CUR"),%LL))  ;;%%Z1-G
+	E  W %E,"[24;1H",$J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)),$C(7)  ;;%%Z1-G
+POS	W %E,"[",%Y,";",%U>0*%CP+%X,"H" Q
+TRAP	 ;**TM**; U 0:CTRAP="" I $ZE["CTRAP"!($ZE["ESCAPE") S %MSG=^%DAMSG(%FLANG,"I") D MSG G INIT
+	U 0 I $ZE["INTERRUPT"!($ZE["ESCAPE") S %MSG=^%DAMSG(%FLANG,"I") D MSG G INIT
+	;**TM**; ZQ動作の変更; ZQ
+	ZQ 1 G @$ZT
+	;
+TERM	; This entry is for the input with TERM attribute ;%%Z3-v3.0a
+	;**TM**; S $ZT="TRAP^%DASDFED" U 0:(NOECHO:CTRAP=%ESC)
+	S $ZT="TRAP^%DASDFED" U 0:(NOECHO:TERM=%ESC_%TRM)
+	S %CP=1,%RES=""
+	S %Y=+$E(%P,2,99),%X=+$P(%P,";",2)-1,%MSG=""
+	W %E,"[",%Y,";",%U>0*%CP+%X,"H"
+	;
+	N KD,%Q S KD=$G(%KD),%Q=0
+	F  S %kjxx=0 D  Q:%Q=1
+	. R %I#1:%TMO E  S %F=$P(KD,";",5),%T=0
+	. I  S %ZB=$ZB,%T=$ZB#256,%F=$ZB\256
+	. I '%F S:%T=8 %F=$P(KD,";",9) I %T=5!(%T=23) S %Q=1 Q
+	. I %T=9 S %T=13,%F=0 ;tab 
+	. ;
+	. ;delete
+	. I %T=127 Q:%CP=1  D  Q
+	.. S %RES=$E(%RES,0,%CP-2),%CP=%CP-1
+	.. ;W:%U %E,"[D",$E(%RES,$L(%RES)),$E(%U(%U))
+	.. W $S(%U&($P(%W,";",3)+%CP>%LL):$E(%U(%U)),%U:%E_"[D"_$E(%RES,%CP,999)_$E(%U(%U)),1:"")
+	.. W %E,"[",%Y,";",%U>0*%CP+%X,"H"
+	. ;
+	. I %T=13!%F S %Q=1 Q
+	. I $$DSMCODE^%DASJUTL()="DSM" S %kj=$ZC(KJOFF),%kjxx=(%I[$C(124)!(%I[$C(126))),%kj=$ZC(KJON)
+	. I %kjxx S %MSG="ノヤナャナ?、ハハクサ?、ャニ?ホマ、オ、?、゛、キ、ソ。」" D MSG Q
+	. I %I'?1ANP S %MSG=^%DAMSG(%FLANG,"I") D MSG Q
+	. ;  Insert at %CP
+	. S %RES=%RES_%I
+	. ; positioning
+	. W %E,"[",%Y,";",%U>0*%CP+%X,"H"
+	. S %CP=%CP+1
+	. ; write character
+	. W:%U %I
+	. ; end 
+	. I $Zwidth(%RES)=+%W S %Q=1 Q
+	;
+	W %E,"[24;1H",%E,"[K" S %MSG=""
+	U 0:ECHO
+	K %CP,%ET
+	Q
+	;
+EDIT	; This entry is for the normal input
+	;  input: %INP,%INPP,%U,%KD
+	N KD,%Q S KD=$G(%KD),%Q=0
+	;**TM**; S %kj=$ZC(KJOFF),%kjx=$L(%INP),%kj=$ZC(KJON)
+	S %kjx=$zwidth(%INP)
+	;**TM**; I %kjx>180 F %I=$L(%INP):-1 S %INP=$E(%INP,1,%I),%kj=$ZC(KJOFF),%kjx=$L(%INP),%kj=$ZC(KJON) Q:%kjx<180
+	I %kjx>180 F %I=$L(%INP):-1 S %INP=$E(%INP,1,%I),%kjx=$zwidth(%INP) Q:%kjx<180
+	;U 0:EXINPUT=(PARAM="X="_($P(%W,";",3)-1)_":Y="_($P(%W,";",2)-1)_":FIELD=(MARKER="""_$E(%U(%U))_""")"_$S($L(%INP):":INITIAL=(STRING="""_$$I19(%INP)_""":POSITION="_%INPP_")",1:""))
+	;U 0:EXINPUT=ENABLE
+	set %RES=$$Input^%DASLIN($P(%W,";",3),$P(%W,";",2),%TM,+%W,0,$$I19(%INP),%TRM,.%F,.%T)
+ 
+	;R %RES#%W:%TM S %ZB=$ZB I  S %T=$ZB#256,%F=$ZB\256
+	;E  S %F=$P(KD,";",5)
+	;R %RES#%W:%TM S %ZB=$ZB I  S %T=$ZB#256,%F=$ZB\256
+	;E  S %F=$P(KD,";",5)
+	;U 0:EXINPUT=NOENABLE
+	Q
+I19(%zz)	;
+	N %zzin,%zz1,%zz2
+	S %zzin=%zz,%zz="",%zz1=1 F  S %zz2=$F(%zzin,"""",%zz1) Q:%zz2=0  S %zz=%zz_$E(%zzin,%zz1,%zz2-1)_"""" S %zz1=%zz2
+	S %zz=%zz_$E(%zzin,%zz1,255)
+	Q %zz
+	;; Run-time
+TEST	;
+	D PROG^%DASL,INIT^%DALOGIN
+	I '$D(%CP) S %CP=1
+	S %LL=80,%P="[10;7H",%W=25,%RES="TEST STRING"
+	W %E,"[r",%E,"[J",%E,"[2J",%E,"[10;1H","Data: ",%RES
+	D %DASDFED,EXIT^%DALOGIN
+	Q
+	;; Run-time
+	;
+	; Following codes are not needed usually. We only need them when
+	; we use the patch version. 
+	;   
+	;**TM**;
+	;INITJ ;	S $ZT="TRAP^%DASDFED"  U 0:CTRAP=%ESC
+	;READJ ;
+	;U 0:(X=($P(%W,";",3)-1):Y=($P(%W,";",2)-1))
+	;U 0:EXINPUT=(PARAM="FIELD=(MARKER="""_$E(%U(%U))_""")"_$S($L(%RES):":INITIAL=(STRING="""_$$I19(%RES)_""":POSITION=1)",1:""))  ;;%%Z3-INPUT
+	;U 0:EXINPUT=ENABLE
+	;R %RES#+%W:%TMO E  S %F=$P(KD,";",5),%ET=0  ;;%%Z3-INPUT
+	;I  S %ZB=$ZB,%ET=$ZB#256,%F=$ZB\256 I '%F S:%ET=8 %F=$P(KD,";",9) ;	;%%Z3-PATCH(TERM)
+	;U 0:EXINPUT=NOENABLE ;;%%Z3-INPUT
+	;S:%F=17 %F=$P(KD,";",7) S:%F=18 %ET=13,%F=0
+	;S:%ET=9 %ET=13,%F=0 ;tab 
+	;D:%ET=23 Q G:%ET=5!(%ET=23) READJ
+	;I $P(%W,";",8)'="" D
+	;.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%ET=13
+	;.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	;%%Z3-PATCH(TERM)-
+	;G QUIT:%ET=13!%F
+	;G READJ
+Q	 U 0:PACK D Q1 F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	;**TM**; W %E,"[2J",%E,"[?3l" U 0:EXIN=PARAM="WIDTH=80" F %=1:1:24 S %O(%)=0
+	W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	W %E,"[;r" Q
+R	G @("R^"_%L(%Z))
+	Q

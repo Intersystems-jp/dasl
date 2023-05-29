@@ -1,0 +1,136 @@
+ROUTINE %DASGBLD [Type=INT,LanguageMode=6]
+DASGBLD	; DASL Utilities ;V3.0 ;DASL Global Kit Builder ;KZY ;22-Feb-1989
+	; Modified by tt;%GTO format;28-APR-90
+	;
+	U 0 W !!,"Nihongo DASL V3.0 Global Kit Build",!
+	;
+ASK	S %QTY=2,%DEF=$S($ZV["VAX":"DSM$DASL_GLOBALS.SAV",1:"dsm_dasl_globals.sav") K %MOD,%IOD,%ZIOD D ^%IOS G %END:'$D(%IOD)
+	I %ZIOD[".GBL;" W !!,"  Please use a file type other than .GBL, as this type is reserved",!,"  for DSM global files. You are saving a set of globals onto ",!,"  a sequential file, not a global file.",! G ASK
+	;
+%HEAD	S %DEF="Nihongo DASL V3.0 Library Globals"
+	U 0 W !,"Header comment... <",%DEF,">" R %HEAD W ! S:%HEAD="" %HEAD=%DEF G:%HEAD="^" %END
+	I %HEAD="?" W !,?5,"Enter free text to be used as heading" D %Q G %HEAD
+	;
+	; scan list and save globals on selected output
+	S %N="",%NG=0,%B="          "
+	U 0 W !!,"saving Globals onto ",%ZIOD,!!
+	I %ZIOD'=$ZIO U %IOD D ^%D W "     " D ^%T W !,%HEAD,!
+	;
+	F I=1:1 S G=$P($T(GLIST+I),";;",2) Q:G=""  D  D @G
+	.S %NG=%NG+1 U 0 I %ZIOD'=$ZIO W:$X+10>80 ! W G,$E(%B,1,10-$L(G))
+	;
+	D DONE
+	;
+	U 0 W !!,?4,%NG," globals saved",!
+	;
+%END	K %D,%RF,%IOD,%ZIOD,%DTY,%B,%N,%HEAD,%NG,G Q
+	;
+	;
+WRITTOP	U %IOD S %RF="^"_G
+	S %D="" I $D(@%RF)#2 S %D=@%RF
+	W %RF,!,@%RF,!
+	Q
+	;
+WRITNODE	;Given node %RF write it
+	I $D(@%RF)#2 W %RF,!,@%RF,!
+	F  S %RF=$Q(%RF) Q:%RF=""  W %RF,!,@%RF,!
+	Q
+	;
+DONE	U %IOD
+	W "**END**",!,"**END**",! C %IOD Q
+	;             
+%Q	W !?5,"Type ^ to return to previous question"
+	Q
+	;
+GLIST	;
+	;;%DADD
+	;;%DADDT
+	;;%DAGR
+	;;%DAMSG
+	;;%DANX
+	;;%DARD
+	;;%DASD
+	;;%DASDH
+	;;%DASY
+	;;
+	;
+%DADD	; ^%DADD global save
+	;
+	;	^%DADD(ddnm,"DF","E")
+	;	      (ddnm,"LK")
+	;	      (ddnm,"REF")	
+	;
+	D WRITTOP
+	S N="" F  S N=$O(^%DADD(N)) Q:N=""  D
+	.S %RF="^%DADD("""_N_""",""DF"",""E"")" D WRITNODE
+	.S %RF="^%DADD("""_N_""",""LK"")" D WRITNODE
+	.S %RF="^%DADD("""_N_""",""REF"")" D WRITNODE
+	Q
+	;
+%DADDT	; ^%DADDT global save
+	;
+	;	only header
+	;                
+	D WRITTOP
+	;
+	Q
+	;
+%DAGR	; ^%DAGR global save
+	;
+	;	All Nodes
+	;
+	D WRITTOP
+	S N="^%DAGR("""")" F  S N=$ZO(@N) Q:N=""  S %RF=N D WRITNODE
+	Q
+	;
+%DAMSG	; ^%DAMSG global save
+	;
+	;	All Nodes
+	;
+	D WRITTOP
+	S N="^%DAMSG("""")" F  S N=$ZO(@N) Q:N=""  S %RF=N D WRITNODE
+	Q
+	;
+%DANX	; ^%DANX global save
+	;
+	;	All Nodes
+	;
+	D WRITTOP
+	S N="^%DANX("""")" F  S N=$ZO(@N) Q:N=""  S %RF=N D WRITNODE
+	Q
+	;
+%DARD	; ^%DARD global save
+	;
+	;	^%DARD(ddnm,"REP")
+	;	      (ddnm,"A")
+	;
+	D WRITTOP
+	S N="" F  S N=$O(^%DARD(N)) Q:N=""  D
+	.S %RF="^%DARD("""_N_""",""REP"")" D WRITNODE
+	.S %RF="^%DARD("""_N_""",""A"")" D WRITNODE
+	Q
+	;
+%DASD	; ^%DASD global save
+	;
+	;	^%DASD(ddnm,"A")
+	;
+	D WRITTOP
+	S N="" F  S N=$O(^%DASD(N)) Q:N=""  D
+	.S %RF="^%DASD("""_N_""",""A"")" D WRITNODE
+	Q
+	;
+%DASDH	; ^%DASDH global save
+	;
+	;	All Nodes
+	;
+	D WRITTOP
+	S N="^%DASDH("""")" F  S N=$ZO(@N) Q:N=""  S %RF=N D WRITNODE
+	Q
+	;
+%DASY	; ^%DASY global save
+	;
+	;	All Nodes
+	;
+	D WRITTOP
+	S N="^%DASY("""")" F  S N=$ZO(@N) Q:N=""  S %RF=N D WRITNODE
+	Q

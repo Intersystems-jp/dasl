@@ -1,0 +1,48 @@
+ROUTINE %DASREP [Type=INT,LanguageMode=6]
+%DASREP	; [DASL] INSTALL ;V3.0 ;DASL Routine Replace;KZY;tt;22-Jul-1992
+	;
+	S $ZT="%ERR^"_$T(+0)
+	U 0:CTRAP=$C(3,26) W !!,"DASL Routine Replace",!!
+%AS	;
+	R !,"Rebuild All or Selected DASL routines [A or S] ? : ",%A I %A="" D %EXIT Q
+	I '((%A="S")!(%A="s")!(%A="A")!(%A="a")) W !,*7,"Input 'A' or 'S'" G %AS
+	S %ALL=$S((%A="A")!(%A="a"):1,1:0)
+	;
+%RSEL	;
+	I '%ALL K %UTILITY D ^%RSEL I '$D(%UTILITY) D %EXIT Q
+	;
+%SURE	R !!,"Are you continue? <N> ",%A S:%A="" %A="N" I %A="N"!(%A="n") D %EXIT Q
+	I '(%A="Y"!(%A="y")) W !,*7,"Input 'Y' or 'N'" G %SURE
+	W !
+	G %ST
+	;
+%COM	; Command procedure (DSM$DASL_REPLACE) entry point
+	S %ALL=1
+	;
+%ST	;
+	S %CT=0,$ZE=""
+	D %ALL^%DASRNM K %daslrtn("%DASREP")
+%UTL	;
+	I %ALL W ! S %NAM="" F  S %NAM=$O(%daslrtn(%NAM)) Q:%NAM=""  D %SEC
+	I '%ALL W ! S %NAM="" F  S %NAM=$O(%UTILITY(%NAM)) Q:%NAM=""  D:$D(%daslrtn(%NAM)) %SEC
+	Q
+	;
+%SEC	U 0 W:'(%CT#7) ! W ?%CT#7*11+2,%NAM D  U 0 W "." S %CT=%CT+1 Q
+	.; Security routine replace
+	.I %daslrtn(%NAM) S %zSECrtn=%NAM,%ZSN=1004,%NP="",STAT=$$%REBUILD^%ZSECUR I STAT'=1 ZT "Zsecur Error code : "_STAT
+	;
+%EOF	; End of file processing
+	;
+%DONE	; Exit here to close current device, and branch back for another.
+	U 0 W !! I %CT W !?4,%CT," DASL routine",$S(%CT'=1:"s",1:"")," replaced",!
+	;
+%EXIT	; Exit here on all errors, and when user is finished.
+	U 0:CTRAP=""
+	K %CT,%NAM,%ZSN,%zSECrtn,%daslrtn,%NP,STAT
+	Q
+	;
+	;
+%ERR	I $ZE["CTRAP" U 0 W !?5,*7,"Unexpected interrupt",! G %EXIT
+	I $ZE["ZTRAP" U 0 W !?5,*7,"Unexpected Secure error (code:"_STAT_")" G %EXIT
+	U 0 W !?5,*7,"Unexpected error occured",!
+	G %EXIT

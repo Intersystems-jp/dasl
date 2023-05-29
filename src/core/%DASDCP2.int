@@ -1,0 +1,441 @@
+ROUTINE %DASDCP2 [Type=INT,LanguageMode=6]
+DASDCP2	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	;
+	I DB W " ; *** Canned Code *** - INIT^%DASDCP2",!
+	S COM="",ROU=%COMPNM D UTILS W !!
+	K %SDPBX,%SDPH,%SDPX,%SDPY,%SDPW
+	Q
+UTILS	S SUB(1)="",SUB($S('%SDPBX:"N",1:"")_"BOX")=""
+UTILSX	;%%Z3-COLOR+
+	N UTLBL S UTLBL=$S($G(%GCCF):"CUTIL",1:"UTIL")
+	F I=1:1 S H=$P($T(@UTLBL+I),";",3,255) Q:H=""  S T=$P(H,";",2,255),H=$P(H,";",1),C=$D(SUB(H)) D SUBR
+	;F I=1:1 S H=$P($T(UTIL+I),";",3,255) Q:H=""  S T=$P(H,";",2,255),H=$P(H,";",1),C=$D(SUB(H)) D SUBR
+	;%%Z3-COLOR-
+	S F="" F I=0:0 S F=$O(SUB(F)) Q:F=""  I 'SUB(F) D LOAD
+	S F="" F I=0:0 S F=$O(SUB(F)) Q:F=""  I 'SUB(F) S %MSG="サブルーチン"""_F_"""が見つかりません。" ZT %MSG  ;;%%Z3-T
+	Q
+SUBR	;
+	;%%Z3-COLOR+
+	;F I=I+1:1 S L=$P($T(UTIL+I),";",3,255) Q:L=""  D:L[";%%Z"  I C D:L["??" SUBT W L,! ;	;%%Z2-Z
+	F I=I+1:1 S L=$P($T(@UTLBL+I),";",3,255) Q:L=""  D:L[";%%Z"  I C D:L["??" SUBT W L,! ;	;%%Z2-Z
+	.;%%Z3-COLOR-
+	.S X=$F(L,";%%Z") Q:'X  S L=$E(L,1,X-5) ;	;%%Z2-Z
+	I C S SUB(H)=1
+	Q
+LOAD	;
+	S COM=$E(F,2,9) I '$D(^DASDC(COM)) S %MSG="サブルーチン コマンド'"_F_"'が未定義です。" ZT %MSG  ;;%%Z3-T
+	W F S SUB(F)=1 F I=0:0 S I=$O(^DASDC(COM,"S",I)) Q:I=""  W ^(I),!
+	Q
+SUBT	S $ZT="SUBERR^%DASDCP"
+SUB	;
+	;	;%%Z3-patch remove BREAK command ;B:X["I2"
+	B:X["I2"&(DB=1)
+	S X=$F(L,"??") Q:'X  S Y=$F(L,"??",X)
+	S @("E="_$E(L,X,Y-3)) S L=$E(L,1,X-3)_E_$E(L,Y,255)
+	G SUB
+SUBERR	;
+	S %MSG=$E(L,X,Y-3)_"が'%DASDCP'で未定義です。^%DACVRTを実行しましたか？" ;	;%%Z3-T
+	ZT %MSG
+UTIL	;;Utility Routines
+	;;1;DO;
+	;;DO S %MSG="" D M,PNT
+	;; I ??SM(".PXF")??="UP" D PDSP(??SM(".PXX")??)
+	;; I ??SM(".PXF")??="DOWN" D PDSP(??SM(".PXX")??-%POPW+1)
+	;; D ERS,DSP Q
+	;;
+	;;1;PNT;moving pointers
+	;;PNT Q:%F'="17"&(%F'="18")  S ??SM(".PXWO")??=??SM(".PXW")??,??SM(".PXXO")??=??SM(".PXX")??,??SM(".PXF")??=""
+	;; I %F="17" D
+	;; .S ??SM(".PXW")??=??SM(".PXW")??-1 I ??SM(".PXW")??<1 S ??SM(".PXW")??=1,??SM(".PXWO")??=0,??SM(".PXF")??="UP"
+	;; .S ??SM(".PXX")??=??SM(".PXX")??-1 I ??SM(".PXX")??<1 S %F=0,%MSG="カーソルが先頭位置にあります。" D M S ??SM(".PXX")??=1,??SM(".PXXO")??=0,??SM(".PXF")??=""  ;;%%Z3-T
+	;; I %F="18" D
+	;; .S ??SM(".PXW")??=??SM(".PXW")??+1 I ??SM(".PXW")??>%POPW S ??SM(".PXW")??=%POPW,??SM(".PXWO")??=0,??SM(".PXF")??="DOWN"
+	;;
+	;;NPOPDDN;
+	;; .S ??SM(".PXX")??=??SM(".PXX")??+1 I ??SM(".PXX")??>??SM(".PNO")?? S %F=0,%MSG="カーソルが最終位置にあります。" D M S ??SM(".PXX")??=??SM(".PNO")??,??SM(".PXXO")??=0,??SM(".PXF")??=""  ;;%%Z3-T
+	;; Q
+	;;
+	;;POPDDN;
+	;; .S ??SM(".PXX")??=??SM(".PXX")??+1 I ??SM(".PNO")??,??SM(".PXX")??>??SM(".PNO")?? S %F=0,%MSG="カーソルが最終位置にあります。" D M S ??SM(".PXX")??=??SM(".PNO")??,??SM(".PXXO")??=0,??SM(".PXF")??=""  ;;%%Z3-T
+	;; Q
+	;;
+	;;1;ERS;Erase the previous field
+	;;ERS Q:'??SM(".PXXO")??!('??SM(".PXWO")??)
+	;; S %P="["_(%POPY+??SM(".PXWO")??)_";"_(%POPX+1)_"H"
+	;; S ??SM(".PDATA")??=$P(??SM(".PNO")??(??SM(".PXXO")??),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??) 
+	;; S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; W %E,%P,"  ",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??)) Q
+	;;
+	;;1;DSP;Display 
+	;;DSP S %P="["_(%POPY+??SM(".PXW")??)_";"_(%POPX+2)_"H"
+	;; S ??SM(".PDATA")??=$P(??SM(".PNO")??(??SM(".PXX")??),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??)
+	;; S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; W %E,%P,%E,"[7m ",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??)),%E,"[m"," " Q
+	;;
+	;;BOX;RP;
+	;;RP K ??SM(".PBXL")?? S $P(??SM(".PBXL")??,"q",??SM(".PMX")??+5)=""
+	;; W %E,"[",%POPY,";",%POPX,"H",%E,"(0l",??SM(".PBXL")??,"k",%E,"(B"
+	;; F ??SM(".PN")??=1:1:%POPW W %E,"[",(%POPY+??SM(".PN")??),";",%POPX,"H",%E,"(0x",%E,"(B",%E,"[",%POPY+??SM(".PN")??,";",%POPX+??SM(".PMX")??+5,"H",%E,"(0x",%E,"(B"
+	;; W %E,"[",(%POPY+%POPW+1),";",%POPX,"H",%E,"(0m",??SM(".PBXL")??,"j",%E,"(B" Q
+	;;
+	;;NBOX;RP;
+	;;RP Q
+	;;
+	;;NPOPDDN;PDSP;
+	;;PDSP(XXP) Q:%EX  U 0
+	;; F ??SM(".PN")??=1:1:%POPW D
+	;; .S ??SM(".PDATA")??=$P(??SM(".PNO")??(XXP+??SM(".PN")??-1),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??)
+	;; .S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; .W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+3,"H",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??))
+	;; U 0 Q
+	;;
+	;;POPDDN;PDSP;
+	;;PDSP(XXP) Q:%EX  U 0
+	;; I XXP+%POPW-1>??SM(".PCURRENT")?? D OPGET(%POPW) I XXP+%POPW-1>??SM(".PCURRENT")?? S %F=0,%MSG="カーソルが最終位置にあります。" D M S ??SM(".PXX")??=??SM(".PNO")??,??SM(".PXXO")??=0,??SM(".PXF")??="" Q  ;;%%Z3-T
+	;; F ??SM(".PN")??=1:1:%POPW D
+	;; .S ??SM(".PDATA")??=$P(??SM(".PNO")??(XXP+??SM(".PN")??-1),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??)
+	;; .S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; .W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+3,"H",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??))
+	;; U 0 Q
+	;;
+	;;POPDDN;OPGET;
+	;;OPGET(XNO) Q:??SM(".PSEARCEND")??
+	;; S ??SM(".PNN")??=??SM(".PCURRENT")?? D GET
+	;; S ??SM(".PCURRENT")??=??SM(".PNN")??
+	;; I ??SM(".PSEARCEND")?? S ??SM(".PNO")??=??SM(".PNN")??
+	;; Q
+	;;
+	;;POPONE;GET
+	;;GET I %LS=""!(%POPDT="KEY") S %LS=$O(@%XR@(%LS))
+	;; F  Q:%LS=""  D MATCH Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)  S %LS=$O(@%XR@(%LS))
+	;; I %LS="",%KY="" S ??SM(".PSEARCEND")??=1
+	;; Q
+	;;MATCH I %POPDT="KEY" S ??SM(".PXP")??=%LS D VARSET Q
+	;; F  S %KY=$O(@%XR@(%LS,%KY)) Q:%KY=""  S ??SM(".PXP")??=%LS_$C(0)_%KY D VARSET Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)
+	;; Q
+	;;
+	;;POPTWO;GET
+	;;GET I %LS="" S %LS=$O(@%XR@(%LS))
+	;; F  Q:%LS=""  D FIRST Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)  S %LS=$O(@%XR@(%LS))
+	;; I %LS="",%FS="",%KY="" S ??SM(".PSEARCEND")??=1
+	;; Q
+	;;FIRST	I %FS="" S %FS=$O(@%XR@(%LS,""))
+	;; F  Q:%FS=""  D MATCH2 Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)  S %FS=$O(@%XR@(%LS,%FS))
+	;; Q
+	;;MATCH2 F  S %KY=$O(@%XR@(%LS,%FS,%KY)) Q:%KY=""  S ??SM(".PXP")??=%LS_$C(0)_%FS_$C(0)_%KY D VARSET Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)
+	;; Q
+	;;
+	;;POPDDN;VARSET
+	;;VARSET S ??SM(".PNN")??=??SM(".PNN")??+1
+	;; I %POPDT="KEY" S %T=??SM(".PXP")??,%X=1 G VARSET2
+	;; S %T=%XR S:%T["(" %T=$E(%T,1,$L(%T)-1)_"," S:%T'["(" %T=%T_"("
+	;; F %X=1:1:$L(??SM(".PXP")??,$C(0)) S %T=%T_""""_$P(??SM(".PXP")??,$C(0),%X)_""","
+	;; S %T=@($E(%T,1,$L(%T)-1)_")") S:%T="" %T=$S($P(??SM(".PXP")??,$C(0),3)="":$P(??SM(".PXP")??,$C(0),1),1:$P(??SM(".PXP")??,$C(0),1)_$S(%POPDT="JNAME":"　",1:", ")_$P(??SM(".PXP")??,$C(0),2))
+	;;VARSET2 I %CD["D" S %DTI=%T D DTIX^%DAUDTTM S %T=%DTX S ??SM(".PXP")??(%NN)=$P(??SM(".PXP")??,$C(0),%X)_";"_%T Q
+	;; I %CD["T" S %TMI=%T D TMIX^%DAUDTTM S %T=%TMX S ??SM(".PXP")??(%NN)=$P(??SM(".PXP")??,$C(0),%X)_";"_%T Q
+	;; I %CD["X" S %INT=%T X %XO S %T=%EXT
+	;; S ??SM(".PNO")??(??SM(".PNN")??)=$P(??SM(".PXP")??,$C(0),%X)_";"_%T
+	;; Q
+	;;
+	;;1;HLP;
+	;;HLP S %MSG="上下矢印キーで選択。<RETURN> で確定。または <EXIT> で終了。" Q  ;;%%Z3-T
+	;;
+	;;1;CLEAR
+	;;CLEAR W %E,"[?25l"
+	;;
+	;;BOX;CLEAR2;
+	;;CLEAR2 U 0
+	;; F ??SM(".PN")??=0:1:%POPW+1 W %E,"[",(%POPY+??SM(".PN")??),";",%POPX,"H",??SM(".PSPC")??,"  "
+	;; Q
+	;;
+	;;NBOX;CLEAR2;
+	;;CLEAR2 U 0
+	;; F ??SM(".PN")??=1:1:%POPW W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+1,"H",??SM(".PSPC")??
+	;; Q
+	;;
+	;;1;E; Exit
+	;;E I ??SM(".PXX")?? S %POPK=$P(??SM(".PNO")??(??SM(".PXX")??),";"),%POPD=$P(??SM(".PNO")??(??SM(".PXX")??),";",2),%FND=1
+	;; E  S (%POPK,%POPD)="",%FND=0
+	;;
+	;;POPDDN;
+	;; I '??SM(".PCURRENT")?? G E2
+	;;
+	;;1;
+	;; I %POPF'["NP"!(%POPF["NP"&'%FND) D CLEAR2
+	;; F ??SM(".PN")??=??SM(".PFL")??:1:??SM(".PLL")?? S %O(??SM(".PN")??)=0
+	;; S %MSG="" D M,CDSP
+	;;E2 K %XO,%XR,%POPA,%POPDT,%POPX,%POPY,%POPW,%POPF,%POPA,%POPS
+	;; K ??SM(".PBXL")??,??SM(".PFL")??,??SM(".PLL")??,??SM(".PN")??,??SM(".PN2")??,??SM(".PNO")??,??SM(".PXX")??,??SM(".PXXO")??,??SM(".PXW")??,??SM(".PXWO")??,??SM(".PXF")??,??SM(".PSPC")??
+	;; K ??SM(".PMX")??,??SM(".PXXT")??,??SM(".PXXB")??,??SM(".PDATA")??,??SM(".PDATAL")??
+	;;
+	;;POPDDN;
+	;; K ??SM(".PSEARCEND")??,??SM(".PCURRENT")??,??SM(".PNN")??,??SM(".PXP")??
+	;;
+	;;1;
+	;; Q
+	;;
+	;;1;Q0
+	;;Q0 S %SCN=$E(%SCN) W %E,"[2J" F ??SM(".PN")??=1:1:24 S %O(??SM(".PN")??)=0
+	;;
+	;;1;Q
+	;;Q Q:%EX  U 0 D Q1:$E(%SCN)'=$S(%POPS=80:"l",1:"h") F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D @("R^"_%L(%Z))
+	;; U 0 S %O=1 Q
+	;;
+	;;1;Q1
+	;;Q1 W:$E(%SCN)'=$S(%POPS=80:"l",1:"h") %E,"[2J",%E,"[?3"_$S(%POPS=80:"l",1:"h")
+	;; ;**TM**;U 0:EXIN=PARAM="WIDTH="_%POPS W:%SCN[";" %E,"[r" S %SCN=$S(%POPS=80:"l",1:"h"),%LL=%POPS Q
+	;; U 0 W:%SCN[";" %E,"[r" S %SCN=$S(%POPS=80:"l",1:"h"),%LL=%POPS Q
+	;;
+	;;1;I;Input routines
+	;; ;**TM**; I U 0:NOECHO
+	;;I U 0:(:"+S")
+	;;I0 S (%F,%Z,%ZB)=0 I %EX S %F="??KD("EX")??",(%MSG,%RES)="" G I3
+	;; S %INP="",%INPP=1
+	;;I1 S $ZT="I9^??ROU??" U 0 W %E,%P
+	;; ;**TM**; I4 R %RES#1:%TM I  S %ZB=$ZB,%T=$ZB#256,%F=$ZB\256
+	;;I4 R %RES#1:%TM I  S %ZB=$ZB,%T=$ZB#256,%F=$$Function^%DASLIN($piece($ZB,"[",2))
+	;; E  S %F="??KD("EX")??"
+	;; I %F="24" S %F=0,%T=13
+	;; G I2:%F
+	;; I $L(%RES)!(%T=5)!(%T=8)!(%T=10)!(%T=127) D HLP,M G I1
+	;; I %T=23 D Q0,CLEAR,RP,PDSP(??SM(".PXX")??-??SM(".PXW")??+1),DSP G I0
+	;; S:%RES="?" %F="??KD("H")??"     
+	;;I2 I %F,%F="??KD("M")??" S %EX=1,%F="??KD("EX")??" G I3
+	;; I %F,%F="??KD("SS")??" S %MODE=$$MODE^%DAZCALL S %MSG=$S($E($T(+0))="%"&('%MODE):"??^%DAMSG(%FLANG,"JSD")??",1:$T(+1)),%F=-1 K %MODE D M G I0
+	;; I %F,%F="??KD("H2")??" S %F="??KD("H")??"
+	;; G I7:%F="??KD("H")??"&%F
+	;; I %F=32 U 0:(:"+S") W %E,"=",%E,%P G I10
+	;;I3 S %TM=??TMOSCN??,%HF="",%T=%RES=""
+	;; U 0:(:"-S")
+	;; Q
+	;;I7 I %HF]"" S %RES=%HF G I3
+	;; S %HF="??%SDPH??" D HLP,M G I0
+	;;I9 U 0 I $ZE'["INTERRUPT",$ZE'["ESCAPE",$ZE'["READERR" ZQuit 1 G @$ZT
+	;;I5 S %MSG="??^%DAMSG(%FLANG,"I")??" D M G I0
+	;;I10 R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	;; E  S %F="??KD("EX")??" G I11
+	;; I %T=27 G I10:%F=32 G I11:%F&(%F="??KD("PS")??"!(%F="??KD("NX")??")) S:%F="??KD("H2")??"&%F %F="??KD("H")??" I %F="??KD("H")??"&%F S %RES="??KD("H")??" G I3
+	;; S:%?1L %=$C($A(%)-32)
+	;; I "??KD("ALLGOLD")??"'[(","_%_",")!%T!%F S %MSG="??^%DAMSG(%FLANG,"UFUN")??",%F=0 D M G I12
+	;; S %F=$S("??KD("GEX")????KD("GM")??"[%:"??KD("EX")??",%="??KD("GDEL")??":"??KD("DEL")??",%="??KD("GIN")??":"??KD("IN")??",%="??KD("GPS")??":"??KD("PS")??",%="??KD("GNX")??":"??KD("NX")??",%="??KD("GH")??":"??KD("H")??",1:"??KD("C")??")
+	;; G I7:%F="??KD("H")??"&%F ;%%Z1-Y
+	;; I %="M" S %EX=1
+	;; I %="T" S %MODE=$$MODE^%DAZCALL S %MSG=$S($E($T(+0))="%"&('%MODE):"??^%DAMSG(%FLANG,"JSD")??",1:$T(+1)),%F=-1 K %MODE D M G I12 ;%%Z1-Z
+	;;I11 D I13 G I3
+	;;I12 D I13 G I0
+	;;I13 W %E,">" Q
+	;;
+	;;1;CDSP
+	;;CDSP W %E,"[?25h" Q
+	;;
+	;;1;M;
+	;;M W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	;; X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	;; W $J("",%LL-$ZWidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)) I '%F S %HF="" W *7 ;%%Z1-G;%%Z3-PATCH
+	;; Q
+	;;
+	;;
+CUTIL	;;Utility Routines for Color;%%Z3-COLOR
+	;;1;DO;
+	;;DO S %MSG="" D M,PNT
+	;; I ??SM(".PXF")??="UP" D PDSP(??SM(".PXX")??)
+	;; I ??SM(".PXF")??="DOWN" D PDSP(??SM(".PXX")??-%POPW+1)
+	;; D ERS,DSP Q
+	;;
+	;;1;PNT;moving pointers
+	;;PNT Q:%F'="17"&(%F'="18")  S ??SM(".PXWO")??=??SM(".PXW")??,??SM(".PXXO")??=??SM(".PXX")??,??SM(".PXF")??=""
+	;; I %F="17" D
+	;; .S ??SM(".PXW")??=??SM(".PXW")??-1 I ??SM(".PXW")??<1 S ??SM(".PXW")??=1,??SM(".PXWO")??=0,??SM(".PXF")??="UP"
+	;; .S ??SM(".PXX")??=??SM(".PXX")??-1 I ??SM(".PXX")??<1 S %F=0,%MSG="カーソルが先頭位置にあります。" D M S ??SM(".PXX")??=1,??SM(".PXXO")??=0,??SM(".PXF")??=""  ;;%%Z3-T
+	;; I %F="18" D
+	;; .S ??SM(".PXW")??=??SM(".PXW")??+1 I ??SM(".PXW")??>%POPW S ??SM(".PXW")??=%POPW,??SM(".PXWO")??=0,??SM(".PXF")??="DOWN"
+	;;
+	;;NPOPDDN;
+	;; .S ??SM(".PXX")??=??SM(".PXX")??+1 I ??SM(".PXX")??>??SM(".PNO")?? S %F=0,%MSG="カーソルが最終位置にあります。" D M S ??SM(".PXX")??=??SM(".PNO")??,??SM(".PXXO")??=0,??SM(".PXF")??=""  ;;%%Z3-T
+	;; Q
+	;;
+	;;POPDDN;
+	;; .S ??SM(".PXX")??=??SM(".PXX")??+1 I ??SM(".PNO")??,??SM(".PXX")??>??SM(".PNO")?? S %F=0,%MSG="カーソルが最終位置にあります。" D M S ??SM(".PXX")??=??SM(".PNO")??,??SM(".PXXO")??=0,??SM(".PXF")??=""  ;;%%Z3-T
+	;; Q
+	;;
+	;;1;ERS;Erase the previous field
+	;;ERS Q:'??SM(".PXXO")??!('??SM(".PXWO")??)
+	;; S %P="["_(%POPY+??SM(".PXWO")??)_";"_(%POPX+1)_"H"
+	;; S ??SM(".PDATA")??=$P(??SM(".PNO")??(??SM(".PXXO")??),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??) 
+	;; S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; W:$D(%GC("PT")) %E,%GC("PT") W %E,%P,"  ",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??))," ",%E,"[m" Q
+	;;
+	;;1;DSP;Display 
+	;;DSP S %P="["_(%POPY+??SM(".PXW")??)_";"_(%POPX+1)_"H"
+	;; S ??SM(".PDATA")??=$P(??SM(".PNO")??(??SM(".PXX")??),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??)
+	;; S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; W:$D(%GC("PS")) %E,%GC("PS") W %E,%P,%E,"[7m  ",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??))," ",%E,"[m" Q
+	;;
+	;;BOX;RP;
+	;;RP K ??SM(".PBXL")?? S $P(??SM(".PBXL")??,"q",??SM(".PMX")??+5)=""
+	;; W:$D(%GC("PB")) %E,%GC("PB") W %E,"[",%POPY,";",%POPX,"H",%E,"(0l",??SM(".PBXL")??,"k",%E,"(B",%E,"[m"
+	;; F ??SM(".PN")??=1:1:%POPW W:$D(%GC("PB")) %E,%GC("PB") W %E,"[",(%POPY+??SM(".PN")??),";",%POPX,"H",%E,"(0x",%E,"(B",%E,"[",%POPY+??SM(".PN")??,";",%POPX+??SM(".PMX")??+5,"H",%E,"(0x",%E,"(B",%E,"[m"
+	;; W:$D(%GC("PB")) %E,%GC("PB") W %E,"[",(%POPY+%POPW+1),";",%POPX,"H",%E,"(0m",??SM(".PBXL")??,"j",%E,"(B",%E,"[m" Q
+	;;
+	;;NBOX;RP;
+	;;RP Q
+	;;
+	;;NPOPDDN;PDSP;
+	;;PDSP(XXP) Q:%EX  U 0
+	;; F ??SM(".PN")??=1:1:%POPW D
+	;; .S ??SM(".PDATA")??=$P(??SM(".PNO")??(XXP+??SM(".PN")??-1),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??)
+	;; .S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; .W:$D(%GC("PT")) %E,%GC("PT") W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+3,"H",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??)),%E,"[m"
+	;; U 0 Q
+	;;
+	;;POPDDN;PDSP;
+	;;PDSP(XXP) Q:%EX  U 0
+	;; I XXP+%POPW-1>??SM(".PCURRENT")?? D OPGET(%POPW) I XXP+%POPW-1>??SM(".PCURRENT")?? S %F=0,%MSG="カーソルが最終位置にあります。" D M S ??SM(".PXX")??=??SM(".PNO")??,??SM(".PXXO")??=0,??SM(".PXF")??="" Q  ;;%%Z3-T
+	;; F ??SM(".PN")??=1:1:%POPW D
+	;; .S ??SM(".PDATA")??=$P(??SM(".PNO")??(XXP+??SM(".PN")??-1),";",2),??SM(".PDATAL")??=$ZWidth(??SM(".PDATA")??)
+	;; .S:??SM(".PDATAL")??>??SM(".PMX")?? ??SM(".PDATA")??=$E(??SM(".PDATA")??,1,??SM(".PMX")??)
+	;; .W:$D(%GC("PT")) %E,%GC("PT") W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+3,"H",??SM(".PDATA")??,$E(??SM(".PSPC")??,1,??SM(".PMX")??+1-$ZWidth(??SM(".PDATA")??)),%E,"[m"
+	;; U 0 Q
+	;;
+	;;POPDDN;OPGET;
+	;;OPGET(XNO) Q:??SM(".PSEARCEND")??
+	;; S ??SM(".PNN")??=??SM(".PCURRENT")?? D GET
+	;; S ??SM(".PCURRENT")??=??SM(".PNN")??
+	;; I ??SM(".PSEARCEND")?? S ??SM(".PNO")??=??SM(".PNN")??
+	;; Q
+	;;
+	;;POPONE;GET
+	;;GET I %LS=""!(%POPDT="KEY") S %LS=$O(@%XR@(%LS))
+	;; F  Q:%LS=""  D MATCH Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)  S %LS=$O(@%XR@(%LS))
+	;; I %LS="",%KY="" S ??SM(".PSEARCEND")??=1
+	;; Q
+	;;MATCH I %POPDT="KEY" S ??SM(".PXP")??=%LS D VARSET Q
+	;; F  S %KY=$O(@%XR@(%LS,%KY)) Q:%KY=""  S ??SM(".PXP")??=%LS_$C(0)_%KY D VARSET Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)
+	;; Q
+	;;
+	;;POPTWO;GET
+	;;GET I %LS="" S %LS=$O(@%XR@(%LS))
+	;; F  Q:%LS=""  D FIRST Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)  S %LS=$O(@%XR@(%LS))
+	;; I %LS="",%FS="",%KY="" S ??SM(".PSEARCEND")??=1
+	;; Q
+	;;FIRST	I %FS="" S %FS=$O(@%XR@(%LS,""))
+	;; F  Q:%FS=""  D MATCH2 Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)  S %FS=$O(@%XR@(%LS,%FS))
+	;; Q
+	;;MATCH2 F  S %KY=$O(@%XR@(%LS,%FS,%KY)) Q:%KY=""  S ??SM(".PXP")??=%LS_$C(0)_%FS_$C(0)_%KY D VARSET Q:??SM(".PNN")??=(??SM(".PCURRENT")??+XNO)
+	;; Q
+	;;
+	;;POPDDN;VARSET
+	;;VARSET S ??SM(".PNN")??=??SM(".PNN")??+1
+	;; I %POPDT="KEY" S %T=??SM(".PXP")??,%X=1 G VARSET2
+	;; S %T=%XR S:%T["(" %T=$E(%T,1,$L(%T)-1)_"," S:%T'["(" %T=%T_"("
+	;; F %X=1:1:$L(??SM(".PXP")??,$C(0)) S %T=%T_""""_$P(??SM(".PXP")??,$C(0),%X)_""","
+	;; S %T=@($E(%T,1,$L(%T)-1)_")") S:%T="" %T=$S($P(??SM(".PXP")??,$C(0),3)="":$P(??SM(".PXP")??,$C(0),1),1:$P(??SM(".PXP")??,$C(0),1)_$S(%POPDT="JNAME":"　",1:", ")_$P(??SM(".PXP")??,$C(0),2))
+	;;VARSET2 I %CD["D" S %DTI=%T D DTIX^%DAUDTTM S %T=%DTX S ??SM(".PXP")??(%NN)=$P(??SM(".PXP")??,$C(0),%X)_";"_%T Q
+	;; I %CD["T" S %TMI=%T D TMIX^%DAUDTTM S %T=%TMX S ??SM(".PXP")??(%NN)=$P(??SM(".PXP")??,$C(0),%X)_";"_%T Q
+	;; I %CD["X" S %INT=%T X %XO S %T=%EXT
+	;; S ??SM(".PNO")??(??SM(".PNN")??)=$P(??SM(".PXP")??,$C(0),%X)_";"_%T
+	;; Q
+	;;
+	;;1;HLP;
+	;;HLP S %MSG="上下矢印キーで選択。<RETURN> で確定。または <EXIT> で終了。" Q  ;;%%Z3-T
+	;;
+	;;1;CLEAR
+	;;CLEAR W %E,"[?25l"
+	;;
+	;;BOX;CLEAR2;
+	;;CLEAR2 U 0
+	;; F ??SM(".PN")??=0:1:%POPW+1 W:$D(%GC("PT")) %E,%GC("PT") W %E,"[",(%POPY+??SM(".PN")??),";",%POPX,"H",??SM(".PSPC")??,"  ",%E,"[m"
+	;; Q
+	;;CLEAR3 U 0
+	;; F ??SM(".PN")??=0:1:%POPW+1 W %E,"[",(%POPY+??SM(".PN")??),";",%POPX,"H",??SM(".PSPC")??,"  "
+	;; Q
+	;;
+	;;NBOX;CLEAR2;
+	;;CLEAR2 U 0
+	;; F ??SM(".PN")??=1:1:%POPW W:$D(%GC("PT")) %E,%GC("PT") W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+1,"H",??SM(".PSPC")??,%E,"[m"
+	;; Q
+	;;CLEAR3 U 0
+	;; F ??SM(".PN")??=1:1:%POPW W %E,"[",(%POPY+??SM(".PN")??),";",%POPX+1,"H",??SM(".PSPC")??
+	;; Q
+	;;
+	;;1;E; Exit
+	;;E I ??SM(".PXX")?? S %POPK=$P(??SM(".PNO")??(??SM(".PXX")??),";"),%POPD=$P(??SM(".PNO")??(??SM(".PXX")??),";",2),%FND=1
+	;; E  S (%POPK,%POPD)="",%FND=0
+	;;
+	;;POPDDN;
+	;; I '??SM(".PCURRENT")?? G E2
+	;;
+	;;1;
+	;; I %POPF'["NP"!(%POPF["NP"&'%FND) D CLEAR3
+	;; F ??SM(".PN")??=??SM(".PFL")??:1:??SM(".PLL")?? S %O(??SM(".PN")??)=0
+	;; S %MSG="" D M,CDSP
+	;;E2 K %XO,%XR,%POPA,%POPDT,%POPX,%POPY,%POPW,%POPF,%POPA,%POPS
+	;; K ??SM(".PBXL")??,??SM(".PFL")??,??SM(".PLL")??,??SM(".PN")??,??SM(".PN2")??,??SM(".PNO")??,??SM(".PXX")??,??SM(".PXXO")??,??SM(".PXW")??,??SM(".PXWO")??,??SM(".PXF")??,??SM(".PSPC")??
+	;; K ??SM(".PMX")??,??SM(".PXXT")??,??SM(".PXXB")??,??SM(".PDATA")??,??SM(".PDATAL")??
+	;;
+	;;POPDDN;
+	;; K ??SM(".PSEARCEND")??,??SM(".PCURRENT")??,??SM(".PNN")??,??SM(".PXP")??
+	;;
+	;;1;
+	;; Q
+	;;
+	;;1;Q0
+	;;Q0 S %SCN=$E(%SCN) W %E,"[2J" F ??SM(".PN")??=1:1:24 S %O(??SM(".PN")??)=0
+	;;
+	;;1;Q
+	;;Q Q:%EX  U 0 D Q1:$E(%SCN)'=$S(%POPS=80:"l",1:"h") F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D @("R^"_%L(%Z))
+	;; U 0 S %O=1 Q
+	;;
+	;;1;Q1
+	;;Q1 W:$E(%SCN)'=$S(%POPS=80:"l",1:"h") %E,"[2J",%E,"[?3"_$S(%POPS=80:"l",1:"h")
+	;; U 0 W:%SCN[";" %E,"[r" S %SCN=$S(%POPS=80:"l",1:"h"),%LL=%POPS Q
+	;;
+	;;1;I;Input routines
+	;;I U 0:(:"+S")
+	;;I0 S (%F,%Z,%ZB)=0 I %EX S %F="??KD("EX")??",(%MSG,%RES)="" G I3
+	;; S %INP="",%INPP=1
+	;;I1 S $ZT="I9^??ROU??" U 0 W %E,%P
+	;; ;**TM**;I4 R %RES#1:%TM I  S %ZB=$ZB,%T=$ZB#256,%F=$ZB\256
+	;;I4 R %RES#1:%TM I  S %ZB=$ZB,%T=$ZB#256,%F=$$Function^%DASLIN($piece($ZB,"[",2))
+	;; E  S %F="??KD("EX")??"
+	;; I %F="24" S %F=0,%T=13
+	;; G I2:%F
+	;; I $L(%RES)!(%T=5)!(%T=8)!(%T=10)!(%T=127) D HLP,M G I1
+	;; I %T=23 D Q0,CLEAR,RP,PDSP(??SM(".PXX")??-??SM(".PXW")??+1),DSP G I0
+	;; S:%RES="?" %F="??KD("H")??"     
+	;;I2 I %F,%F="??KD("M")??" S %EX=1,%F="??KD("EX")??" G I3
+	;; I %F,%F="??KD("SS")??" S %MODE=$$MODE^%DAZCALL S %MSG=$S($E($T(+0))="%"&('%MODE):"??^%DAMSG(%FLANG,"JSD")??",1:$T(+1)),%F=-1 K %MODE D M G I0
+	;; I %F,%F="??KD("H2")??" S %F="??KD("H")??"
+	;; G I7:%F="??KD("H")??"&%F
+	;; I %F=32 U 0:(:"+S") W %E,"=",%E,%P G I10
+	;;I3 S %TM=??TMOSCN??,%HF="",%T=%RES=""
+	;; U 0:(:"-S")
+	;; Q
+	;;I7 I %HF]"" S %RES=%HF G I3
+	;; S %HF="??%SDPH??" D HLP,M G I0
+	;;I9 U 0 I $ZE'["INTERRUPT",$ZE'["ESCAPE",$ZE'["READERR" ZQuit 1 G @$ZT
+	;;I5 S %MSG="??^%DAMSG(%FLANG,"I")??" D M G I0
+	;;I10 R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	;; E  S %F="??KD("EX")??" G I11
+	;; I %T=27 G I10:%F=32 G I11:%F&(%F="??KD("PS")??"!(%F="??KD("NX")??")) S:%F="??KD("H2")??"&%F %F="??KD("H")??" I %F="??KD("H")??"&%F S %RES="??KD("H")??" G I3
+	;; S:%?1L %=$C($A(%)-32)
+	;; I "??KD("ALLGOLD")??"'[(","_%_",")!%T!%F S %MSG="??^%DAMSG(%FLANG,"UFUN")??",%F=0 D M G I12
+	;; S %F=$S("??KD("GEX")????KD("GM")??"[%:"??KD("EX")??",%="??KD("GDEL")??":"??KD("DEL")??",%="??KD("GIN")??":"??KD("IN")??",%="??KD("GPS")??":"??KD("PS")??",%="??KD("GNX")??":"??KD("NX")??",%="??KD("GH")??":"??KD("H")??",1:"??KD("C")??")
+	;; G I7:%F="??KD("H")??"&%F ;%%Z1-Y
+	;; I %="M" S %EX=1
+	;; I %="T" S %MODE=$$MODE^%DAZCALL S %MSG=$S($E($T(+0))="%"&('%MODE):"??^%DAMSG(%FLANG,"JSD")??",1:$T(+1)),%F=-1 K %MODE D M G I12 ;%%Z1-Z
+	;;I11 D I13 G I3
+	;;I12 D I13 G I0
+	;;I13 W %E,">" Q
+	;;
+	;;1;CDSP
+	;;CDSP W %E,"[?25h" Q
+	;;
+	;;1;M;
+	;;M W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	;; X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	;; W $J("",%LL-$ZWidth(%MSG)) W:$D(%GC("SM")) %E,%GC("SM") W $E(%MSG,1,$ZPosition(%MSG,%LL)),%E,"[m" I '%F S %HF="" W *7  ;;%%Z1-G
+	;; Q
+	;;

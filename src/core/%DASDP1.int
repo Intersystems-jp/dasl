@@ -1,0 +1,505 @@
+ROUTINE %DASDP1 [Type=INT,LanguageMode=6]
+%DASDP1	;;4-Mar-92;V6.1
+	;;          Copyright ゥ Digital Equipment Corporation.
+	;;             1987 - 1992 All rights reserved.
+	;	%LINE   - Line of DASL Commands
+	;	%COM	- Keyword for a singel command
+	;	%OPCODE	- 2 letter code for %COM, compiler
+	;	%PCOND	- Optional post-conditional of the form 'EXPR'
+	;	%PARA	- Command Qualifiers,parameters and/or arguments.
+	; 	%TYP	- Indicates where command may be used.
+	;	%LAB	- Line label fo validation subroutine
+	;	%UCRES	- %RES converted to uppercase
+	;	%END	- pointer to last command character of %RES
+LASSIGN	;
+	S %X1="" I $E(%LINE,J)="/" D GQUAL G EEXIT:%MSG]"",EQUAL:",INTERNAL,INT,"'[(","_N_",") S %X1="I" D GSPACE Q:%MSG]""
+	D GNAM Q:%MSG]""  S %PARA=N_"$"_%X1 I $E(%LINE,J)'="=" G EMISS
+	S J=J+1 D GEXPR S %PARA=%PARA_"$"_N
+	G GSCND
+LBATCH	;
+	Q:$E(%LINE,J)'="/"  S %PARA=""
+	D GQUAL,SBATCH:%MSG="" G EEXIT:%MSG]""
+	Q
+SBATCH	;
+	Q:N=""  G EQUAL:",DEBUG,DB,"'[(","_N_",")
+	S N=0 I $E(%LINE,J)="=" S J=J+1 D GINT Q:%MSG]""  G ENUM:N<1!(N>9)
+	S %PARA="DB$"_+N
+	Q
+LBOX	;
+	;%%Z3-COLOR+
+	N %X9 S (%X1,%X2,%X3)=""
+	I $E(%LINE,J)="/" F %DUM=1:1 D GQUAL,SQGRAPH:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" D GSPACE Q
+	S %X9=%X1
+	;%%Z3-COLOR-
+	S %LAB="GINT",K=4 D GLIST Q:%MSG]""  I K<4 G EMISS
+	F K=1:1:4 S @("%X"_K)=$P(%PARA,":",K) G ENUM:'@("%X"_K)
+	S %X2=%X2+SDFL-1,%X4=%X4+SDFL-1,N=""
+	I %X3<%X1!(%X4<%X2)!(%X1>132)!(%X3>132)!(%X2>SDLL)!(%X4>SDLL) S %MSG="BOX座標が範囲を越えています。" Q  ;;%%Z1-T
+	I $E(%LINE,J)="," S J=J+1 D STRLIT S N=$E(N,2,$L(N)-1) Q:%MSG]""
+	;%%Z3-COLOR+
+	;S %PARA=%X1_":"_%X2_":"_(%X3-%X1+1)_":"_(%X4-%X2+1)_":"_N
+	S %PARA=%X1_":"_%X2_":"_(%X3-%X1+1)_":"_(%X4-%X2+1)_":"_N_%X9
+	;%%Z3-COLOR-
+	Q
+LCOMMIT	;
+	S (%X3,N)="" I $E(%LINE,J)="/" D GQUAL
+	I N="" S %PARA=N Q
+	I ",NOMSG,MSG,"'[(","_N_",") G EQUAL
+	S %PARA=N I N="NOMSG"," ;"[$E(%LINE,J) Q
+	I N="MSG",$E(%LINE,J)="=" S J=J+1 D GEXPR S %PARA=%PARA_"="_N Q
+	G ESYNTAX
+	Q:%MSG]""  S %LAB="GINT",K=2 D GLIST Q:%MSG]""  I K<2 G EMISS
+	S %X1=SDFL+%PARA-1,%X2=SDFL+$P(%PARA,":",2)-1
+	G ENUM:%X2'>%X1!(%X2>SDLL)!(%X1<1) S %PARA=%X1_":"_%X2_%X3
+	Q
+LCOND	;
+LDFAULT	D GEXPR S %PARA=N Q
+LPATT	D GEXPR
+	S $ZT="LPATTE^%DASDP1"  ;;%%Z3-DASLV61_BUGS-6
+	S %X4="TEST"?@N  ;;%%Z3-DASLV61_BUGS-6
+	;**TM**; ZおよびKをZFWCHARZ,ZHWKATAZに変更
+	N I,NN S NN=""
+	F I=1:1:$L(N) S NN=NN_$S($E(N,I)="K":"ZHWKATAZ",$E(N,I)="Z":"ZFWCHARZ",1:$E(N,I))
+	S %PARA=NN Q
+	Q
+LPATTE	S $ZE=""
+	I $E(N)="@" S %PARA=N Q
+	S %MSG="不適当なパターン マッチ" Q  ;;%%Z3-T
+LCOUNT	;
+	D GSFNAME Q:%MSG]""
+	I '$D(^DADD(N)) S %MSG="未定義データネーム "_N Q  ;;%%Z1-T
+	S %PARA=N
+	G GSCND
+LDATE	;
+	Q:";"[$E(%LINE,J)
+	D GEXPR S %PARA=N Q:$E(%LINE,J)'=","!(%MSG]"")
+	S J=J+1 D GEXPR S %PARA=%PARA_"$"_N
+	Q
+LDISP	;
+	S %X1="" I $E(%LINE,J)="/" F %DUM=1:1 D GQUAL,SDISP:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" D GSPACE:$E(%LINE,J)'=":" Q
+	D LERASE S %PARA=%PARA_%X1
+	Q
+SDISP	;
+	G EMISS:N=""
+	;%%Z3-COLOR+
+	;I ",BLINK,BOLD,REVERSE,UNDER,BELL,NORMAL,BL,BO,REV,UN,BE,NO,"'[(","_N_",") G EQUAL
+	I ",BLINK,BOLD,REVERSE,UNDER,BELL,NORMAL,FCOLOR,BCOLOR,BL,BO,REV,UN,BE,NO,FC,BC,"'[(","_N_",") G EQUAL
+	S %X3=$E(N,1,2)
+	I %X3="FC"!(%X3="BC") G EDUP:%X1[("$"_%X3),EQUAL:$E(%LINE,J)'="=" S J=J+1 G SLCOLOR
+	;%%Z3-COLOR+
+	S %X2="$"_$E(N,1,2) G EDUP:%X1[%X2 S %X1=%X1_%X2
+	Q
+LDO	;
+	S %X1=""
+	I $E(%LINE,J)'="^" D GRNAM Q:%MSG]""  G GDOS:$E(%LINE,J)'="^" G EARG:$L(N)>8 S %X1=N
+	;S J=J+1 D GNAM Q:%MSG]""  I N="%"!($L(N)>8) G EARG ;	;%%Z3-Y
+	S J=J+1 D GNAM Q:%MSG]""  I N="%"!($L(N)>14) G EARG ;	;%%Z3-Y
+	I $E(%LINE,J)="(" D
+	.N X,Y,P S X=J,%QC=0,P=0  ;;%%Z3-DASLV61_BUGS-5
+	.F J=J+1:1 S Y=$E(%LINE,J) Q:Y=""  Q:(Y'?.UN.",".".".""""."%"."(".")")&'(%QC#2)  S:Y="""" %QC=1-%QC S:Y="(" P=P+1 Q:Y=")"&(P=0)  S:Y=")" P=P-1  ;;%%Z3-DASLV61_BUGS-5
+	.I $E(%LINE,J)'=")"!%QC S %MSG=1
+	.E  S N=N_$E(%LINE,X,J),J=J+1
+	I %MSG'="" G EARG
+	S %PARA=%X1_"^"_N G GSCND:$E(%TYP,3)="C"
+	Q
+LERASE	;
+LRESET	;
+	I ":;"'[$E(%LINE,J) S %LAB="GSFNAME",K=99 D GLIST Q:%MSG]""
+SNOARG	;
+	I %PARA="" G EMISS:%TYP=",SC"
+	G GSCND
+LLOCK	;
+	S %X3="" I $E(%LINE,J)="/" D GQUAL,SLOCK:%MSG="" G EEXIT:%MSG]"" D GSPACE
+	S:$E(%LINE,J)="(" J=J+1 D GLKKL I $E(%LINE,%X4-1)="(" G ESYNTAX:$E(%LINE,J)'=")" S %PARA="("_%PARA_")",J=J+1
+	S:%X3]"" %PARA=%PARA_":"_%X3 G GSCND:$E(%LINE,J)=":"
+	Q
+SLOCK	;
+	G EMISS:N="" I ",TIMEOUT,TO,"'[(","_N_",") G EQUAL
+	G EQUAL:$E(%LINE,J)'="=" S J=J+1 D GINT Q:%MSG]""  G ENUM:N<0 S %X3=+N
+	Q
+LTSTART	;
+	S %X3="" I $E(%LINE,J)="/" D GQUAL,SLOCK:%MSG="" G EEXIT:%MSG]"" D GSPACE
+	S %PARA=N
+	D GEXPR
+	S %PARA=N_":"_%PARA
+	Q
+LERROR	;
+LLOG	D GEXPR S %PARA=N G GSCND
+LKILL	;
+	I $E(%LINE,J)'="/" D GLKKL G GSCND
+	I %TYP'=",FC" G EQUAL
+	S %X1="" D GQUAL
+	G:",DDN,XREF,KEY,"'[(","_N_",") EQUAL
+	S (%X1,%PARA)="$"_N
+	I N="XREF" S %LAB="GDDNXRF",K=99,%PARA="",J=J+1 D GLIST S %PARA=%PARA_%X1 G GSCND
+	I N="KEY"  S %LAB="GDDNKEY",K=99,%PARA="",J=J+1 D GLIST S %PARA=%PARA_%X1 G GSCND
+	G GSCND:$E(%LINE,J)=":"
+	F J=J+1:1 Q:$E(%LINE,J)'=" "
+	Q:";"[$E(%LINE,J)
+	I $E(%LINE,J)="(" S J=J+1
+	E  G EARG
+	S %LAB="GDDN",K=99,%PARA="" D GLIST
+	I $E(%LINE,J)=")" S J=J+1
+	E  G EARG
+	S %PARA=%PARA_%X1
+	G GSCND
+LTERM	;
+	Q:$E(%LINE,J)'="/"
+	F %DUM=1:1 D GQUAL,STERM:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" Q
+	Q
+STERM	;
+	I ",NOFULL,NF,"'[(","_N_",") G EQUAL
+	S %X1="NF" G EDUP:":"_%PARA_":"[(":"_%X1_":")
+	S %PARA=$S(%PARA="":"",1:%PARA_":")_%X1
+	Q
+LEVAL	;
+	S K=99,%LAB="SEVAL3",%PRC=0 D SEVAL1 Q:%MSG]""
+	G GSCND:%OPCODE="EV"
+	Q
+SEVAL3	;
+	D GSFNAME S:$E(%LINE,J,J+1)=",(" J=J+1
+	Q
+SEVAL1	;
+	I $E(%LINE,J)'="(" D GLIST
+	Q:%MSG]""  S %X2=$E(%LINE,J) I '%PRC Q:" :;"[%X2
+	I %X2="(" G ESYNTAX:" ,"'[$E(%LINE,J-1)
+	I %PRC G ESYNTAX:"(<"[%X2!(%X2=")"&($E(%LINE,J+1)'="<"))
+	S %PRC=$S(%X2="(":1,%X2=")":0,1:%PRC) I "()"[%X2 S %PARA=%PARA_$S(%PARA="":"(",%X2="(":":(",1:"") S:%X2=")" %X2="<",J=J+1
+	I %X2'="<" S J=J+1
+	E  S %X4=0 D SEVAL2 Q:%MSG]""
+	I '%PRC Q:" :;"[$E(%LINE,J)
+	G SEVAL1
+SEVAL2	;
+	S J=J+1,%PARA=%PARA_"<"
+	G EARG:%X4=1 I $E(%LINE,J)="#" S %PARA=%PARA_"#",J=J+1,%X4=1
+	G:$E(%LINE,J)'?1U EARG D GNAM S %PARA=%PARA_N,%X2=$E(%LINE,J)
+	G SEVAL2:%X2="<",ESYNTAX:%X2="(" I %X2="," S %X3=$E(%LINE,J+1) I %X3="%"!(%X3="(")!(%X3?1U) S J=J+1
+	Q
+LEVALS	;
+	G EMISS:$E(%LINE,J)'="/"
+	S (%XX1,%XX2)=""
+	F %I=1,2 I $E(%LINE,J)="/" D GQUAL G EMISS:N="" Q:%MSG]""  D
+	.I ",KEY,K,"[(","_N_",") S:$E(%LINE,J)'="=" %MSG="等号がありません。" Q:%MSG'=""  S J=J+1 D GNAM Q:%MSG]""  S %XX1=N Q  ;;%%Z1-T
+	.I ",INPUT,IN,"[(","_N_",") S %XX2=N Q
+	.E  S %MSG="修飾子が分かりません。"
+	D GSPACE
+	D LEVAL Q:%MSG]""
+	G EARG:%PARA["%" S %PARA=%PARA_"$"_%XX1_$S(%XX2'="":"$IN",1:"")
+	Q
+LEXIT	;
+	I $E(%TYP,3)="C" G LNXTFLD
+	I ";"[$E(%LINE,J) Q:%TYP=",FT"  G EMISS
+SFLD	;
+	D GSFNAME S %PARA=N
+	Q
+LFILE	;
+	S K=99,%LAB="GSFNAME" D GLIST
+	G GSCND
+LFILES	;
+	G EMISS:$E(%LINE,J)'="/" D GQUAL Q:%MSG]""
+	I ",KEY,K,"'[(","_N_",") G EQUAL
+	G EARG:$E(%LINE,J)'="=" S J=J+1 D GNAM Q:%MSG]""
+	G EMISS:N="" S %X1=N D GSPACE
+	D LFILE Q:%MSG]""
+	G EARG:%PARA["%" S %PARA=%PARA_"$"_%X1
+	Q
+LHANG	D GNUM S %PARA=N
+	G GSCND
+LINT	S %LAB="GEXPR1",K=2 D GLIST
+	Q
+LKEY	;
+	I $E(%LINE,J)'="/" G EMISS
+	F %DUM=1:1 D GQUAL,SKEY:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" Q
+	Q
+SKEY	;
+	I ",DELETE,INSERT,UPDOWN,FORWARDBACK,D,I,UD,FB,"'[(","_N_",") G EQUAL
+	S %X1=$E(N) S:%X1="U" %X1="UD" G EDUP:":"_%PARA_":"[(":"_%X1_":")
+	S %PARA=$S(%PARA="":"",1:%PARA_":")_%X1
+	Q
+LLOOKUP	;
+	Q:";"[$E(%LINE,J)  S (%X2,%X3)=""
+	I $E(%LINE,J)="/" F %DUM=1:1 D GQUAL,SQLOOK:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" D GSPACE Q
+	I $E(%LINE,J)?1U!($E(%LINE,J)="^") S K=1 D GVAR S %PARA=N
+	I $E(%LINE,J)="," F J=J+1:1 D SLOOKUP Q:%MSG]""  S %PARA=%PARA_"&"_N Q:$E(%LINE,J)'=","
+	S %PARA=%PARA_"$"_%X2_%X3
+	Q
+SQLOOK	;
+	G EMISS:N=""
+	I ",EXACT,LIST,VERIFY,CUTBACK,NOPAINT,CONTAIN,BACKWARD,POPUP,EX,LI,VE,CU,NO,CO,BA,PO,"'[(","_N_",") G EQUAL ;	;%%Z2-X1
+	I $E(N,1,2)="CU" G EDUP:%X2,EQUAL:$E(%LINE,J)'="=" S J=J+1 D GINT Q:%MSG]""  G ENUM:N<1 S %X2=+N Q  ;	;%%Z2-X1
+	I $E(N)="V",$E(%LINE,J)="=" S J=J+1 D GNAM G EQUAL:",PARTIAL,PA,"'[(","_N_",")
+	I $E(N,1,2)="PO",$E(%LINE,J)="=" S J=J+1 G SLPOP
+	S %X3=%X3_$E(N)
+	Q
+SLPOP	;
+	N N1,N2,N3,N4
+	S N=J F J=J+1:1 Q:$E(%LINE,J)'?1N&($E(%LINE,J)'?1",")
+	S N=$E(%LINE,N,J-1)
+	I N'?.N1",".N1",".N1",".N S %MSG="不適当な POPUP 引数"  ;;%%Z3-T
+	S N1=$P(N,","),N2=$P(N,",",2),N3=$P(N,",",3),N4=$P(N,",",4)
+	I N1<1!(N1>130) S %MSG="第一 POPUP 引数（行）が不適当です。" Q  ;;%%Z3-T
+	I N1<1!(N2>24) S %MSG="第二 POPUP 引数（行）が不適当です。" Q  ;;%%Z3-T
+	I N2+N3>24 S %MSG="第三 POPUP 引数（行）が不適当です。" Q  ;;%%Z3-T
+	I N1+N4>132 S %MSG="第四 POPUP 引数（行）が不適当です。" Q  ;;%%Z3-T
+	S N="PO="_N_","
+	S %X3=%X3_N
+	Q
+SLOOKUP	;
+	D GNAM Q:%MSG]""
+	S K=N,%X1=0 I $E(%LINE,J)="'" S %X1=1,J=J+1
+	S N=$E(%LINE,J) I "[>=<]"'[N!(N="") G ESYNTAX:%X1 S N=K_"!'=!"_K Q
+	S %X1=$S(%X1:"",1:"'")_N,J=J+1
+	D GATOM S N=K_"!"_%X1_"!"_N
+	Q
+LPOPUP	;
+	S (%POPX,%POPY,%POPW,%POPF)=""
+	;Q:";"[$E(%LINE,J)  S (%X2,%X3)=""
+	Q:$E(%LINE,J)=";"  S (%X2,%X3)="" ;	;%%Z2-patch seq.008
+	I $E(%LINE,J)="/" F %DUM=1:1 D GQUAL,SQPOP:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" D GSPACE Q
+	G EARG:$E(%LINE,J)'?1U S K=1 D GVAR S %PARA=N
+	S %PARA=%PARA_";"_%POPX_";"_%POPY_";"_%POPW_";"_%POPF
+	G GSCND
+	Q
+SQPOP	;
+	G EMISS:N=""
+	I ",X,Y,WINDOW,NOPAINT,WD,NP,"'[(","_N_",") G EQUAL
+	I $E(N)="N" S %POPF="NP" Q
+	S %POPA="%POP"_$E(N) G EDUP:@%POPA'="",EQUAL:$E(%LINE,J)'="=" S J=J+1 D  Q:%MSG]""  G ENUM:(N?.N)&((N<1)!(N>128)) S @%POPA=N Q
+	.I $E(%LINE,J)?1N D GINT Q
+	.S K=1 D GVAR
+	Q
+LGRAPH	;%%Z3-COLOR+
+	I $E(%LINE,J)'="/" G EMISS
+	S (%X1,%X2,%X3)=""
+	I $E(%LINE,J)="/" F %DUM=1:1 D GQUAL,SQGRAPH:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" D GSPACE Q
+	S %PARA=%PARA_%X1
+	Q
+SQGRAPH	;
+	G EMISS:N=""
+	I ",FCOLOR,BCOLOR,BOLD,REVERSE,BLINK,FC,BC,BO,RE,BL,"'[(","_N_",") G EQUAL
+	S %X3=$E(N,1,2)
+	I %X3="FC"!(%X3="BC") G EDUP:%X1[("$"_%X3),EQUAL:$E(%LINE,J)'="=" S J=J+1 G SLCOLOR
+	S %X2="$"_%X3 G EDUP:%X1[%X2 S %X1=%X1_%X2
+	Q
+SLCOLOR	;
+	D GNAM G EQUAL:%MSG]"",EMISS:N=""
+	I ",BLACK,RED,GREEN,YELLOW,BLUE,MAGENTA,CYAN,WHITE,BLA,GRE,YEL,BLU,MAG,CYA,WHI,"'[(","_N_",") G EQUAL
+	S %X1=%X1_"$"_%X3_"="_$E(N,1,3)
+	Q
+	;%%Z3-COLOR-
+LMUMPS	D GEXPRM
+	S %PARA=N
+	Q
+LNOBACK	;
+	Q:%TYP=",FT"  G GSCND
+LNUM	S %LAB="GEXPR1",K=3 D GLIST
+	Q
+LNXTFLD	;
+	I ":;"'[$E(%LINE,J) D GSFNAME Q:%MSG]""  S %PARA=N
+	G SNOARG
+LNXTSCN	;
+	I ":;"'[$E(%LINE,J) D GRNAM Q:%MSG]""  D GDOS
+	G GSCND
+LREPNT	;
+LQUIT	;
+GSCND	Q:%MSG]""  I $E(%LINE,J)=":" S J=J+1 D GEXPR S %PCOND=N
+	Q
+LSCROLL	;
+	I %TYP'=",ST" G SCRLF
+	S %X3="" I $E(%LINE,J)="/" F %DUM=1:1 D GQUAL,SSCROLL:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" D GSPACE Q
+	Q:%MSG]""  S %LAB="GINT",K=2 D GLIST Q:%MSG]""  I K<2 G EMISS
+	S %X1=SDFL+%PARA-1,%X2=SDFL+$P(%PARA,":",2)-1
+	G ENUM:%X2'>%X1!(%X2>SDLL)!(%X1<1) S %PARA=%X1_":"_%X2_%X3
+	Q
+SCRLF	;
+	I $E(%LINE,J)'="/" G EMISS
+	F %DUM=1:1 D GQUAL,SCRLF1:%MSG="" G EEXIT:%MSG]"" I $E(%LINE,J)'="/" Q
+	G GSCND:$E(%LINE,J)=":"
+	Q
+SCRLF1	;
+	G EMISS:N=""
+	I ",BACK,DELETE,FILL,FORWARD,INDEX,INSERT,RESET,BA,DE,FI,FO,IND,INS,RS,"'[(","_N_",") G EQUAL
+	I N["RESET" S N=$P(N,"RESET",1)_"RS"_$P(N,"RESET",2)
+	I $E(N,1,3)="IND",$E(%LINE,J)="=" S J=J+1 D GNAM G EQUAL:",BACKWARD,BA,"'[(","_N_",") S N="INB" ;	;%%Z2-X3
+	S %X1="$"_$S($E(N)="I":$E(N,1,3),1:$E(N,1,2))
+	I %TYP=",SC",%X1'="$FI" S %MSG=N_" はスクリーンアクションでは使用できません。" Q  ;;%%Z1-T
+	G EDUP:%PARA[%X1 S %PARA=%PARA_%X1
+	Q
+SSCROLL	;
+	G EMISS:N=""
+	I ",GLOBAL,NOKILL,ARRAY,NORESET,GL,NO,AR,NRS,"'[(","_N_",") G EQUAL
+	I N["NORESET" S N=$P(N,"NORESET",1)_"NRS"_$P(N,"NORESET",2)
+	S %X1="$"_$E(N,1,2) G EDUP:%X3[%X1 S %X3=%X3_%X1 Q:%X1'["AR"
+	G ESYNTAX:$E(%LINE,J)'="=" S J=J+1 S:$E(%LINE,J)="^" J=J+1
+	D GNAM Q:%MSG]""
+	I N'?1U1UN.6UN S %MSG="アレイ名が"_$S(N="":"ありません。",1:"不適当です。") G EMESS  ;;%%Z1-T
+	S %X3=%X3_"="_N
+	Q
+LSET	;
+	I $E(%LINE,J)'="(" D GVAR1 G SSET
+	S %X4=J,J=J+1,K=1 F %DUM=1:1 D GVAR Q:$E(%LINE,J)'=","  S J=J+1
+	G EARG:$E(%LINE,J)'=")" S %PARA=$E(%LINE,%X4,J),J=J+1
+SSET	;
+	Q:%MSG]""  I $E(%LINE,J)'="=" G EMISS:%TYP=",SC" S N="%RES"
+	E  S J=J+1 D GEXPR
+	S %PARA=%PARA_"="_N
+	G GSCND
+LTAB	;
+	G GVAR1:$E(%LINE,J)="^" S %X1=J F J=J:1 Q:" ;"[$E(%LINE,J)
+	S %PARA=$E(%LINE,%X1,J-1) G EMISS:%PARA=""
+	Q
+LFKEY	;
+	S %X1=J F J=J:1 Q:" ;"[$E(%LINE,J)
+	S %X2=$E(%LINE,%X1,J-1)
+	S %X3=^DASY("PARM","FKEY")
+	F %X1=1:1:$L(%X2,",") S N=$P(%X2,",",%X1) I N'="" D  Q:%MSG]""  S %PARA=%PARA_N_","
+	.I N'?.N S K=1 D  S N=$S(K:%X4-1,1:-1)
+	..F  S K=$F(%X3,N,K) Q:'K  S %X4=$L($E(%X3,1,K-1),";") Q:$P(%X3,";",%X4)=N
+	.S N=+N I (N<0)!(N>63) D EARG
+	Q:%MSG]""
+	G EMISS:%PARA="" Q
+LTIMO	;
+	D GEXPR
+	I $E(N)="=" S N=$E(N,2,9)
+	S %PARA=N
+	Q
+LUNLCK	;
+	Q:";"[$E(%LINE,J)  D GLKKL G GSCND:$E(%LINE,J)=":"
+	Q
+LXEC	;
+	G LCOND:$E(%TYP,3)="A",LERROR
+GEXPRM	;
+	S N=J,(%PRC,%QC)=0
+	F J=J:1 S L=$E(%LINE,J) Q:L=""  S:L="""" %QC=1-%QC I '%QC Q:";"[L  S:L="(" %PRC=%PRC+1 S:L=")" %PRC=%PRC-1 I L="=",$E(%LINE,J-1)="=" G ESYNTAX
+	I %PRC!%QC G ESYNTAX
+	S N=$E(%LINE,N,J-1) I N="" G EARG
+	F K=$L(N):-1:1 Q:$E(N,K)'=" "  S N=$E(N,1,K-1)
+	Q
+GEXPR	;
+	S N=J,(%PRC,%QC)=0
+	F J=J:1 S L=$E(%LINE,J) Q:L=""  S:L="""" %QC=1-%QC I '%QC Q:" ;"[L!(",:)"[L&'%PRC)  S:L="(" %PRC=%PRC+1 S:L=")" %PRC=%PRC-1 I L="=",$E(%LINE,J-1)="=" G ESYNTAX
+	I %PRC!%QC G ESYNTAX
+	S N=$E(%LINE,N,J-1) I N="" G EARG
+	Q
+GEXPR1	;
+	S N=J,(%PRC,%QC)=0
+	F J=J:1 S L=$E(%LINE,J) Q:L=""  S:L="""" %QC=1-%QC I '%QC Q:" ;"[L!(",:)"[L&'%PRC)  S:L="(" %PRC=%PRC+1 S:L=")" %PRC=%PRC-1 I L="=",$E(%LINE,J-1)="=" G ESYNTAX
+	I %PRC!%QC G ESYNTAX
+	S N=$E(%LINE,N,J-1)
+	Q
+GEXPRL	S K=99,%LAB="GEXPR"
+GLIST	S J=J-1
+	S Q=K F K=1:1:Q S J=J+1 D @%LAB S %PARA=$S(%PARA="":"",%PARA?.E1"(":%PARA,1:%PARA_":")_N Q:$E(%LINE,J)'=","!(%MSG]"")
+	Q
+STRLIT	S N="" I $E(%LINE,J)="""" F L=J:0 S J=$F(%LINE,"""",J+1),N=N_$E(%LINE,L,J-1) Q:$E(%LINE,J)'=""""  S L=J
+	G ESYNTAX:N=""!'J
+	Q
+GINT	S N=J F J=J:1 Q:$E(%LINE,J)'?1N
+	G GNUMX
+GNUM	S N=J F J=J:1 Q:$E(%LINE,J)'?1N
+	I $E(%LINE,J)="." S J=J+1
+	F J=J:1 Q:$E(%LINE,J)'?1N
+GNUMX	S N=$E(%LINE,N,J-1) G ENUM:N=""
+	Q
+GATOM	I $E(%LINE,J)?1N G GNUM
+	I $E(%LINE,J)="""" G STRLIT
+GNAM	I $E(%LINE,J)'?1U,$E(%LINE,J)'="%" G EARG
+GNAM1	S N=J F J=J+1:1 Q:$E(%LINE,J)'?1NU
+	S N=$E(%LINE,N,J-1)
+	Q
+GSPACE	;
+	Q:";"[$E(%LINE,J)  G ESYNTAX:$E(%LINE,J)'=" "
+	F J=J+1:1 Q:$E(%LINE,J)'=" "
+	Q
+GQUAL	G ESYNTAX:$E(%LINE,J)'="/"!($E(%LINE,J+1)'?1UN)
+	S (N,J)=J+1 F J=J+1:1 Q:$E(%LINE,J)'?1UN
+	S N=$E(%LINE,N,J-1)
+	Q
+GSFNAME	;
+	D GNAM I $E(N)="%" G EARG:$L(N)=1!($L(N)>8)!("FI,FS,EV,ES"'[%OPCODE) Q
+	G EARG:$L(N)>7 I %OPCODE="NS",'$D(^DASD(N)) S %MSG=%COM_" 引数のスクリーン'"_N_"'が分かりません。"  ;;%%Z1-T
+	Q
+GRNAM	I $E(%LINE,J)'?1UN,$E(%LINE,J)'="%" G EARG
+	G GNAM1
+GLKKL	S %X4=J D GVARL S %PARA=$E(%LINE,%X4,J-1)
+	Q
+GDOS	;
+	I %TYP["O" G EARG
+	D GSCN I %MSG="",$E(%TYP,3)="C" G GSCND
+	Q
+GSCN	;
+	I $E(N)="%",$L(N)>1 S:'$D(^%DASD($E(N,2,99))) %MSG=1
+	E  S:'$D(^DASD(N)) %MSG=1
+	I %MSG S %MSG=%COM_" 引数のスクリーン'"_N_"'が分かりません。" Q  ;;%%Z1-T
+	S %PARA=N
+	Q
+GDDN	S N=J F J=J+1:1 Q:$E(%LINE,J)'?1NU
+	S N=$E(%LINE,N,J-1)
+	I '$D(^DADD(N)) G EDDN
+	Q
+GDDNXRF	S N=J F J=J+1:1 Q:$E(%LINE,J)'?1NU
+	S N=$E(%LINE,N,J-1)
+	I N="" S %MSG="KILL/XREF に引数がありません。" Q  ;;%%Z3-T
+	I '$D(^DADD(N)) G EDDN
+	I $P(^DADD(N,"REF"),";",4)="" S %MSG="DDN'"_N_"'にクロスリファレンスがありません。" G EMESS  ;;%%Z1-T
+	Q
+GDDNKEY	S N=J F J=J+1:1 Q:$E(%LINE,J)'?1NU
+	S N=$E(%LINE,N,J-1)
+	I N="" G EDDN
+	I '$D(^DADD(N)) G EDDN
+	I "*#"'[$E($P(^DADD(N,"REF"),";",1),$L($P(^DADD(N,"REF"),";",1))-1) S %MSG="KILLコマンドのDDN'"_N_"'がキーではありません。" Q  ;;%%Z1-T
+	Q
+GVAR1	S K=1 D GVAR S %PARA=N
+	Q
+GVARL	S K=99,%LAB="GVAR" D GLIST
+	Q
+GVAR	S %X1=J S:$E(%LINE,J)="^" J=J+1 D GNAM
+GVAR2	I $E(%LINE,J)="(" S J=J+1,%X5=K D GEXPRL S K=%X5 G ESYNTAX:$E(%LINE,J)'=")" S J=J+1
+	S N=$E(%LINE,%X1,J-1)
+	Q
+GLVAR	;
+	S %PARA="",%LINE=%RES,J=1,%COM="" D GVAR1
+	S:%MSG]"" %MSG="MUMPS変数が不適当です。"  ;;%%Z1-T
+	G PKILL
+GNODE	;
+	S:$E(%RES)'="^" %RES="^"_%RES S J=2
+	S:%RES["(" %RES=$P(%RES,"(",1)_"("_$$UPCASEQ^%DAZCALL($P(%RES,"(",2,255))
+	I $E(%RES,2)="[" D  I %MSG]"" S %RES=%OLD G PKILL
+	. S %X1=$$UPCASE^%DAZCALL($P(%RES,"]",1))
+	. I %X1'?1"^["""3U1""","""3U1"""",%X1'?1"^["""3U1"""",%X1'?1"^["3U1","3U,%X1'?1"^["3U  S %MSG="グローバルの拡張シンタックスが不適当です。" Q  ;;%%Z1-T;;%%Z3-ref
+	. S %RES=%X1_"]"_$P(%RES,"]",2,255),J=$L(%X1)+2
+	S %PARA="",%LINE=%RES,%COM="",K=1,%X1=J
+	I $E(%LINE,J)'?1A,$E(%LINE,J)'="%" G EARG
+	F J=J+1:1 Q:$E(%LINE,J)'?1NA
+	D GVAR2 S:%MSG]"" %MSG="グローバルノードフォーマットが不適当です。"  ;;%%Z1-T
+	F L=1:1 S N=$P(%PARA,":",L) Q:N=""  D  Q:%MSG]""
+	. Q:$E(N)=""""!("*#"[N)!($D(^DADD(N)))!(N?1N.N)
+	. S %MSG=N_" 不適当なサブスクリプトです。データネーム，文字列またはキー(*#)を入力して下さい。"   ;;%%Z3-T
+	G PKILL
+GEREF	;
+	S %PARA="",%LINE=%RES,J=1,%COM="",%TYP=""
+	D LDO
+	S:%MSG]"" %MSG="スクリーン名またはMUMPSエントリを入力して下さい。"  ;;%%Z1-T
+	G PKILL
+GPOS	;
+	I %TYP["O" G EARG
+	D GPSCN
+	Q
+GPSCN	;
+	I $E(N)="%",$L(N)>1 S %MSG=$S('$D(^%DASD($E(N,2,99))):1,'$D(^%DASD($E(N,2,99),"P")):2,1:"")
+	E  S %MSG=$S('$D(^DASD(N)):1,'$D(^DASD(N,"P")):2,1:"")
+	I %MSG=1 S %MSG=%COM_" 引数のスクリーン'"_N_"'が分かりません。" Q  ;;%%Z1-T
+	I %MSG=2 S %MSG=%COM_" 引数のスクリーン'"_N_"'のタイプが不適当です。" Q  ;;%%Z1-T
+	S %PARA=N
+	Q
+PKILL	G PKILL^%DASDPAR
+EDDN	S %MSG="データネーム'"_N_"'が未定義です。" G EMESS  ;;%%Z1-T
+EDDNXRF	S %MSG="データネームにクロスリファレンスがありません。" G EMESS  ;;%%Z1-T
+EDUP	S %MSG="引数が重複しています。" G EMESS  ;;%%Z1-T
+EARG	S %MSG="引数が不適当です。" G EMESS  ;;%%Z1-T
+EQUAL	S %MSG="修飾子が分かりません。" G EMESS  ;;%%Z1-T
+ENUM	S %MSG="数値引数が不適当です。" G EMESS  ;;%%Z1-T
+ESYNTAX	S %MSG="引数のシンタックスが不適当です。" G EMESS  ;;%%Z1-T
+EMISS	S %MSG="引数がありません。" G EMESS  ;;%%Z1-T
+EMESS	S:%COM]"" %MSG="'"_%COM_"'コマンドの"_%MSG  ;;%%Z1-T
+EEXIT	Q

@@ -1,0 +1,81 @@
+ROUTINE %DASDTED [Type=INT,LanguageMode=6]
+%DASDTED	;
+	;;     Copyright ?Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+WRITE	;
+	N %kjon,%kjof,%knon,%knof S %kjon=$C(124),%kjof=$C(126),%knon=$C(123),%knof=$C(125)  ;;%%Z1-N
+	S %MSG="",FILE="DSM$DASL_"_SDNM_".TMP"
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["ULTRIX" S FILE=$TR($ZC(%LOWCASE,FILE),"$","_")  ;;%%Z3-ULTRIX
+	S FILE=$TR($ZCVT(FILE,"U"),"$","_")  ;;%%Z3-ULTRIX
+	C FILE O FILE:NEW:10
+	E  S %MSG="シーケンシャルファイル'"_FILE_"'がオープンできません。" K FILE Q  ;;%%Z1-T
+	S (FILE,OLDFILE)=$ZSE(FILE)
+	;**TM** Cache,IRISのみ対応
+	;S:$$DSMCODE^%DASJUTL()="DSM" $ZT="BADINP^"_$T(+0) ;  ;%%Z1-N
+	;I $ZV'["ULTRIX" U FILE F %=0:0 S %=$O(SLA(%)) Q:%=""  W $S($$DSMCODE^%DASJUTL()="DSM":$ZC(%KJVMS,SLA(%,"SDTEXT"),%knon,%knof),1:SLA(%,"SDTEXT")),!  ;;%%Z1-N;%%Z3-ULTRIX
+	;E  U FILE F %=0:0 S %=$O(SLA(%)) Q:%=""  W SLA(%,"SDTEXT"),!  ;;%%Z3-ULTRIX
+	U FILE F %=0:0 S %=$O(SLA(%)) Q:%=""  W SLA(%,"SDTEXT"),!  ;;%%Z3-ULTRIX
+	S $ZT="" ;      ;%%Z1-N
+	C FILE
+	;U 0:(NOESC:NOCON:WIDTH=80:CTRAP="":TERM="")
+	W %E,"[r"
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["ULTRIX" W %E,"|"  ;;%%Z3-ULTRIX
+	S %=$$EDT^%DAZCALL(FILE)
+	;I $ZV["ULTRIX" W %E,"}"  ;;%%Z3-ULTRIX
+	S FILE=$ZSE($P(FILE,";",1))
+	U 0:(ESC:ECHO:CON:WIDTH=0:TERM=%TRM)
+	;I $ZV["VAX DSM" S %=$ZC(%ZCVODIC)
+	;I $ZV["ULTRIX" S %=$ZC(%CNV_CLOSE_DICTIONARY)
+	W %kjof
+	W %E,"[7l",%E,"*I"  ;;%%Z1-N for NO AUTO WRAP and KATAKANA to G2
+	W %E,"[",$E(%SCN,2,$L(%SCN)),"r"
+	Q
+BADINP	;;%%Z1-N +++
+	I $ZE]"",$ZE'["bad input" ZQuit 1 G @$ZT
+	S %MSG="'"_%knon_"'または'"_%knof_"'が含まれています。他の文字に置き換えて下さい。"  ;;%%Z1-T
+	C FILE:DELETE
+	Q
+	;;%%Z1-N ---
+READ	;
+	N %kjon,%kjof,%knon,%knof S %kjon=$C(124),%kjof=$C(126),%knon=$C(123),%knof=$C(125)  ;;%%Z1-N
+	S %MSG1=""  ;;%%Z1-N
+	K SLA S $ZT="EOFE^%DASDTED",($ZE,%MSG)=""
+	O FILE:READONLY U FILE
+	S COUNT=0 F I=0:0 R LINE D:$$DSMCODE^%DASJUTL()="DSM"  D CONTROL:LINE?.E1C.E,BUILD  ;;%%Z1-N
+	. D KESC(.LINE,.%MSG)
+	. ;S LINE=$ZC(%KJDSM,LINE,%knon,%knof)
+EOFE	I $ZE]"",$ZE'["ENDOFFILE" ZQuit 1 G @$ZT
+	C FILE:DELETE
+	O OLDFILE C OLDFILE:DELETE
+	I %MSG]"",(%MSG["CONTROL")!(%MSG["$C(") S %MSG=%MSG_"文字を取り除きました。"  ;;%%Z1-N;%%Z1-T
+	I %MSG1]"" S %MSG=$S(%MSG]"":%MSG_"さらに",1:"")_%MSG1  ;;%%Z1-T
+	K I,J,X,LINE,COUNT,POS,CHAR,BAD,%MSG1  ;;%%Z1-N
+	Q
+CONTROL	;
+	I ^%DASY("PARM","CSF")="N" Q 
+	S BAD=LINE,LINE=""
+	F POS=1:1:$L(BAD) S CHAR=$E(BAD,POS) D  
+	. I CHAR?1C,^%DASY("PARM","CS")'[CHAR Q
+	. S LINE=LINE_CHAR
+	I BAD'=LINE,%MSG'["CONTROL" S %MSG=%MSG_$S(%MSG]"":"と",1:"")_"CONTROL"  ;;%%Z1-N;%%Z1-T
+	Q
+BUILD	;
+	I $ZWidth(LINE)<80 S COUNT=COUNT+1,SLA(COUNT,"SDTEXT")=LINE Q  ;;%%Z1-N
+	F J=79:79 S X=$E(LINE,$ZPosition(LINE,J-79)+1,$ZPosition(LINE,J)) Q:X=""  S COUNT=COUNT+1,SLA(COUNT,"SDTEXT")=X  ;;%%Z1-N
+	I %MSG1']"" S %MSG1="79文字で折り曲げました。"  ;;%%Z1-T
+	Q
+KESC(L,M)	;;%%Z1-N +++ Check kanji ON/OFF invoke sequence : L=sourece_line, M=message
+	N kj,b,c,p
+	S kj=$ZC(KJOFF)
+	I (L[%kjon)!(L[%kjof) D KESC1
+	S kj=$ZC(KJON)
+	Q
+KESC1	;
+	I L[%kjon,M'[$A(%kjon) S M=M_$S(%MSG]"":"と",1:"")_"$C("_$A(%kjon)_")"  ;;%%Z1-T
+	I L[%kjof,M'[$A(%kjof) S M=M_$S(%MSG]"":"と",1:"")_"$C("_$A(%kjof)_")"  ;;%%Z1-T
+	S b=L,L=""
+	F p=1:1:$L(b) S c=$E(b,p) I (c'=%kjon)&(c'=%kjof) S L=L_c
+	Q
+	;;%%Z1-N ---

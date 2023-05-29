@@ -1,0 +1,216 @@
+ROUTINE %DASUCRE [Type=INT,LanguageMode=6]
+%DASUCRE	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I OPT'="R" D SCREEN
+	Q:%MSG]""
+	I OPT'="S" D REPORT
+	Q:%MSG]""
+KILLS	;
+	I %MSG="",$ZE'="" S %MSG=$ZE
+	K ACT1,ACT2,ACT3,ACT4,ACT5,ATT1,CNTDDN,COUNT,DESC,FIELD,FLAG
+	K FSTDDN,FSTFLD,HELP,HELPS,I,KEY,L,LASTDDN,LASTFLD,SECFLD,RPFOR
+	K LASTLIN,N,P,SDDES,SDGROUP,SNDFLD,STRD,STRF,TITLE,VAL1,%REF
+	Q
+SCREEN	;
+	N A,J,I
+	F I=1:1:4 S (STRD(I),STRF(I))="" F J=1:1:5 S A=I-1*5+J Q:'$D(SDCRE(A,"DDNM"))  S:SDCRE(A,"DDNM")'="" STRD(I)=STRD(I)_$S(STRD(I)'="":",",1:"")_SDCRE(A,"DDNM"),STRF(I)=STRF(I)_$S(STRF(I)'="":",",1:"")_SDCRE(A,"GNDUM1")
+	I STRF(1)'?.AN1",".ANP S %MSG="フィールドが不十分でスクリーンが作成できません。" Q  ;	;%%Z1-T
+	K ^DASD(SDNM) 
+TITLE	;
+	D FLDINIT
+	S FIELD="TITLE"
+	S DESC="スクリーン タイトル" ;	;%%Z1-Z
+	S P="1;20;;;C;"_TITLE
+	S ATT1="TALL ; BOLD"
+	D SAVFLD
+SAMESCN	;
+	D FLDINIT
+	S FIELD="SAMESCN"
+	S DESC="自スクリーンの呼び出し" ;	;%%Z1-Z
+	S ACT1="NXTSCN"
+	D SAVFLD
+EXIT	;
+	D FLDINIT
+	S FIELD="EXIT"
+	S DESC="終了フィールド" ;	;%%Z1-Z
+	S ACT1="KILL "_STRD(1)
+	I STRD(2)'="" S ACT2="KILL "_STRD(2)
+	E  G EXITX
+	I STRD(3)'="" S ACT3="KILL "_STRD(3)
+	E  G EXITX
+	I STRD(4)'="" S ACT4="KILL "_STRD(4)
+EXITX	D SAVFLD
+EVAL	;
+	D FLDINIT
+	S FIELD="EVAL"
+	S DESC="全フィールドの読みだし" ;	;%%Z1-Z
+	I FLAG("PRIMARY KEY")=1 S ACT1="EVAL "_$P(STRF(1),",",2,99)
+	I FLAG("PRIMARY KEY")=0 S ACT1="EVAL "_STRF(1)
+	I STRF(2)'="" S ACT2="EVAL "_STRF(2)
+	E  S ACT2="NXTFLD EQ" G EVALX
+	I STRF(3)'="" S ACT3="EVAL "_STRF(3)
+	E  S ACT3="NXTFLD EQ" G EVALX
+	I STRF(4)'="" S ACT4="EVAL "_STRF(4)_";"_" NXTFLD EQ"
+	E  S ACT4="NXTFLD EQ" G EVALX
+EVALX	D SAVFLD
+FILE	;
+	D FLDINIT
+	S FIELD="FILE"
+	I FLAG("PRIMARY KEY")=1 D
+	.S DESC="先頭（キーフィールド）以外の全フィールドのファイル" ;	;%%Z1-Z
+	.S ACT1="LOGON ; FILE "_$P(STRF(1),",",2,99)
+	.I STRF(2)'="" S ACT2="FILE "_STRF(2)
+	.E  S ACT2="LOGOFF ; NXTFLD SAMESCN" Q
+	.I STRF(3)'="" S ACT3="FILE "_STRF(3)
+	.E  S ACT3="LOGOFF ; NXTFLD SAMESCN" Q
+	.I STRF(4)'="" S ACT4="FILE "_STRF(4)_" ; LOGOFF ; NXTFLD SAMESCN"
+	.E  S ACT4="LOGOFF ; NXTFLD SAMESCN" Q
+	I FLAG("PRIMARY KEY")=0 D
+	.S DESC="キーのセットおよび全フィールドのファイル" ;	;%%Z1-Z
+	.S ACT1="LOGON ; COUNT "_CNTDDN_":"_FLAG("KEY")_"="""" ; SET "_FLAG("KEY")_"="_CNTDDN_":"_FLAG("KEY")_"="""""
+	.S ACT2="FILE "_STRF(1)
+	.I STRF(2)'="" S ACT3="FILE "_STRF(2)
+	.E  S ACT3="LOGOFF ; NXTFLD SAMESCN" Q
+	.I STRF(3)'="" S ACT4="FILE "_STRF(3)
+	.E  S ACT4="LOGOFF ; NXTFLD SAMESCN" Q
+	.I STRF(4)'="" S ACT5="FILE "_STRF(4)_" ; LOGOFF ; NXTFLD SAMESCN"
+	.E  S ACT5="LOGOFF ; NXTFLD SAMESCN" Q
+FILEX	D SAVFLD
+EQ	;
+	D FLDINIT
+	S FIELD="EQ"
+	S DESC="修正 および 終了フィールド" ;	;%%Z1-Z
+	S P="23;40;1;;C;修正(E), 終了(Q) : " ;	;%%Z1-Z
+	S ACT1="EXIT SEQ ; NXTFLD SAMESCN:%RES=""Q"""
+	I FLAG("PRIMARY KEY") S ACT2="NXTFLD "_SDCRE($P(SDCRE(1),";",1),"GNDUM1")
+	E  S ACT2="NXTFLD EDIT"
+	S ATT1="EXIT EXIT ; DEFAULT ""E"" ; REQUIRED ; DEMAND"
+	S HELP="E（データ修正）, Q（スクリーンクリア）" ;	;%%Z1-Z
+	S VAL1="TABLE E,Q"
+	D SAVFLD
+	S L="",COUNT=0
+FIELDS	;
+	D FLDINIT
+	S L=$O(SDCRE(L))
+	S N=$O(SDCRE(L))
+	S COUNT=COUNT+1
+	S FIELD=SDCRE(L,"GNDUM1")
+	S DESC=""
+	S:COUNT=1 FSTFLD=FIELD,FSTDDN=SDCRE(L,"DDNM")
+	S:COUNT=2 SNDFLD=FIELD
+	S P=L+3_";1;;"_SDCRE(L,"DDNM")_";L;"
+	S ACT1=$S(COUNT=2:"EXIT SEQ ; ",1:"")_"NXTFLD "_SDCRE(N,"GNDUM1")
+	D SAVFLD
+	I $O(SDCRE(N))'="" G FIELDS
+	S LASTFLD=SDCRE(L,"GNDUM1"),LASTDDN=SDCRE(L,"DDNM")
+	S LASTLIN=L
+FSTFLD	;
+	D FLDINIT
+	S FIELD=FSTFLD
+	S DESC="先頭フィールド" ;	;%%Z1-Z
+	S P="4;1;;"_FSTDDN_";L;"
+	S ACT1="EXIT SAMESCN ; NXTFLD EXIT:%RES="""""
+	S ACT2="NXTFLD EVAL:%FND"
+	S L="" F I=1,2 S L=$O(SDCRE(L))
+	S ACT3="NXTFLD "_SDCRE(L,"GNDUM1")
+	D SAVFLD
+EDIT	;
+	D FLDINIT
+	S FIELD="EDIT"
+	S DESC="修正時用 "_FSTFLD_" フィールド " ;	;%%Z1-Z
+	S P="4;1;;"_FSTDDN_";L;"
+	S ATT1="REQUIRED"
+	S L="" F I=1,2 S L=$O(SDCRE(L))
+	S ACT1="NXTFLD "_SDCRE(L,"GNDUM1")
+	S ACT2="! このフィールドでは’ＬＯＯＫＵＰ’を使用しないでください！" ;	;%%Z1-Z
+	S ACT3="! データフォーマットのチェックだけを行ってください。" ;	;%%Z1-Z
+	D SAVFLD
+LASTFLD	;
+	D FLDINIT
+	S FIELD=LASTFLD
+	S DESC="最終フィールド" ;	;%%Z1-Z
+	S P=LASTLIN+3_";1;;"_LASTDDN_";L;"
+	S ACT1="NXTFLD SEQ"
+	D SAVFLD
+SEQ	;
+	D FLDINIT
+	S FIELD="SEQ"
+	S DESC="保存，修正 および 終了フィールド" ;	;%%Z1-Z
+	S P="23;40;1;;C;保存(S), 修正(E) または 終了(Q) : " ;	;%%Z1-Z
+	S ACT1="EXIT SEQ"
+	S ACT2="NXTFLD FILE:%RES=""S"""
+	I FLAG("PRIMARY KEY") S ACT3="NXTFLD "_SNDFLD_":%RES=""E"""
+	E  S ACT3="NXTFLD EDIT:%RES=""E"""
+	S ACT4="NXTFLD SAMESCN:%RES=""Q"""
+	S ATT1="DEMAND ; REQUIRED ; EXIT EXIT"
+	S HELP="S（データ保存）, E（データ修正), Q（スクリーンクリア）" ;	;%%Z1-Z
+	S VAL1="TABLE S,E,Q"
+	D SAVFLD
+SAVESCN	;
+	S ^DASD(SDNM,"A")=SDGROUP_";"_SDDES_";"_"N"
+	S ^DASD(SDNM,"SCR")="DATA;1;23"
+	S ^DASD(SDNM,"D","S","AT",1)="EXIT EXIT"
+	S ^DASD(SDNM,"D","S","AC",1)="NXTFLD "_SDCRE(1,"GNDUM1")
+	S ^DASD(SDNM,"D","S","AC",2)="! フィールド定義の省略値が正しいかどうか" ;	;%%Z1-Z
+	S ^DASD(SDNM,"D","S","AC",3)="! チェックしてください。" ;	;%%Z1-Z
+	Q
+SAVFLD	;
+	S ^DASD(SDNM,"D","F",FIELD,"P")=P
+	S ^DASD(SDNM,"D","F",FIELD,"D")=DESC
+	S %FD="ACT" F I=1:1:5 S:@(%FD_I)'="" ^DASD(SDNM,"D","F",FIELD,"AC",I)=@(%FD_I)
+	S ^DASD(SDNM,"D","F",FIELD,"AT",1)=ATT1
+	S ^DASD(SDNM,"D","F",FIELD,"VA",1)=VAL1
+	S ^DASD(SDNM,"D","F",FIELD,"H","T")=HELP
+	S ^DASD(SDNM,"D","F",FIELD,"H","S")=HELPS
+	Q
+FLDINIT	;
+	S P=";;;;;",(ACT1,ACT2,ACT3,ACT4,ACT5,ATT1,HELP,HELPS,VAL1)=""
+	Q
+KEY	;
+	S FLAG("KEY")=SDCRE($O(SDCRE("")),"DDNM")
+	S REF=$P(^DADD(FLAG("KEY"),"REF"),";") Q:REF=""
+	S (QUOTED,PAREN,FLAG("PRIMARY KEY"))=0
+	F I=$L(REF):-1:1 S CHAR=$E(REF,I) S:CHAR="""" QUOTED=QUOTED+1#2 S:CHAR=")"&'QUOTED PAREN=PAREN+1 S:CHAR="("&'QUOTED PAREN=PAREN-1 Q:PAREN=0  I 'QUOTED,"*#"[CHAR S FLAG("PRIMARY KEY")=1 Q
+	I FLAG("PRIMARY KEY")=0 D
+	.S KEY="",(QUOTED,PAREN)=0
+	.F I=$L(REF):-1:1 S CHAR=$E(REF,I) S:CHAR="""" QUOTED=QUOTED+1#2 S:CHAR=")"&'QUOTED PAREN=PAREN+1 S:CHAR="("&'QUOTED PAREN=PAREN-1 Q:PAREN=0  S:('QUOTED)&(CHAR?1AN) KEY=CHAR_KEY Q:KEY'=""&CHAR=","
+	.S FLAG("KEY")=KEY
+	K QUOTED,PAREN,CHAR,REF
+	Q
+REPORT	;
+	K ^DARD(RPNM)
+	S ^DARD(RPNM,"A")=SDGROUP_";"_SDDES_";N"
+	S ^DARD(RPNM,"C","FW",1)=FLAG("KEY")_";"
+	S FSTFLD=SDCRE(2,"DDNM")
+	S SECFLD=SDCRE(3,"DDNM")
+	S ^DARD(RPNM,"C","S")=""
+	S ^DARD(RPNM,"H")=";;;;;"
+	S I=1
+	I 'FLAG("PRIMARY KEY") S ^DARD(RPNM,"P","D","G",I,"I")="$SECTION",^("E")=";",I=I+1
+	S L="" F I=I:1 S L=$O(SDCRE(L)) Q:L=""  S DDNM=SDCRE(L,"DDNM") Q:DDNM=""  D
+	.     S ^DARD(RPNM,"P","D","G",I,"E")="10;"
+	.     S ^DARD(RPNM,"P","D","G",I,"I")=DDNM_"/PROMPT",I=I+1
+	.     S ^DARD(RPNM,"P","D","G",I,"E")=";"
+	.     S ^DARD(RPNM,"P","D","G",I,"I")="$LINE"
+	I 'FLAG("PRIMARY KEY") S ^DARD(RPNM,"P","D","G",I,"I")="$ENDSEC",^DARD(RPNM,"P","D","G",I,"E")=";"
+	S ^DARD(RPNM,"P","H0","G",1,"E")="40;C"
+	S ^DARD(RPNM,"P","H0","G",1,"I")=""""_TITLE_""""
+	S ^DARD(RPNM,"P","H0","G",2,"E")=";"
+	S ^DARD(RPNM,"P","H0","G",2,"I")="$LINE"
+	S ^DARD(RPNM,"P","H0","G",3,"E")="75;R"
+	S ^DARD(RPNM,"P","H0","G",3,"I")="$PAGEN"
+	S ^DARD(RPNM,"P","H0","G",4,"E")=";"
+	S ^DARD(RPNM,"P","H0","G",4,"I")="$LINE"
+	S ^DARD(RPNM,"P","H0","G",5,"E")="5;L"
+	S ^DARD(RPNM,"P","H0","G",5,"I")="$DATE"
+	S ^DARD(RPNM,"P","H0","G",6,"E")="75;R"
+	S ^DARD(RPNM,"P","H0","G",6,"I")="$TIME"
+	S ^DARD(RPNM,"P","H0","G",7,"E")=";"
+	S ^DARD(RPNM,"P","H0","G",7,"I")="$LINE"
+	S ^DARD(RPNM,"P","H0","G",8,"E")="40;C"
+	S ^DARD(RPNM,"P","H0","G",8,"I")=""""_SDDES_""""
+	S ^DARD(RPNM,"P","H0","G",9,"E")=";"
+	S ^DARD(RPNM,"P","H0","G",9,"I")="$LINE(""_"",5,75)"
+	S ^DARD(RPNM,"REP")="80;62"
+	Q

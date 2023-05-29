@@ -1,0 +1,46 @@
+ROUTINE %DAS [Type=INT,LanguageMode=6]
+%DAS	;JEB/DAH,,UTILITY,DASL;4-Mar-92;V6.1 Programmer Entry Point to DASL
+	;DASL;Y;UTILITY
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	S $ZT="RESET^%DASL",$ZE=""
+	;
+READ	; Programmer Entry Point
+	; Check data base rev level run ^%DACVRT to update
+	;I $P($ZC(%UCI),",",1,2)="MGR,MGR",$ZC(%RTNTYPE)'="1,1" W !,"DASL should not be run in the managers UCI" Q
+	I $GET(^DASY("CONVERT"))'="61AJ" W !,"データベースが正しいリビジョンではありません。DO ^%DACVRT を実行して下さい。" Q  ;;%%Z3-B;%%Z3-T
+	I '$D(%WRITE) S %WRITE=1 ; Data Base has Write Access
+	;U 0:PACK W $C(27),"[2J"  ;;%%Z3-ULTRIX-ZIN
+AGN	;**TM**; U 0:(NOESCAPE:ECHO:CONVERT:TERM="":CTRAP="")
+	;**TM**; USEコマンド変更
+	U 0:(ECHO:CONVERT)
+	;U 0:EXINPUT=(NAME="ZIN":PARAM="DASL")  ;;%%Z1-E
+	U 0 ;;%%Z1-E
+	;W $C(27),"[3;1H",$C(27),"[K"  ;;%%Z3-ULTRIX-ZIN
+	;U 0:EXINPUT=ENABLE  ;;%%Z1-E
+	R "Screen: ",%:300
+	;U 0:EXINPUT=NOENABLE  ;;%%Z1-E
+	U 0:(NOCONVERT)
+	;**TM**
+	;I %="" W $C(27),"[2J" U 0:(NOPACK:NOEXINPUT) K %,%PPV,%PDV,%PGMR,%DASD,%USR Q  ;;%%Z1-E
+	I %="" W $C(27),"[2J" U 0:(NOPACK) K %,%PPV,%PDV,%PGMR,%DASD,%USR Q  ;;%%Z1-E
+	;  Call DASL or APPLICATION compiled screen.
+	I %'="*",%'?1U.13UN,%'?1"%"1U.13UN W $C(7),$C(27),"[23;1H",$J("Enter a screen name or * a list.",80) G AGN
+	I $E(%)="%",'$D(^%DASD($E(%,2,99))) W $C(7),$C(27),"[23;1H",$J("Unknown DASL screen: "_%_".",80) G AGN
+	S %DASD="^"_$S($E(%)="%":"%",1:"")_"DASD"
+	S SDNM=$S($E(%)="%":$E(%,2,99),1:%)
+	S %OP=99,%OP(99)="Main Menu"
+	I $D(@%DASD@(SDNM)) S %NAME=% K SDNM D PROG^%DASL,SCREEN^%DALOGIN G READ
+	;  Perform a DASL Lookup
+	D PROG^%DASL,INIT^%DALOGIN S (%INP,%OLD,%W)=""
+	S %CD="PL",%PR="Screen Name: ",%XL=%DASD_";KEY;",%XT="         Name               Type      Description",%XD="SDNM",%XA=""
+	S %XL(1)="??28,$P("_%DASD_"(SDNM,""SCR""),"";"")"
+	S %XL(2)="??38,$P("_%DASD_"(SDNM,""A""),"";"",2)"
+	S (%RES,%REST)=SDNM D ^%DASDLU K SDNM I %EX G EXIT^%DALOGIN
+	I %MSG]"" W $C(7),%E,"[23;1H",$J("",80-$ZWidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,80))  ;;%%Z1-G
+	I %RES=""!(%MSG]"") D EXIT^%DALOGIN G AGN
+	S %NAME=$S(%DASD["%":"%",1:"")_%RES K %DASD D SCREEN^%DALOGIN
+	G READ
+	;

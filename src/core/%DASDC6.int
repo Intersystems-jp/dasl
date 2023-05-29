@@ -1,0 +1,485 @@
+ROUTINE %DASDC6 [Type=INT,LanguageMode=6]
+%DASDC6	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+CSA	;
+	I DB W " ; *** Perform Screen Actions - CSA+1^%DASDC6",!
+	S (F,FLAG("TP"))=0,LR="W" D ACT
+	W "U" S CM="S",COM=""
+	I SC'=";" W " K ",$E(SCARY,1,$L(SCARY)-1) W:SCARY["^" ")"
+	K TMP S (FN,FLAG("$DATE"),FLAG("$TIME"))=0
+	F I=1:1 S FN=$O(F0(FN)) Q:FN=""  I '$D(SC(FN)) D INITD,INITVD:$S(FN(FN)="":1,$D(SM(FN_".V")):1,'$D(TMP(FN(FN))):1,1:0) S:FN(FN)]"" TMP(FN(FN))=""
+	S CM="S",FN="%"
+	F I=1:1 S FN=$O(FN(FN)) Q:$E(FN)'="%"  S %DDNM=FN(FN) I '$D(TMP(%DDNM)),$D(%DN(%DDNM,"EVAL")) S ARG=%DDNM_"=""""",TMP(%DDNM)="" D COM
+	W " Q",! S COM="" K TMP I SC'=";" D ^%DASDC7
+	G ^%DASDC3
+CFO	;
+	I DB W " ; *** Perform Option Actions - CFO+1^%DASDC6",!
+	S F=%SDON,LR=F_"OP" W LR D ACT
+	S %SDOPSN=$P(^DASD(%SDNM,"O","O",F,"D"),";",2)
+	I %SDOPSN]"" S %NAME=%SDOPSN D SCREEN^%DANAME S CM="G",ARG=%PROGRAM D COM,ENDL Q
+	W " Q",!
+	Q
+CFA	;
+	I DB W " ; *** Perform Field Actions - CFA+1^%DASDC6",!
+	;%%Z3-PATCH+
+	E  W " ;",!
+	;%%Z3-PATCH-
+ACT	;
+	K TMP S (AC,COM,C)="",(FLAG("LB"),FLAG("TP"))=0
+	F ACTLIN=1:1 Q:'$D(FC(F,ACTLIN))  F ACTION=2:1 S A=$P(FC(F,ACTLIN),"{",ACTION) Q:A=""  D ACT1
+	I %SDTYPE="DATA",$S(AC="":1,(",QT,NF,NS,RR,"'[(","_AC_",")):1,C]"":1,1:0) S CM="G",ARG="E" D COM
+	D ENDL
+	Q
+ACT1	;
+	S AC=$E(A,1,2),C=$E($P(A,"}"),3,999),A=$P(A,"}",2,99)
+	S (FLAG("$DATE"),FLAG("$TIME"))=0,WTLEN=150
+	D @AC
+	Q
+TT	;
+	S FLAG("TP")=FLAG("TP")+1
+	D LABEL S LB(F_".TP"_FLAG("TP")_"A")=LR_FLAG("LB")
+	D LABEL S LB(F_".TP"_FLAG("TP")_"B")=LR_FLAG("LB")
+	D LABEL S LB(F_".TP"_FLAG("TP")_"C")=LR_FLAG("LB")
+	S CM="D",ARG=LB(F_".TP"_FLAG("TP")_"B") D COM
+	S CM="G",ARG=LB(F_".TP"_FLAG("TP")_"C") D COM,ENDL
+	;**TM**; とりあえずZQ動作の変更; W LB(F_".TP"_FLAG("TP")_"A")," ZUABORT  I $ZE'[""TPABORT"" ZQ" S COM="@" D ENDL
+	W LB(F_".TP"_FLAG("TP")_"A")," ZUABORT  I $ZE'[""TPABORT"" ZQ 1 G @$ZT" S COM="@" D ENDL
+	S CM="S",ARG="$ZE=""""" D COM,ENDL
+	W LB(F_".TP"_FLAG("TP")_"B")
+	S CM="S:$ZULEVEL=0",ARG="$ZT="""_LB(F_".TP"_FLAG("TP")_"A")_"^"_%COMPNM_"""" D COM
+	S CM="ZUSTART"_$S(C="":"",1:":"_C),ARG=A D COM
+	Q
+TI	I 'FLAG("TP") S %MSG="フィールド'"_F_"'において TCOMMIT が TSTART によって処理されていません。" ZT %MSG  ;;%%Z3-T
+	S CM="ZUCOMMIT",ARG="" D COM
+	S CM="W"
+	I A="" S ARG="%E,""[24;1H"",$J("""_^%DAMSG(%FLANG,"TP")_""",%LL)" D COM
+	I $E(A,1,4)="MSG=" S ARG="%E,""[24;1H"",$J("_$P(A,"MSG=",2)_",%LL)" D COM
+	S CM="Q",ARG="" D COM,ENDL
+	W LB(F_".TP"_FLAG("TP")_"C")
+	S FLAG("TP")=FLAG("TP")-1
+	Q
+AS	;
+	I FLAG("TP") S %MSG="フィールド'"_F_"'での ASSIGN コマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S $ZT="ERRFLD^%DASDC6",FN=$P(A,"$"),DF=$P(A,"$",3,255)
+	I C]"" D CONDI 
+	D INITV:$P(A,"$",2)'="I",INITVI:$P(A,"$",2)="I" 
+	I $D(SC(FN)),FL(FN) D ASSC 
+	S LN=FN_".P",CM="D" D LG S ARG=LB D COM 
+	I C]"" D ENDL
+	Q
+ASSC	D SCVN,FLAGS 
+	S CM="S",ARG=SCARY_SPC_","""_VN_""")="_$S(FLAG("CV"):"%"_CV(FN)_"I",FLAG("TR"):"%INT",1:VN)
+	D COM I 'FLAG("CV"),'FLAG("TR") Q
+	S ARG=SCNAK_""""_VN_"i"")"
+	S ARG=$S(FLAG("DM")!FLAG("DS"):"$P("_ARG_",$C(1))",1:ARG)_"="_$S(FLAG("CV"):"%"_CV(FN)_"X",1:"%EXT")
+	D COM
+	Q
+CM	;
+	S COM="*" D ENDL
+	W " ;"_A
+	S COM="*" D ENDL
+	Q
+CN	;
+	D:C]"" CONDG S %DDNM=A,X=%DN(%DDNM,"R"),%DDREF=$P(X,";")
+	S %DDPIECE=%DN(%DDNM,"PI"),%DDXTRCT=$P(X,";",3)
+	I %DDXTRCT]"" S %MSG="DDN'"_%DDNM_"'ではCOUNTコマンドは使用できません。EXTRACTは許されていません。" ZT %MSG  ;;%%Z1-T
+	S CM="L",ARG="+"_%DDREF D COM
+	S CM="D",ARG=NEV(%DDREF) D COM S CM="S"
+	I '%DDPIECE S ARG="("_%DDREF_","_%DDNM_")=%T+1" D COM G CNX
+	S AA="%T" D CN1 S ARG=%DDNM_"="_X_"+1" D COM
+	S AA=%DDREF D CN1 S ARG=X_"="_%DDNM D COM
+CNX	S CM="L",ARG=$S(%DDREF'="":"-",1:"")_%DDREF D COM I C]"" D CONDT
+	Q
+CN1	;
+	S X="$P("_AA_","""_$S(%DDPIECE?.N:FLAG("DELIM"),1:$E(%DDPIECE,$L(%DDPIECE)))_"""" S:+%DDPIECE>1 X=X_","_(+%DDPIECE) S X=X_")"
+	Q
+CO	I FLAG("TP") S %MSG="フィールド'"_F_"'においてCONDバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S CM="S",ARG="%FND=("_A_")" D COM 
+	Q
+DN	I FLAG("TP") S %MSG="フィールド'"_F_"'においてDATENバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D QS S CM="S",ARG="%="""_A_"""" D COM 
+	S CM="D",ARG="VDN^%DAUDTTM" D COM
+	G DTX
+DT	I FLAG("TP") S %MSG="フィールド'"_F_"'においてDATEバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D QS S CM="S",ARG="%="""_A_"""" D COM 
+	S CM="D",ARG="VD^%DAUDTTM" D COM
+DTX	S CM="S",ARG="%FND=%MSG=""""" D COM
+	Q
+DO	;
+DP	I A["^" S CM="D",ARG=A_$S(C="":"",1:":"_C) D COM Q 
+	I C]"" D ENDL W " I ",C
+	D RUNSCN I AC="DO" S CM="D",ARG="Q" D COM
+	I C]"" D ENDL
+	Q
+DS	I FLAG("TP") S %MSG="フィールド'"_F_"'においてDISPLAYコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I C]"" D CONDB 
+	S AT="",FLAG("NKD")=0,FLAG("BELL")=0,AA=$P(A,"$",2,99),A=$P(A,"$",1)
+	S:A="" A=F 
+	;%%Z3-COLOR+
+	;I AA]"" F J=1:1:$L(AA,"$") S X=$P(AA,"$",J) S:X="BE" FLAG("BELL")=1 I X'="BE" S AT=AT_";"_+$P("NO0BO1BL5UN4RE7",X,2)
+	I AA]"" F J=1:1:$L(AA,"$") S X=$P(AA,"$",J) S:X="BE" FLAG("BELL")=1 I X'="BE" D
+	. I $E(X,1,2)="FC"!($E(X,1,2)="BC") S AT=AT_";"_+$G(^%DASY("GRAPHIC",$P(X,"=",2)_$E(X))) Q
+	. S AT=AT_";"_+$P("NO0BO1BL5UN4RE7",X,2)
+	;%%Z3-COLOR-
+	S AT=$E(AT,2,255) F J=1:1:$L(A,":") S FN=$P(A,":",J) D DS1
+	I FLAG("BELL") S CM="W",ARG="$C(7)" D COM
+	I C]"" D CONDE
+	Q
+DS1	;
+	S SM="",CM="S",FLAG("SC")=($D(SC(FN))&FL(FN)),FLAG("DM")=$D(DM(FN))
+	I AT]"" S VN=FN_".A" D SG S ARG=SM_"=%E_""["_AT_"m""" D COM
+	I FLAG("DM") S ARG=SM(FN_".F")_"=1" D COM
+	D:FLAG("SC") DSSC S LN=FN_".P",CM="D" D LG S ARG=LB D COM
+	Q
+DSSC	;
+	D SCVN S ARG="$P("_$S('FLAG("NKD"):SCARY_SPC_",",1:SCNAK)
+	S FLAG("NKD")=1,ARG=ARG_""""_VN_"i""),$C(1)"
+	S:FLAG("DM") ARG=ARG_",2" S:AT]"" ARG=ARG_",3"
+	S ARG=ARG_")=1" S:AT]"" ARG=ARG_"_$C(1)_"_SM D COM
+	Q
+ER	I FLAG("TP") S %MSG="フィールド'"_F_"'においてERRORコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	Q:'BATCH  I C]"" D CONDB 
+	S $ZT="ERRFLD^%DASDC6",FLAG("NKD")=0,X="W:"
+	S:A="" A=F 
+	F Q=1:1:$L(A,":") S FN=$P(A,":",Q),CM=X_SM(FN_".F") F K=0:1:FT(FN)["{TL" S ARG=EQ_"["_$S(+F0(FN)=+SC:""","_+F0(FN)_"+"_SP_"-"_SO_",""",1:F0(FN)+K)_";"_$P(F0(FN),";",2)_"H"",$J("""","_(FL(FN)+$ZWidth(FP(FN)))_")" D COM
+	S CM="S",ARG="" 
+	F Q=1:1:$L(A,":") S FN=$P(A,":",Q),ARG=ARG_","_SM(FN_".F")
+	S ARG=$E(ARG,2,255) S:ARG["," ARG="("_ARG_")" S ARG=ARG_"=0" D COM
+	F Q=1:1:$L(A,":") S FN=$P(A,":",Q) D INITA,INITVD,INITS:($D(SC(FN))&(FL(FN)))
+	I C]"" D CONDE
+	Q
+ES	G EVALS^%DASDC7
+EV	G EVAL^%DASDC8
+EX	;
+	S:A="" A=F 
+	S LN=A_".R" D LG S CM="S"_$S(C="":"",1:":"_C),ARG=SMS_"(0)="""_LB_""""
+	D COM I C]"" S COM=""
+	Q
+FI	;
+	G ^%DASDC10
+FS	G FILES^%DASDC7
+IN	I FLAG("TP") S %MSG="フィールド'"_F_"'においてINTEGERバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S SUB("VINT")="",CM="S" 
+	S K=$P(A,":",2) S:K="" K=0 S ARG="%X="_K D COM
+	S K=$P(A,":",2) S:K="" K=1E25 S ARG="%Y="_K D COM
+	S CM="D",ARG="N" D COM
+FND	S CM="S",ARG="%FND=$T" D COM
+	Q
+KL	;
+	G @$S(A["$DDN":"KLDDN",A["$XREF":"KLXREF",A["$KEY":"KLKEY",1:"KLOCAL")
+	Q
+KLOCAL	S CM="K"_$S(C="":"",1:":"_C),ARG=A D COM S:C]"" COM="" Q
+KLDDN	S (ARG,O)="",A=$P(A,"$DDN",1)
+KLOOP	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	F  S O=$O(%DN(O)) Q:O=""  S:":"_A_":"'[(":"_O_":") ARG=$S(ARG'="":ARG_","_O,1:O) Q:($L(ARG)>140)
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	I ARG'="" S CM="K"_$S(C="":"",1:":"_C) D COM I O'="" S ARG="" G KLOOP
+	S:C]"" COM=""
+	Q
+KLKEY	S (ARG,O)="",A=$P(A,"$KEY",1)
+	F O=1:1:$L(A,":") S T=$P(^DADD($P(A,":",O),"REF"),";",1),T=$E(T,1,$L(T)-2)_$P(A,":",O)_")",ARG=ARG_","_T
+	S ARG=$E(ARG,2,255)
+	S CM="K"_$S(C="":"",1:":"_C) D COM
+	S:C]"" COM=""
+	Q
+KLXREF	S (ARG,O)="",A=$P(A,"$XREF",1)
+	F O=1:1:$L(A,":") S NODE(NEV($P(%DN($P(A,":",O),"R"),";",1)),$P(A,":",O))=""
+	S NODE=""
+	F  S NODE=$O(NODE(NODE)) Q:NODE=""  S CM="D",ARG=NODE D COM S A="" F  S A=$O(NODE(NODE,A)) Q:A=""  D  
+	.S %DDPIECE=%DN(A,"PI")
+	.S %DDXTRCT=$P(%DN(A,"R"),";",3)
+	.S %DDXREF=$P(%DN(A,"R"),";",4)
+	.I %DDXREF["(" S %DDXREF=$E(%DDXREF,1,$L(%DDXREF)-1)_","
+	.E  I %DDXREF'="" S %DDXREF=%DDXREF_"("
+	.S %DDXTYP=$P(%DN(A,"R"),";",5)
+	.S %DDXKEY=$P(%DN(A,"R"),";",6)
+	.S %DDTRX=%DN(A,"XT") 
+	.S T=A,A="%" 
+	.D EVSUB^%DASDC3
+	.S A=T
+	. 
+	. 
+	. 
+	.S REF=$S(%DDXTYP="FIACR":"D",%DDXTYP="KWIC":"FIKWIC",%DDXTYP="NUMERIC":"FINUMER",%DDXTYP="NAME":"FINAME",%DDXTYP="JNAME":"FIJNAME",%DDXTYP="STRING":"FISTRIN",%DDXTYP="TRAN1":"FITRAN1",%DDXTYP="TRAN2":"FITRAN2")_"^%DASDC3"  ;;%%Z1-M
+	.D @REF
+	.S COM=""
+	K NODE
+	Q
+LD	I FLAG("TP") S %MSG="フィールド'"_F_"'でのLOGDMPコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I '$D(BATV) S %MSG="フィールド'"_F_"'でのLOGDMPコマンドは，non-batchスクリーンで許されていません。" ZT %MSG  ;;%%Z3-T
+	D ENDL W " I " W:C]"" C,"," W "%LOGFILE]"""" F ",BATV,"=1:1:",BATV," U %LOGFILE:KANJI W ",BATV,"(",BATV,"),! U 0",!  ;;%%Z1-A
+	Q
+LF	S CM="S",ARG="^%JOURNAL=""0;"_%SDNM_","_F_";""_"_"%OPN" D COM 
+	Q
+LK	;
+	S CM="L"_$S(C="":"",1:":"_C),ARG="+"_A D COM
+	I A[":" W " S %FND=$T" S COM="*" 
+	Q
+LN	S CM="S",ARG="^%JOURNAL=""1;"_%SDNM_","_F_";""_"_"%OPN" D COM 
+	Q
+LO	I FLAG("TP") S %MSG="フィールド'"_F_"'でのLOGコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I '$D(BATV) S %MSG="フィールド'"_F_"'でのLOGコマンドは，non-batchスクリーンで許されていません。" ZT %MSG  ;;%%Z3-T
+	S CM="S" 
+	S ARG=BATV_"="_BATV_"+1,"_BATV_"("_BATV_")="_A S:C]"" CM="S:"_C D COM
+	Q
+LU	I FLAG("TP") S %MSG="フィールド'"_F_"'でのLOOKUPバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D LUSUB^%DASDC4 S CM="D",ARG="Q" D COM 
+	Q
+MU	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(A)>WTLEN W !
+	;**TM**;W " "_A S COM="*" S %KJ=$ZC(KJON) D ENDL  ;;%%Z1-A
+	W " "_A S COM="*" D ENDL  ;;%%Z1-A
+	Q
+NB	S CM="S:"_SMS_">1"_$S(C]"":"&("_C_")",1:"") 
+	S ARG=SMS_"(1)="_SMS_"("_SMS_"-1),"_SMS_"=2" D COM
+	Q
+NF	;
+	I FLAG("TP") S %MSG="フィールド'"_F_"'でのNXTFLDコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S:A="" A=F 
+	S LN=A_".R" D LG S CM="G",ARG=LB D COM W:C]"" ":",C
+	Q
+NM	I FLAG("TP") S %MSG="フィールド'"_F_"'でのNAMEバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S SUB("VNAME")="",CM="D",ARG="A" D COM 
+	G FND
+JN	;;%%Z1-M +++
+	S SUB("VJNAME")="",CM="D",ARG="JA" D COM
+	G FND
+	;;%%Z1-M ---
+NS	;
+	I FLAG("TP") S %MSG="フィールド'"_F_"'でのNXTSCNコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I A=%SDNM!(A="") S CM="G",ARG="S"_$S(C="":"",1:":"_C) D COM Q
+	I C]"" S COM="*" D ENDL W " I ",C  ;;%%Z3-DASLV61_BUGS-21
+	S CM="D",ARG="E" D COM,RUNSCN,ENDL:C]""
+	Q
+NU	I FLAG("TP") S %MSG="フィールド'"_F_"'でのNUMERICコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S SUB("VNUM")="",CM="S" 
+	S K=$P(A,":",1) S:K="" K=0 S ARG="%X="_K D COM
+	S K=$P(A,":",2) S:K="" K=1E25 S ARG="%Y="_K D COM
+	S J=$P(A,":",3) S:J="" J=18 S ARG="%T="_J D COM
+	G FND
+PA	I FLAG("TP") S %MSG="フィールド'"_F_"'でのPATTERNバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S CM="S",ARG="%FND=%RES?"_A D COM 
+	Q
+PU	;
+	I FLAG("TP") S %MSG="フィールド'"_F_"'でのポップ アップ スクリーンの呼び出しは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I C]"" D ENDL W " I ",C
+	S CM="S"
+	S ARG="%POPA="
+	F Q=2:1:4 S J=$P(A,";",Q) D
+	.I J=""!(J?.N) S ARG=ARG_$S(Q=2:"""",1:"")_J_";"
+	.E  S ARG=ARG_$S(Q=2:"",1:"""_")_J_"_"";"
+	S POPF=$P(A,";",5),ARG=ARG_$S($E(SAT)="l":80,1:132)_";"_POPF_"""" D COM
+	S A=$P(A,";") D RUNSCN 
+	;W $S(POPF'["NP":",Q",1:" D:'%FND Q") W:$X=0 !
+	S CM=$S(POPF'["NP":"D",1:"D:'%FND"),ARG="Q" D COM ;	;%%Patch Seq.J006
+	I C]"" D ENDL ;	;%%Patch Seq.J007
+	S FLAG("POPUP")=""
+	K POPF
+	Q
+QT	;
+	I FLAG("TP") S %MSG="フィールド'"_F_"'でのQUITコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S CM="G",ARG="E"_$S(C="":"",1:":"_C) D COM
+	Q
+RP	I FLAG("TP") S %MSG="フィールド'"_F_"'でのREPAINTコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S FLAG("REPAINT")=1,CM="D",ARG="Q0"_$S(C="":"",1:":"_C) D COM 
+	Q
+RS	I FLAG("TP") S %MSG="フィールド'"_F_"'でのRESETコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S:A="" A=F 
+	S FLAG("NKD")=0 D CONDB:C]""
+	F Q=1:1:$L(A,":") S FN=$P(A,":",Q) D INITA,INITVD,INITS:($D(SC(FN))&(FL(FN)))
+	D REPAINT I C]"" D CONDE
+	Q
+RR	I FLAG("TP") S %MSG="フィールド'"_F_"'でのERRORコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I C]"" S WTLEN=255 D ENDL W " I ",C 
+	S $ZT="ERRFLD^%DASDC6",CM="S",ARG="%F=0,%MSG="_A D COM
+	S FN=F I 'FL(FN) S CM="D",ARG="M" D COM W:BATCH'=1 " S %F=33 G F" G RRX
+	S ARG=SMS_"="_SMS_"-1" D COM S DF="%OLD" D INITV I $D(SC(F)) D RRSC
+	W " D J1" I BATCH'=1 W " S %F=33 G F"
+	E  W ",",LP W " G ",LR 
+RRX	D ENDL S WTLEN=150
+	Q
+RRSC	;
+	D SCVN,FLAGS S CM="S:%OLD'=%RES",ARG=SCARY_SPC_","""_VN_""")="
+	S ARG=ARG_$S(FLAG("CV"):"%"_CV(FN)_"I",FLAG("TR"):"%INT",1:"%OLD")
+	D COM I 'FLAG("CV"),'FLAG("TR") Q
+	S ARG=SCNAK_""""_VN_"i"")"
+	S ARG=$S(FLAG("DM")!FLAG("DS"):"$P("_ARG_",$C(1))",1:ARG)_"="_$S(FLAG("CV"):"%"_CV(FN)_"X",1:"%EXT") D COM
+	Q
+SC	;
+	I FLAG("TP") S %MSG="フィールド'"_F_"'でのSCROLLコマンドは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	I SC=";" S %MSG="フィールド'"_F_"'でのSCROLLコマンドの使用が不適当です。" ZT %MSG
+	I C]"" D ENDL,LABEL S CM="G",ARG=LR_FLAG("LB")_":'("_C_")" D COM
+	F J=2:1:$L(A,"$") D @("SC"_$P(A,"$",J))
+	I C]"" D ENDL W LR,FLAG("LB")," ;",!
+	Q
+SCBA	S SUB("SCROLLB")="",CM="D",ARG="XU:"_SO_">1" D COM 
+	Q
+SCDE	S CM="D",ARG="XD" D COM 
+	Q
+SCFI	S CM="D",ARG="SF" D COM 
+	Q
+SCFO	S SUB("SCROLLF")="",CM="D" 
+	S ARG="XF:"_SO_"+"_SN_"<"_SL D COM
+	Q
+SCRS	I SCATR["$NR" S CM="D",ARG="SS:"_SP_"'="_SO D COM 
+	Q
+SCIND	S CM="S",ARG="%F=0" D COM S CM="D",ARG="XM" D COM 
+	S X=",",FN="" F K=0:0 S FN=$O(SC(FN)) Q:FN=""  I FL(FN) S X=X_LB(FN_".R")_","
+	W " F ",SMS,"=1:1:",SMS,$S(FL(F):"",1:"-1")," Q:""",X,"""[("",""_",SMS,"(",SMS,")_"","")",! S COM=""
+	Q
+SCINB	;
+	S CM="S",ARG=SMS_"="_SMS_"-1" D COM S CM="D",ARG="XMB" D COM
+	S X=",",FN="" F K=0:0 S FN=$O(SC(FN)) Q:FN=""  I FL(FN) S X=X_LB(FN_".R")_","
+	W " F ",SMS,"=1:1:",SMS,$S(FL(F):"",1:"-1")," Q:""",X,"""[("",""_",SMS,"(",SMS,")_"","")",! S COM=""
+	Q
+SCINS	S CM="D",ARG="XI" D COM 
+	Q
+ST	S CM="S"_$S(C="":"",1:":"_C),ARG=A 
+	S:$E(A,$L(A))="=" ARG=ARG_"%RES" D COM S:C]"" COM="*"
+	Q
+TB	I FLAG("TP") S %MSG="フィールド'"_F_"'でのTABLEバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D TSUB S SUB("VTABLE")="",CM="D",ARG="T" D COM 
+	G FND
+TS	I FLAG("TP") S %MSG="フィールド'"_F_"'でのTABLEMバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D TSUB S SUB("VTABLEM")="",CM="D",ARG="T" D COM 
+	G FND
+TC	I FLAG("TP") S %MSG="フィールド'"_F_"'でのTABLEXバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D TSUB S SUB("VTABLEX")="",CM="D",ARG="H" D COM 
+	G FND
+TSUB	S CM="S" I A["^" S ARG="%="",""_"_A_"_"","""
+	E  S ARG="%="","_A_","""
+	D COM
+	Q
+TM	I FLAG("TP") S %MSG="フィールド'"_F_"'でのTIMEバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	D QS S CM="S",ARG="%="""_A_"""" D COM 
+	S CM="D",ARG="VT^%DAUDTTM" D COM
+	G DTX
+UL	;
+	S CM="L"_$S(C="":"",1:":"_C),ARG=$S(A'="":"-("_A_")",1:"") D COM  ;;%%Z3-DASLV61_BUGS-29
+	Q
+WT	S CM="H"_$S(C="":"",1:":"_C),ARG=A D COM 
+	Q
+XE	S CM="X",ARG=A_$S(C="":"",1:":"_C) D COM 
+	Q
+YN	I FLAG("TP") S %MSG="フィールド'"_F_"'でのLOGICALバリデーションは，トランザクションの中で許されていません。" ZT %MSG  ;;%%Z3-T
+	S SUB("VYN")="",CM="D",ARG="L" D COM 
+	G FND
+ZZ	S SUB(A)="",CM="D",ARG=A_$S(C="":"",1:":"_C) D COM 
+	Q
+REPAINT	;
+	K TMP F Q=1:1:$L(A,":") S FN=$P(A,":",Q) I FN'["%" S U=+F0(FN),V=$P(F0(FN),";",2) S:V="" %MSG=1 Q:V=""  S TMP(U,V)=$S($D(TMP(U,V)):TMP(U,V)_",",1:"")_LB(FN_".P")
+	I %MSG=1 S %MSG="アクションフィールド'"_FN_"'はフィールド'"_F_"'のRESETコマンドの引数としては不適当です。" ZT %MSG  ;;%%Z1-T
+	I $D(TMP) W $$USE^%DAIO(0,"PACK")
+	S CM="D" F U=0:0 S U=$O(TMP(U)) Q:U=""  F V=0:0 S V=$O(TMP(U,V)) Q:V=""  S ARG=TMP(U,V) D COM
+	I $D(TMP) W $$USE^%DAIO(0,"NOPACK") S COM=""
+	Q
+RUNSCN	;
+	S %NAME=A D SCREEN^%DANAME S CM=$S(AC="NS":"G",1:"D"),ARG=%PROGRAM D COM
+	Q
+INITD	;
+	I $D(DM(FN)) S CM="S",ARG=SM(FN_".F")_"="_(FT(FN)'["{DM") D COM
+INITA	;
+	Q:'$D(DS(FN))  S AT=""
+	F K=1,4,5,7 S J=$P("{BO,,,{UN,{BL,,{RV",",",K) I FT(FN)[J S AT=AT_";"_K
+	S CM="S",ARG=SM(FN_".A")_"=" D COM
+	I 'FL(FN) W "%E_""[",$E(AT,2,255),"m"""
+	E  W """"""
+	Q
+INITVI	S FLAG("/INT")=1 
+	G INITV2
+INITVD	;
+	S $ZT="ERRFLD^%DASDC6" Q:'FL(FN)
+	S DF=$S(FT(FN)["{DF":$P($P(FT(FN),"{DF}",2),"{",1),1:"")
+INITV	S FLAG("/INT")=0 
+INITV2	;
+	;	;%%Z3-patch remove BREAK command; B
+	B:DB=1
+	S:DF="" DF="""""" S $ZT="ERRFLD^%DASDC6"
+	S VN=$S($D(SM(FN_".V")):SM(FN_".V"),1:FN(FN))
+	I VN="" S %MSG="フィールド'"_FN_"'にデータネームがありません。" ZT %MSG  ;;%%Z1-T
+	I DF="$DATE" S CM="D",ARG="DTNW^%DAUDTTM" D COM:'FLAG("$DATE") S DF="%DTX",FLAG("$DATE")=1
+	I DF="$TIME" S CM="D",ARG="TMNW^%DAUDTTM" D COM:'FLAG("$TIME") S DF="%TMX",FLAG("$TIME")=1
+	S CM="S" I '$D(CV(FN)),'$D(TR(FN)) S ARG=VN_"="_DF D COM Q
+	I DF="""""" S ARG="("_VN_","_FN(FN)_")=""""" D COM Q
+	G:$D(TR(FN)) INITTR G:FLAG("/INT") INITV4
+	I DF=("%"_CV(FN)_"X") S ARG=VN_"="_DF D COM G INITV3
+	S ARG="(%"_CV(FN)_"X,"_VN_")="_DF
+	S FLAG($S(CV(FN)="DT":"$DATE",1:"$TIME"))=0 D COM
+	S CM="D",ARG=CV(FN)_"XI^%DAUDTTM" D COM
+INITV3	S CM="S",ARG=FN(FN)_"=%"_CV(FN)_"I" D COM
+	Q
+INITV4	S ARG="(%"_CV(FN)_"I,"_FN(FN)_")="_DF 
+	S FLAG($S(CV(FN)="DT":"$DATE",1:"$TIME"))=0 D COM
+	S CM="D",ARG=CV(FN)_"IX^%DAUDTTM" D COM
+	S CM="S",ARG=VN_"=%"_CV(FN)_"X" D COM
+	Q
+INITTR	;
+	S %DDNM=FN(FN),LN=".TR-"_%DDNM D LG I FLAG("/INT") G INITTRO
+	I %DN(%DDNM,"IT")="" S %MSG="フィールド'"_FN_"'のデータネーム'"_%DDNM_"'に'input transform'が未定義です。" ZT %MSG  ;;%%Z1-T
+	S CM="S",ARG="%EXT="_DF D COM S CM="D",ARG=LB_"i" D COM
+	G INITTRX
+INITTRO	;
+	S CM="S",ARG="(%INT,"_%DDNM_")="_DF D COM S CM="D",ARG=LB_"o" D COM
+INITTRX	;
+	S CM="S",ARG=SM(FN_".V")_"=%EXT" D COM
+	Q
+INITS	;
+	D SCVN,FLAGS
+	S CM="S",ARG=$S(FLAG("NKD")=0:SCARY_SPC_",""",1:SCNAK_"""")_VN_""")"
+	S FLAG("NKD")=1,ARG=ARG_"="_$S(DF="""""":DF,FLAG("TR"):"%INT",FLAG("CV"):"%"_CV(FN)_"I",1:VN) D COM
+	I 'FLAG("CV"),'FLAG("TR"),'FLAG("DS"),'FLAG("DM") Q
+	S (ARG,DF)=$S(DF'=""""""&(FLAG("CV")!FLAG("TR")):SM(FN_".V"),1:"")
+	I FLAG("DM") S ARG=ARG_$S(DF]"":"_",1:"")_"$C(1)_"_SM(FN_".F")
+	I FLAG("DS") S ARG=ARG_$S(FLAG("DM"):"_$C(1)_",1:$S(DF]"":"_",1:"")_"$C(1,1)_")_SM(FN_".A")
+	S ARG=SCNAK_""""_VN_"i"")="_$S(ARG]"":ARG,1:$C(34,34)) D COM
+	Q
+FLAGS	;
+	S FLAG("CV")=$D(CV(FN)),FLAG("TR")=$D(TR(FN))
+	S FLAG("DS")=$D(DS(FN)),FLAG("DM")=$D(DM(FN))
+	Q
+SCVN	;
+	S VN=$S(FN(FN)]"":FN(FN),$D(SM(FN_".V")):SM(FN_".V"),1:"")
+	I VN="" S %MSG="スクロールフィールド'"_FN_"'にデータネームがありません。" ZT %MSG  ;;%%Z1-T
+	Q
+CONDI	;
+	D ENDL W " I ",C
+	Q
+CONDG	;
+	D LABEL S CM="G",ARG=LR_FLAG("LB")_":'("_C_")" D COM
+	Q
+CONDT	;
+	;D ENDL W LR,FLAG("LB")
+	D ENDL W LR,FLAG("LB")," ;" S COM="*" D ENDL ;	;%%Z3-patch 93/2/15
+	Q
+CONDB	;
+	I $L(A,":")>1 D LABEL S COM="" W " I '(",C,") G ",LR,FLAG("LB"),! Q
+	D ENDL S WTLEN=255 W " I ",C
+	Q
+CONDE	;
+	;	;%%Z3-patch remove BREAK command ; B
+	B:DB=1
+	;I $L(A,":")>1 S COM="*" D ENDL W LR,FLAG("LB") Q
+	I $L(A,":")>1 S COM="*" D ENDL W LR,FLAG("LB")," ;" S COM="*" D ENDL Q  ;	;%%Z3-patch 93/2/15
+	S COM="*" D ENDL S WTLEN=150
+	Q
+QS	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+LABEL	S FLAG("LB")=FLAG("LB")+1 
+	Q
+SG	I $D(SM(VN)) S SM=SM(VN) Q 
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+LG	I $D(LB(LN)) S LB=LB(LN) Q 
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>WTLEN W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q
+ENDL	I COM]"" W:$X ! S COM=""  ;;%%Z3-DASLV61_BUGS-21
+	Q
+	;**TM**; ZQ動作の変更; ERRFLD	I %MSG]"" ZQ
+ERRFLD	I %MSG]"" ZQ 1 G @$ZT
+	S %MSG="未定義フィールド'"_FN_"'がフィールド'"_F_"'で参照されています。" ZT %MSG  ;;%%Z1-T
+	Q

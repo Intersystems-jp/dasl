@@ -1,0 +1,252 @@
+ROUTINE %DASLIN
+#define SetCurPos write $char(27),"[",ypos,";",xpos,"H"
+ 
+%DASLIN ;Dasl Input routine;TM
+ ; DASLの漢字入力ルーチン
+ ; Parameters:
+ ; 	xpos:入力フィールドのＸ座標
+ ; 	ypos:Y座標
+ ; 	intim: 入力タイムアウト(秒)
+ ; 	fstr:初期設定文字列
+ ; 	flen:フィールドの長さ
+ ; 	fpos:カーソルポジション
+ ; 	term:入力終了文字列
+ ; 	fnum:ファンクションキー番号[out]
+ ; 	fnum:ターミネータコード[out]
+ ;
+ ; 戻り値
+ ; 	入力文字列 
+ ;
+Input(xpos,ypos,intim,flen,fpos,fstr,term,fnum,tnum) public {
+ set intim=$get(intim,3600*24*365)
+ set flen=$get(flen,255)
+ set fpos=$get(fpos,255)
+ set fstr=$get(fstr)
+ set xpos=$get(xpos)
+ set ypos=$get(ypos)
+ set term=$get(term)
+ 
+ ; デバイスの設定
+ do Init(.xpos,.ypos)
+ 
+ write:fstr'="" fstr
+ 
+ set fbuf="",bbuf=fstr
+ set xstart=xpos,ystart=ypos
+ 
+ ; ファンクションキーの初期化
+ set fnum=0,tnum=""
+ set inkey="" 
+   
+ ; 文字入力
+ for  {
+	 $$$SetCurPos
+	 read *inkey:intim
+	 quit:'$test
+	 quit:term[$ascii(inkey) ; ターミネータが入力された場合
+	 quit:inkey=13 ; リターンを入力された場合終了
+	 
+	 if inkey=27 {
+		 write *-1
+		 set escstr=$piece($ZB,"[",2)
+		 set fnum=$$EditBuf(.xpos,.ypos,.fbuf,.bbuf,escstr)
+		 quit:fnum'=0
+		 
+		 continue
+ 	}
+ 	if inkey=127!(inkey=8) {
+		 set tmp=$extract(fbuf,$length(fbuf))
+		 set fbuf=$extract(fbuf,1,$length(fbuf)-1)
+		 set xpos=xpos-$zwidth(tmp)
+ 
+		 $$$SetCurPos
+		 write bbuf_$select(tmp?1ZFWCHARZ:"  ",1:" ")
+		 continue
+	 }
+ 	 if $zwidth(fbuf_bbuf_$char(inkey))>flen!(inkey<32) {
+		 write *7
+		 continue
+	 }
+	 write $char(inkey)_bbuf
+	 set xpos=xpos+$zwidth($char(inkey)),fbuf=fbuf_$char(inkey)
+ 
+	 quit:fnum'=0
+ }
+ ; デバイスの設定
+ use $io:(:"-S")
+ 
+ set tnum=inkey 
+ quit fbuf_bbuf
+}
+ 
+EditBuf(xpos,ypos,fbuf,bbuf,escstr) public {
+ 
+ set func=$$Function(escstr)
+ 
+ if func=19 { ;right
+ 	if bbuf'="" {
+		set xpos=xpos+$zwidth($extract(bbuf))
+		set fbuf=fbuf_$extract(bbuf)
+		set bbuf=$extract(bbuf,2,999)
+		$$$SetCurPos
+ 
+	 	quit 0
+ 	}
+ }
+ if func=20 { ;left
+ 	if fbuf'="" {
+		set xpos=xpos-$zwidth($extract(fbuf,$length(fbuf)))
+		set bbuf=$extract(fbuf,$length(fbuf))_bbuf
+		set fbuf=$extract(fbuf,1,$length(fbuf)-1)
+		$$$SetCurPos
+ 
+		quit 0
+ 	}
+ }
+ write:func=0 *7
+ quit func
+}
+ 
+Function(escstr) public {
+ 
+ set inkey=$A(escstr)
+ 
+ ; RIGHT
+ quit:inkey=67 19
+ ; LEFT
+ quit:inkey=68 20
+ ; UP
+ quit:inkey=65 17
+ ; DOWN
+ quit:inkey=66 18
+ quit:(inkey>48)&(inkey<55) $$Function2(escstr)
+ quit 0
+}
+ 
+Function2(escstr) private {
+ set esc1=$ascii($extract(escstr,1)),esc2=$ascii($extract(escstr,2))
+ ; F7,F8,FIND
+ quit:esc1=49 $select(esc2=56:38,esc2=57:39,esc2=126:21,1:0)
+ ; F9,F10,F11,F12,F13,F14,HELP,DO,INSERT
+ quit:esc1=50 $select(esc2=48:40,esc2=49:41,esc2=51:43,esc2=52:44,esc2=53:45,esc2=54:46,esc2=56:48,esc2=57:49,esc2=126:22,1:0)
+ ; F17,F18,F19,F20,REMOVE
+ quit:esc1=51 $select(esc2=49:51,esc2=50:52,esc2=51:53,esc2=52:54,esc2=126:23,1:0)
+ ;SELECT
+ quit:esc1=52 $select(esc2=126:24,1:0)
+ ; PREV
+ quit:esc1=53 $select(esc2=126:25,1:0)
+ ; NEXT
+ quit:esc1=54 $select(esc2=126:26,1:0)
+ ; その他
+ quit 0
+}
+ 
+ /*
+ 
+A1 ;W $C(%ZZ)_%ZZBB S %ZZDX=%ZZDX+1,%ZZFB=%ZZFB_$C(%ZZ)
+ W $C(%ZZ)_%ZZBB S %ZZDX=%ZZDX+$ZWIDTH($C(%ZZ)),%ZZFB=%ZZFB_$C(%ZZ)  ;%%DEJ
+ X %ZVTDXDY
+ Q
+A2 S %TMP=%ZZ R *%ZZ:%ZZTIM S %ZZDX=%ZZDX+2,%ZZFB=%ZZFB_$C(%TMP,%ZZ)
+ W $C(%TMP,%ZZ)_%ZZBB
+ X %ZVTDXDY
+ Q
+A3 S %TMP=%ZZ R *%ZZ:%ZZTIM S %ZZDX=%ZZDX+1,%ZZFB=%ZZFB_$C(%TMP,%ZZ)
+ W $C(%TMP,%ZZ)_%ZZBB
+ X %ZVTDXDY
+ Q
+Y I %ZZDX=%ZZZDX W *7 Q            
+ S %ZZCB=$E(%ZZFB,$L(%ZZFB)),%ZZFB=$E(%ZZFB,1,$L(%ZZFB)-1)
+ S %ZZDX=%ZZDX-1 S:%ZZCB?1ZFWCHARZ %ZZDX=%ZZDX-1
+ X %ZVTDXDY
+ W %ZZBB,%ZZMRK W:%ZZCB?1ZFWCHARZ %ZZMRK
+ X %ZVTDXDY
+ Q
+X ;R *%ZZ,*%ZZ
+ S %ZZ=$A($P($ZB,"[",2))
+ I %ZZ=67 D RI Q
+ I %ZZ=68 D LE Q
+ I %ZZ=65,%ZZTRM["UP" S %ZZESC="UP" Q
+ I %ZZ=66,%ZZTRM["DOWN" S %ZZESC="DOWN" Q
+ I %ZZ>48,%ZZ<55 D X1 ;I %ZZ1'=126 R *%ZZ  ;;Bug Fix 1998/04/27  
+ ;;TI;I (%ZZ=80)!(%ZZ=81)!(%ZZ=82)!(%ZZ=83) D X2  ;No PF keys
+ I $D(%ZZESC),%ZZESC'="" K %ZZ1 Q
+ K %ZZ1
+ W *7
+ Q
+X1 ;
+ ;;TI;R *%ZZ1
+ S %ZZ1=$P($ZB,"[",2) S %ZZ=$A($E(%ZZ1,1)) S %ZZ1=$A($E(%ZZ1,2))
+ I %ZZ1=126 D  Q
+ .I %ZZ=49,%ZZTRM["FIND" S %ZZESC="FIND" Q
+ .I %ZZ=50,%ZZTRM["INSERT" S %ZZESC="INSERT" Q
+ .I %ZZ=51,%ZZTRM["REMOVE" S %ZZESC="REMOVE" Q
+ .I %ZZ=52,%ZZTRM["SELECT" S %ZZESC="SELECT" Q
+ .I %ZZ=53,%ZZTRM["PREV" S %ZZESC="PREV" Q
+ .I %ZZ=54,%ZZTRM["NEXT" S %ZZESC="NEXT" Q
+ I %ZZ=49,%ZZ1=56,%ZZTRM["F7" S %ZZESC="F7" Q
+ I %ZZ=49,%ZZ1=57,%ZZTRM["F8" S %ZZESC="F8" Q
+ I %ZZ=50,%ZZ1=48,%ZZTRM["F9" S %ZZESC="F9" Q
+ I %ZZ=50,%ZZ1=49,%ZZTRM["F10" S %ZZESC="F10" Q
+ I %ZZ=50,%ZZ1=51,%ZZTRM["F11" S %ZZESC="F11" Q
+ I %ZZ=50,%ZZ1=52,%ZZTRM["F12" S %ZZESC="F12" Q
+ I %ZZ=50,%ZZ1=53,%ZZTRM["F13" S %ZZESC="F13" Q
+ I %ZZ=50,%ZZ1=54,%ZZTRM["F14" S %ZZESC="F14" Q
+ I %ZZ=50,%ZZ1=56,%ZZTRM["HELP" S %ZZESC="HELP" Q
+ I %ZZ=50,%ZZ1=57,%ZZTRM["DO" S %ZZESC="DO" Q
+ I %ZZ=51,%ZZ1=49,%ZZTRM["F17" S %ZZESC="F17" Q
+ I %ZZ=51,%ZZ1=50,%ZZTRM["F18" S %ZZESC="F18" Q
+ I %ZZ=51,%ZZ1=51,%ZZTRM["F19" S %ZZESC="F19" Q
+ I %ZZ=51,%ZZ1=52,%ZZTRM["F20" S %ZZESC="F20" Q
+ Q
+X2 ;
+ I %ZZ=80,%ZZTRM["PF1" S %ZZESC="PF1" Q
+ I %ZZ=81,%ZZTRM["PF2" S %ZZESC="PF2" Q
+ I %ZZ=82,%ZZTRM["PF3" S %ZZESC="PF3" Q
+ I %ZZ=83,%ZZTRM["PF4" S %ZZESC="PF4" Q
+ Q
+G S %ZVTY=%ZZDY,%ZVTX=%ZZDX X %ZVTXY
+ Q
+RI I %ZZBB="",%ZZTRM["RIGHT" S %ZZESC="RIGHT" Q
+ I %ZZBB="" W *7 Q
+ W %ZVTFWD S %ZZDX=%ZZDX+1 I $E(%ZZBB,1)?1ZFWCHARZ W %ZVTFWD S %ZZDX=%ZZDX+1
+ ;W %ZVTFWD S %ZZDX=%ZZDX+1
+ S %ZZFB=%ZZFB_$E(%ZZBB,1),%ZZBB=$E(%ZZBB,2,512)
+ Q
+LE I %ZZDX=%ZZZDX,%ZZTRM["LEFT" S %ZZESC="LEFT" Q
+ I %ZZDX=%ZZZDX W *7 Q
+ W %ZVTBCK S %ZZDX=%ZZDX-1 I $E(%ZZFB,$L(%ZZFB))?1ZFWCHARZ W %ZVTBCK S %ZZDX=%ZZDX-1
+ ;W %ZVTBCK S %ZZDX=%ZZDX-1
+ S %ZZBB=$E(%ZZFB,$L(%ZZFB))_%ZZBB,%ZZFB=$E(%ZZFB,1,$L(%ZZFB)-1)
+ Q
+POSI I $D(%ZZDX),$D(%ZZDY) W $C(27)_"["_%ZZDY_";"_%ZZDX_"H" Q
+ F QQ=0:0 D P1 I %ZZDY?1N.N,(%ZZDX?1N.N) Q
+ S %ZZDY=+%ZZDY,%ZZDX=+%ZZDX
+ ;I %ZZDY>23 W ! W:'$D(%ZZLF) ! S %ZZDY=23 ;%%JB-x
+ K %ZZ
+ Q
+P1 R "",*%ZZ:0
+ ;;TI;W $C(27)_"[6n" R *%ZZ(2) S %ZZ="" F %ZZ(1)=0:0 R *%ZZ(2) Q:$C(%ZZ(2))="R"  S %ZZ=%ZZ_$C(%ZZ(2))
+ W $C(27)_"[6n" S %ZZ="" R *%ZZ(2) S %ZZ(3)=$ZB F %ZZ(4)=1:1 S %ZZ(5)=$E(%ZZ(3),%ZZ(4)) Q:%ZZ(5)="R"  S %ZZ=%ZZ_%ZZ(5) 
+ S %ZZ=$P(%ZZ,"[",2),%ZZDY=$P(%ZZ,";",1),%ZZDX=$P(%ZZ,";",2)
+ Q
+CNTU S %ZZDX=%ZZDX-$ZWIDTH(%ZZFB,2) X %ZVTDXDY W $J(" ",$ZWIDTH(%ZZFB,2)+$ZWIDTH(%ZZBB,2)) X %ZVTDXDY
+ S (%ZZFB,%ZZBB)=""
+ Q
+Version() Q "V1.0.5"
+*/
+ 
+Init(xpos,ypos) public {
+	use $io:(:"+S") ; NOECHO
+	; ESC [6nを送信し、カーソル位置を取得
+	read "",*inkey:0 write $char(27),"[6n" read *dummy set escape=$piece($zb,"R")
+	set escape=$piece(escape,"[",2),y=$piece(escape,";"),x=$piece(escape,";",2)
+ 
+	; カーソル位置の設定
+	set:xpos="" xpos=x
+	set:ypos="" ypos=y
+ 
+	; カーソル位置へ移動
+	write $char(27),"[",ypos,";",xpos,"H"
+	quit
+}

@@ -1,0 +1,249 @@
+ROUTINE %DASDCO [Type=INT,LanguageMode=6]
+%DASDCO	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	;
+	;	;%%Z3-patch remove BREAK command ;B  
+	B:DB=1
+	S VN=".1" D SG S S1=SM
+	S:%SDLL=24 %SDLL=23 S F0(0)=%SDFL_","_%SDLL
+	S X=^DASD(%SDNM,"O","S"),%SDOPHD=$P(X,";"),%SDOPCF=$P(X,";",2),%SDOPHLP=$P(X,";",3)
+	S OPLIN=%SDFL+1,%MSG="" G CHK:%SDOPHD="" 
+	S X=$S(%SDOPHD="%HEADER":"DATA;1;4",1:^DASD(%SDOPHD,"SCR"))
+	I $P(X,";")'="DATA" S %MSG="ヘッダスクリーンタイプが'DATA'ではありません。"  ;;%%Z1-T
+	S OPLIN=%SDFL+$P(X,";",3)-$P(X,";",2)+2 
+CHK	S OPCNT=%SDLL-OPLIN-1\2 I OPCNT<1 S %MSG="オプションライン領域が十分ではありません。"  ;;%%Z1-T
+	I %MSG]"" ZT %MSG
+	I %SDOPHD="" S FT(0)="" G ATTR 
+	I %SDOPHD="%HEADER" D HEADER G ATTR 
+	K %DN S F="" F I=0:0 S F=$O(^DASD(%SDOPHD,"D","F",F)) Q:F=""  D FIELD1
+	D AOPTION^%DADDLD 
+	S F=0 F I=0:0 S F=$O(F0(F)) Q:F=""  D FIELD2
+	K %DN S HELP=%SDNM,%SDNM=%SDOPHD D ALL^%DASDPAR S %SDNM=HELP
+ATTR	;
+	S BATCH=1,F=0,PD="_",SC=";",(WID,TAL)=0,SAT="l",BX="" D ACTION
+	S LN=$S(SAT="l":80,1:132)
+	W " Q:%EX  D OPGET" 
+	W " I %NO=1 S %RES=1 G DO",!
+	S CM="N",(COM,F)="" F I=0:0 S F=$O(SM(F)) Q:F=""  S ARG=SM(F) D COM
+	W " S ",S1,"="""" F %Z=0,",%SDFL,":1:",%SDLL," S $P(",S1,","","",%Z+1)=%L(%Z),%L(%Z)="""",%O(%Z)=0",!
+	W " S %L(0)=""",%SDNM,""""
+	W " S:%OP=99 %OP=0" 
+	D PNTS^%DASDC2
+	S P0=P0_","_OPLIN_":2:"_(OPCNT*2+OPLIN) S:$E(P0)="," P0=$E(P0,2,999)
+	W " F %Z=",P0," S %L(%Z)=""",%COMPNM,"""",!
+	W " S " I %SDLL=23 W "%L(24)="""","
+	S TMOSCN=$S(TMO]"":TMO,1:"%TMO")
+	W "%U=2,%TM=",TMOSCN
+	S COM="",FN=0 F I=1:1 S FN=$O(FN(FN)) Q:FN=""  D INITVD^%DASDC6
+	D ENDL
+	W " I '%NO K %NO G Z",! 
+	W " D CLEAR,Q",!
+	S OPLEN=+^%DADD("SDOPKW","DF","E") 
+	S OPPOS=$S(LN=132:25,1:5) 
+	W "READ"
+	W " I $P(^DASY(""PARM"",""MISC""),"";"",3)=""Y"",%USR]"""",$D(^DAMC(%USR,""NMF"")),^(""NMF"")]"""" S %MSG=^%DAMSG(%FLANG,""NMF"")_"" ""_^DAMC(%USR,""NMF"") D M S ^(""NMF"")=""""",!
+	W " S %FND=0,%XX=1,%XX(0)=""E"",%W=""",OPLEN,";""_(%R*2+",OPLIN,")_"";",OPPOS+$Zwidth(^%DAMSG(%FLANG,"OP"))+1,";2;READ"",%OLD=""""",!  ;;%%Z1-G
+	W " I '%OP"_$$USE^%DAIO(0,"NOECHO:NOTYPE")_" R """",%RES:0"_$$USE^%DAIO(0,"ECHO:TYPE")_" W %E,""["",%R*2+",OPLIN,","";",OPPOS+$L(^%DAMSG(%FLANG,"OP"))+1,"H""",!
+	W " D I,P G OPF:%F,LIST:%RES=""*"" I %RES="""" G E",!
+	S REF=$P(^%DADD("USRCMD","REF"),";") 
+	W " F USR=%USR,""SYS"" G:USR]"""" COM:$D(",$P(REF,"*"),"%RES",$P(REF,"*",2),")",!
+	W " K USR S:%RES?.AZFWCHARZZHWKATAZ %RES=+$P($P(%K,"" ""_%RES,2),"" "",2)",!  ;;%%Z1-K
+	W " S %X=1,%Y=%NO D N I %MSG]"""" D HLP,J1 G READ",!
+	; %%Z1-I start
+	W "DO S:%NO>1 %OP=%OP+1,%OP(%OP)=%OPN S %Z=%NO(%RES),%OPV=$P(%Z,""`""),%RPNAME=$P(%Z,""`"",2),%X=$P(%Z,""`"",4),%OPN=$P(%Z,""`"",5)",!
+	; %%Z1-I end
+	W " S %Z=%NO K:%RES'>%NO %NO D JOB I %Z=1 D @%X Q",!
+	W " D CLEAR",^%DASY("MUMPS",%MUMPS,"U 0:NOPACK")," F %Z=",P0," S %L(%Z)=""""",!
+	;W " D @%X S %OPN=%OP(%OP),%OP=%OP-1 D JOB",!
+	W " D @%X S %OPN=%OP(%OP),%OP=%OP-1 D JOB I $G(%OQUIT) K %NO,%OQUIT G E",! ;%%patch-seq.opt007
+	W " D OPGET I %NO<2 K %NO G E:%EX&%OP,Z",!
+	W " I %EX D CLEAR S %EX=0",!
+	W " F %Z=",P0," S %L(%Z)=""",%COMPNM,""",%O(%Z)=0,%RPNAME=""""",!
+	W " D Q G READ",!
+	W "COM S %Z=",$P(REF,"*"),"%RES",$P(REF,"*",2),",%XX=$P(%Z,"";"",4),%NAME=$P(%Z,"";"",2),%LABEL=""COMCHK"" K USR D SCREEN^%DARUN",!
+	; %%Z1-I start
+	W " I %MSG="""" S %X=$P(%XX,""`"") D Z2^%DASDLU1 E  S %MSG=^%DAMSG(%FLANG,""M"")",!
+	; %%Z1-I end
+	W " I %MSG]"""" D Q:'%O,J1 G READ",!
+	W " S %RES=%NO,%NO(%NO)=%XX G DO",!
+	W "JOB S %I=%OPN S:$P(%I,"" "",2,99)="""" %I=%OP(%OP)_"": ""_%I",!
+	W " I '%PGMR,%USR]"""" S ^($J)=$P(^DAJC($J),"";"",1,3)_"";""_%I",!
+	W " Q",!
+	W "OPF I %EX&'%OP S %EX=0 G READ",!
+	I %SDOPCF="Y" W " I %F="""_KD("C")_""" G DEFCOM",!
+	W " G F",!
+	G OPGET:%SDOPCF'="Y"
+	W "DEFCOM S USR=%USR,%X=$S($D(^DASY(""PARM"",""MISC"")):$P(^(""MISC""),"";""),1:""US"")",!
+	S %NAME="%USRCMDQ" D SCREEN^%DANAME
+	W " I %PPV[""+""!(%PPV[""@""),%X[""S"" S USR=""SYS"" D:%USR]""""&(%X[""U"") ",%PROGRAM,",Q:USR="""" G DEFGO",!
+	W " I %X'[""U"" G F",!
+	W "DEFGO I USR="""" K USR G READ",!
+	S %NAME="%USRCMD" D SCREEN^%DANAME
+	; %%Z1-I start
+	W " S %RES=%NO+1,%NO(%RES)=""@`",$S(%COMPNM["%":"%",1:""),%SDNM,",""_%OPN_""``",%PROGRAM,"`""_$S(USR=""SYS"":""システム"",1:""ユーザ"")_"" コマンド 定義 "" G DO",!  ;;%%Z1-T
+	; %%Z1-I end
+OPGET	;
+	W "OPGET K %NO S %NO=0,%K="""" Q:%EX&%OP  D Z1",! 
+	D OPTION 
+	W " Q",!
+	S %SDON="" F I=0:0 S %SDON=$O(^DASD(%SDNM,"O","O",%SDON)) Q:%SDON=""  I $D(FC(%SDON)) D CFO^%DASDC6
+	W "COMCHK"
+	; %%Z1-I start
+	F I=0:0 S I=$O(OP(I)) Q:I=""  W " I $P(%XX,""`"",2,4)=""",$P(OP(I),"`",2,3),"`",$P($P(OP(I),"`",4),"^"),""" S %XX=""",OP(I),""" Q",!
+	; %%Z1-I end
+	W " S %MSG=^%DAMSG(%FLANG,""M"") Q",!
+	W "HLP S %MSG=",^%DAMSG(%FLANG,"OPH")," Q",!
+	W "LIST I ""SYS""[%USR G LISTS",! 
+	W " S USR=%USR",! S FN="USRCMD" D LUSUB
+	W " K USRCMD G COM:%FND",!
+	W "LISTS S USR=""SYS""",!
+	S FN="SYSCMD" D LUSUB 
+	W " K SYSCMD G COM:%FND",!
+	W " D Q,J1 G READ",! 
+	W "CLEAR",^%DASY("MUMPS",%MUMPS,"U 0:PACK") 
+	I %SDLL=23 W " W ",EQ,"[",%SDFL,";1H",QEQ,"[J""",!
+	E  W " F %Z=",%SDFL,":1:",%SDLL,",24 W ",EQ,"["",%Z,"";1H",QEQ,"#5",QEQ,"[K""",!  ;;%%Z1-Y
+	W " Q",!
+	W "R I %L(%Z)'=""",%COMPNM,""" G @(""R^""_%L(%Z))",! 
+	D LINESO^%DASDC3 
+	W " W ",EQ,"[",OPLIN-1,"H"",!",! 
+	; %%Z1-I start
+	;+%%Z3-COLOR
+	I $G(%GCCF) D
+	. W " I %NO<",OPCNT+1," S %R=%NO F %I=1:1:%NO D",!
+	. W " . W ?",$S(LN=132:50,1:15),",%E,""[1m"" W:$D(%GC(""ON"")) %E,%GC(""ON"") W $J(%I,2),""."",%E,""[m """,!
+	. W " . W:$D(%GC(""OT"")) %E,%GC(""OT"") W $P(%NO(%I),""`"",6),%E,""[m"",!!",!
+	. W " E  S %R=%NO+1\2 F %I=1:1:%NO\2 D",!
+	. W " . W ",$S(LN=132:"?20,",1:""),"%E,""[1m"" W:$D(%GC(""ON"")) %E,%GC(""ON"") W $J(%I,2),""."",%E,""[m """,!
+	. W " . W:$D(%GC(""OT"")) %E,%GC(""OT"") W $P(%NO(%I),""`"",6),%E,""[m"",%E,""["",%I*2+",OPLIN-2,","";",$S(LN=132:70,1:40),"H"",%E,""[1m"" W:$D(%GC(""ON"")) %E,%GC(""ON"") W $J(%I+%R,2),""."",%E,""[m """,!
+	. W " . W:$D(%GC(""OT"")) %E,%GC(""OT"") W $P(%NO(%I+%R),""`"",6),%E,""[m"",!!",!
+	. W " E  I %NO#2 W ",$S(LN=132:"?20,",1:""),"%E,""[1m"" W:$D(%GC(""ON"")) %E,%GC(""ON"") W $J(%R,2),""."",%E,""[m "" W:$D(%GC(""OT"")) %E,%GC(""OT"") W $P(%NO(%R),""`"",6),%E,""[m"",!!",!
+	. S X="",$P(X,"_",OPLEN+1)=""
+	. W " W ?",OPPOS-1," W:$D(%GC(""OP"")) %E,%GC(""OP"") W """_^%DAMSG(%FLANG,"OP")_" ",X,""",%E,""[m""",!
+	E  D
+	. W " I %NO<",OPCNT+1," S %R=%NO F %I=1:1:%NO W ?",$S(LN=132:50,1:15),",%E,""[1m"",$J(%I,2),%E,""[m. "",$P(%NO(%I),""`"",6),!!",!
+	. W " E  S %R=%NO+1\2 F %I=1:1:%NO\2 W ",$S(LN=132:"?20,",1:""),"%E,""[1m"",$J(%I,2),%E,""[m. "",$P(%NO(%I),""`"",6)"
+	. W ",%E,""["",%I*2+",OPLIN-2,","";",$S(LN=132:70,1:40),"H"",%E,""[1m"",$J(%I+%R,2),%E,""[m. "",$P(%NO(%I+%R),""`"",6),!!",!
+	. W " E  I %NO#2 W ",$S(LN=132:"?20,",1:""),"%E,""[1m"",$J(%R,2),%E,""[m. "",$P(%NO(%R),""`"",6),!!",!
+	. S X="",$P(X,"_",OPLEN+1)=""
+	. W " W ?",OPPOS-1,","""_^%DAMSG(%FLANG,"OP")_" ",X,"""",!
+	;-%%Z3-COLOR
+	W " F %X=",P0," S:%L(%X)=""",%COMPNM,""" %O(%X)=1 W:'%O(%X) %E,""["",%X,""H"",%E,""[K""",!
+	W " Q",!
+	I %SDOPHLP="" S %COMPHL=""
+	E  S %NAME=%SDOPHLP D SCREEN^%DANAME S %COMPHL=$E(%PROGRAM,2,9)
+	S SMS="%XX",(FLAG("NOR"),SUB("VINT"),SUB("CP"))="",SM(".KILL")="%XX,%NO,%K"
+	D ENDSC^%DASDC5
+KILL	;
+	K %SDOPHLP,%SDOPHD,%SDOPCF,OPLIN,OPCNT,OPLEN,OPPOS,OP
+	K %SDOPPS,%SDOPSN,%SDOPNM,%SDOPKW,%SDOPREP,%SDON
+	Q
+LUSUB	;
+	S REF=^%DADD(FN,"REF"),REF=$E(REF,1,$F(REF,"*")-3) 
+	; %%Z1-I start
+	S A="S %X=$P($P("_REF_","_FN_"),""`""),"";"",4) D Z2^%DASDLU1 E  S %MSG=1" D QD
+	; %%Z1-I end
+	W " S %XS=""",A,"""",!
+	W " S %CD=""LP""" 
+	S A=$P(^%DADD(FN,"DF","E"),";",2) D QD W ",%PR=""",A,""""
+	S A=REF_");KEY" D QD W ",%XL=""",A,""""
+	S C=^%DADD(FN,"LK"),A=$P(C,";") D QD W ",%XT=""",A,""""
+	W ",%XD=""",FN,""",%XA=""""",!
+	S A="$P("_REF_","_FN_"),"";"")" D QD W " S %XL(1)=""??",$P(C,";",3),",",A,"""",!
+	W " D ^%DASDLU"
+	Q
+OPTION	;
+	K OP,FC D ALLO^%DASDPAR S %SDON=""
+	F %=0:0 S %SDON=$O(^DASD(%SDNM,"O","O",%SDON)) Q:%SDON=""  S X=^(%SDON,"D") D OPT1
+	Q
+OPT1	S %SDOPPS=$P(X,";"),%SDOPSN=$P(X,";",2)
+	S A=$P(X,";",3) D QD:A["""" S %SDOPNM=A
+	S %SDOPKW=$P(X,";",4),%SDOPREP=$P(X,";",5)
+	I %SDOPPS=""!(%SDOPSN=""&'$D(FC(%SDON)))!(%SDOPNM="") Q
+	I %SDOPKW="" S C=%SDOPNM G OPTWR
+	S C=$$UPCASE^%DAZCALL(%SDOPNM) 
+	S Y=$F(C,%SDOPKW),L="""_%E_""[1m""_"""_%SDOPKW_"""_%E_""[m""_""" 
+	I 'Y S C=L_%SDOPNM
+	E  S C=$E(%SDOPNM,0,Y-$L(%SDOPKW)-1)_L_$E(%SDOPNM,Y,99)
+OPTWR	;
+	I %SDOPPS'="@" W " S %X=""",%SDOPPS,""" D Z2^%DASDLU1 I "
+	I $D(FC(%SDON)) S %PROGRAM=%SDON_"OP"
+	E  S %NAME=%SDOPSN D SCREEN^%DANAME
+	; %%Z1-I start
+	S OP(%SDON)=%SDOPPS_"`"_%SDOPREP_"`"_%SDOPSN_"`"_$S(%PROGRAM["^":%PROGRAM,1:%PROGRAM_"^"_%COMPNM)_"`"_%SDOPNM
+	W " S %NO=%NO+1,%NO(%NO)=""",%SDOPPS,"`",%SDOPREP,"`",%SDOPSN,"`",%PROGRAM,"`",%SDOPNM,"`",C,""""
+	; %%Z1-I end
+	I %SDOPKW]"" W ",%K=%K_"" ",%SDOPKW," ""_%NO"
+	W !
+	Q
+FIELD1	;
+	S F0=^DASD(%SDOPHD,"D","F",F,"P")
+	S FL(F)=$P(F0,";",3)
+	S FP(F)=$P(F0,";",6)
+	S FN(F)=$P(F0,";",4)
+	I FN(F)]"" S %DN(FN(F))="" 
+	S F0(F)=$P(F0,";",1,2)_";"_$P(F0,";",5) 
+	Q
+FIELD2	;
+	I FN(F)]"" S:FL(F)="" FL(F)=%DN(FN(F),"L") S:FP(F)="" FP(F)=%DN(FN(F),"P") S:FP(F)="_" FP(F)=""  ;;%%Z1-I
+	S F0=F0(F)
+	S Y=+F0
+	S X=$P(F0,";",2)
+	;	;%%Z3-patch remove BREAK command; B  
+	B:DB=1
+	I X["," D 
+	. N BLANKS,DP
+	. S $P(BLANKS," ",132)=" "
+	. S DP=$P(X,",",2) 
+	. S X=$P(X,",") 
+	. S FP(F)=FP(F)_$E(BLANKS,1,DP-X-$L(FP(F))) 
+	. S FL(F)=$L(FP(F))
+	S J=$P(F0,";",3)
+	I Y S Y=Y+%SDFL-1
+	I X S K=FL(F)+$Zwidth(FP(F)),X=$S(J="R":X-K+1,J="C":X-(K\2),1:X) S:X<0 X=1  ;;%%Z1-G
+	S F0(F)=Y_";"_X_";"_J
+	I FL(F),FN(F)="" S VN=F_".V" D SG 
+	Q
+HEADER	;
+	K F0,FL,FN,FP,FT S FL("LINE")=40,FL("TITLE")=36,FT(0)=""
+	S FT("LINE")="{QF}{BO}{WD}{DF}""=== ""_%OP(%OP)_"" =============================="""
+	S FT("TITLE")="{BO}{TL}{QF}{DF}%OPN",F0="1;20;C",F0(0)="1,23"
+	S F0("LINE")="4;1;L",F0("TITLE")="1;2;C",FN("LINE")=""
+	S (FN("TITLE"),FP("LINE"),FP("TITLE"))=""
+	F VN="LINE.V","TITLE.V" D SG
+	Q
+DDN	;
+	S DF=^DADD(D,"DF","E"),DL(D)=$P(DF,";"),DP(D)=$P(DF,";",2)
+	Q
+ACTION	;
+	N KK
+	I F=0 Q:'$D(FT(F))
+	F KK=1:1 Q:'$D(FT(F,KK))  F K=2:1 S A=$P(FT(F,KK),"{",K) Q:A=""  D @$E(A,1,2):$T(@$E(A,1,2))]""
+	Q
+13	S SAT="h" Q
+BX	S BX=BX_"{"_$P(A,"}",2) Q
+CP	Q
+QS	S PD=" " Q
+TO	S TMO=A Q
+EX	Q
+PM	Q
+SC	Q
+QD	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>150 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM  ;;%%Z1-A
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q  ;;%%Z1-A
+ENDL	I COM]"" W ! S COM=""
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	G:V2 SG2 S V1=V1+1 I V1>26 S V1=0,V2=1 G SG2
+	S SM=SCNV_$C(V1+64),SM(VN)=SM
+	Q
+SG2	S V1=V1+1 I V1>26 S V1=1,V2=V2+1
+	S SM=SCNV_$C(V2+64)_$C(V1+64),SM(VN)=SM
+	Q

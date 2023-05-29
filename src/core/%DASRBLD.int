@@ -1,0 +1,119 @@
+ROUTINE %DASRBLD [Type=INT,LanguageMode=6]
+DASRBLD	; DASL Utilities ;V3.0 ;DASL Routine Kit Builder ;KZY;tt ;22-Jul-1992
+	; Saved routines must be restored by %DASRR
+	;
+	Q
+%LIB	; Entry for DASL Library Routine Build
+	W !!,"Nihongo DASL V3.0 Library Routine Kit Build",!
+	S %OPR=1
+	I $ZV["VAX" S %DEVDEF="DSM$DASL_ROUTINES.SAV"
+	E  S %DEVDEF="dsm_dasl_routines.sav"
+	S %HDRDEF="Nihongo DASL V3.0 Library Routines"
+	G %ST
+	;
+%INST	; Entry for Installation Routine Build
+	W !!,"DASL Installation Routine Kit Build",!
+	S %OPR=2
+	I $ZV["VAX" S %DEVDEF="DSM$DASL_INSTALL.SAV"
+	E  S %DEVDEF="dsm_dasl_install.sav"
+	S %HDRDEF="Nihongo DASL V3.0 Installation Routines"
+	G %ST
+	;
+%PATCH	; Entry for Patched Routine build
+	W !!,"DASL Patched Routine Kit Build",!
+	I $ZV["VAX" S %DEVDEF="DSM$DASL_PATCH_V30J_000.SAV"
+	E  S %DEVDEF="dsm_dasl_patch_v30j_000.sav"
+	S %HDRDEF="Nihongo DASL V3.0 Patch File <No.000>"
+	S %OPR=3
+	;
+%ST	S $ZT="%ERR^"_$T(+0),$ZE="" U 0:NOCENABLE
+	I $ZV["VAX" S %ZSNDEF=1004 ;	;DASL SECURITY NUMBER
+	E  S %ZSNDEF=1001 ;	;DASL SECURITY NUMBER
+	;
+%SECN	I $D(%ZSN),$D(%PS) G:$$SECCHK %DEV U 0 W !?5,*7,"Invalid Security Sequence" G %EXIT
+	S %ER=0 F %I=1:1:3 D  Q:%ER  U 0 W !?5,*7,"Invalid Security Sequence"
+	.U 0 W !,"Security Number  = < ",%ZSNDEF," > " R %ZSN S:%ZSN="" %ZSN=%ZSNDEF S %ZSN=+%ZSN
+	.I %ZSN=0 S %ER=1 Q
+	.S %ER=1 Q
+	.U 0 W !,"Security Keyword = " U 0:NOECHO R %PS:180 U 0:ECHO I '$T Q
+	.S %ER=$$SECCHK
+	I '%ER U 0 W ?40,*7,"Expired" G %EXIT
+	S %SFLG=$S(%ZSN=0:0,1:1)
+	;
+%DEV	S %QTY=2 S %DEF=%DEVDEF D ^%IOS S:'$D(%MTM) %MTM="" G:'$D(%IOD) %EXIT
+	I "MT,TT,DB,NET,LP,RMSTP"'[%DTY W !,?5,*7,"Improper device selection" G %DONE
+	S %AVL=(%DTY="MT"&(%MTM["V")) ; AVL tape mode flag
+	S %LP=",TT,LP,"[(","_%DTY_",") ; output to line printer/terminal flag
+	I %LP U 0 W !?5,*7,"Printable device is not allowed" G %DONE
+	G %HEAD:%DTY'="MT"
+	U %IOD I @(%MTON_"=0") U 0 W !?5,*7,"Drive not ready" G %DONE
+	I @%MTWLK U 0 W !?5,*7,"Tape is write protected" G %DONE
+	I @(%MTBOT_"=0") U 0 D %REW^%IOS I '$D(%REW) G %DONE
+	;
+%HEAD	S %ZZIN=%HDRDEF U 0 W !,"Header comment... " D ST2^%ZIN S %HEAD=%ZZOUT W ! G:%HEAD="^" %DONE
+	I %HEAD="?" W !,?5,"Enter free text to be used as heading" D %Q G %HEAD
+	;
+%RSEL	K %daslrtn
+	I %OPR=1 D %DASL^%DASRNM ;			; Library Routines
+	I %OPR=2 D %INST^%DASRNM,%SECUR^%DASRNM ;	; Installation Routines
+	I %OPR=3 D  G:'$D(%daslrtn) %DONE ;		; Patched Routines
+	.D %ALL^%DASRNM
+	.U 0 W !!,"Select saving routine(s)" K %UTILITY D ^%RSEL D  K %UTILITY
+	..S %NAM="" F  S %NAM=$O(%daslrtn(%NAM)) Q:%NAM=""  K:'$D(%UTILITY(%NAM)) %daslrtn(%NAM)
+	;
+	U 0 W !!,"Following Routine(s) will include with in KIT",!?10,"( '*' marked routine(s) will be secured ) :"
+	S %ZRTN="",%CT=0 F  S %ZRTN=$O(%daslrtn(%ZRTN)) Q:%ZRTN=""  U 0 W:'(%CT#7) ! W ?(%CT#7)*11+2,$S(%daslrtn(%ZRTN):"*",1:" "),%ZRTN S %CT=%CT+1
+	U 0 R !!,"Proceed OK ? <Y> ",%ANS S:%ANS="" %ANS="Y" I %ANS'="Y"&(%ANS'="y") G %EXIT
+	;
+	U 0 W !!,"Building DASL Routines Kit on ",%ZIOD,!!
+	U %IOD S %NAM="",%CT=0,%DATIM=$P($ZH,",",3),%BL=$J("",10)
+	;  Output to tape in DSM-11 format.  Special case AVL tape.
+	I %DTY="MT" W %DATIM W:'%AVL ! W %HEAD W:'%AVL ! G %OUT
+	I $ZV["VAX",+$ZC(%RTNTYPE) S %=$P($ZC(%PGMSHOW),",") ; RMS Routine Directory
+	E  S %=$ZC(%UCI),%="["_$P(%,",",6,7)_"]" ; [UCI,VOL]
+	; Output to a file.
+	W "Build by "_$T(+0)_" from ",%," on ",%DATIM,!,%HEAD,!
+	;
+	S %ZRTN="",%CT=0 
+	S %SEC="F %J=1:1:%ZSN#1000 S %Z=$ZC(%ZSECUR,3,"""",6,""isono$TOMATO$ok"",21,""CHIECYAN$AKIKOCYAN_DASL"")"
+	I %OPR=3 S %ZRTN="%DASRNM",%daslrtn(%ZRTN)=0 G %OUTA
+%OUT	S %ZRTN=$O(%daslrtn(%ZRTN)) G:%ZRTN'="" %OUTA U %IOD W:%DTY'="MT" ! G %OUTD
+	;
+%OUTA	U 0 W:'(%CT#7) ! W ?(%CT#7)*11+2,%ZRTN S %CT=%CT+1
+	U %IOD I %DTY="MT",@%MTEOT G EOT
+	X "ZL @%ZRTN U %IOD W %ZRTN W:'%AVL ! X:%SFLG&%daslrtn(%ZRTN) %SEC ZP  W:'%AVL ! W:%AVL """""
+	U 0 W "."
+	K %daslrtn(%ZRTN) S %ZRTN=""
+	G %OUT
+	;
+%Q	W !?5,"Type ^ to return to previous question"
+	Q
+	;
+%OUTD	U 0 W !!?4,%CT," routine",$S(%CT'=1:"s",1:"")," saved",!
+%DONE	U 0 I $$%NPDEV^%IOS C %IOD U 0
+	;
+%EXIT	U 0:CENA I $$%NPDEV^%IOS C %IOD
+	K %,%BL,%LP,%AVL,%ZE,%BLK,%RL
+	K %MTM,%UTILITY,%HEAD,%CT,%DATIM,%DTY,%ZIOD,%IOD,%NAM,%REW,%ZA
+	K %ZSN,%PS,%ZRTN,%ER,%daslrtn,%UTILITY
+	D %KILL^%MTCHK
+	Q
+	;
+%ERR	S %ZA=$ZA,%ZE=$ZE,$ZT="%ERR^"_$T(+0)
+	I %ZE["CTRAP" U 0 W !?5,*7,"Unexpected interrupt",! G %EXIT
+	I %ZE["SRCFULL" U 0 W !!!,*7,%NAM," is too large for source buffer, and will not be saved.",!!!,*7 G %OUT
+	I %ZE["NOSUCHPGM",$D(%NAM) U 0 W !!!,*7,%NAM,?12," has been deleted since creation of your list.  Continuing...",*7,!!! G %OUT
+	G:%ZE'["MTERR" %E2 I @(%MTEOT_"=0") G %E2
+EOT	; handle end-of-tape
+	U 0 W !!?5,*7,"** End of tape detected **",!?5,"After current tape rewinds, mount next tape"
+	U %IOD W *5 U 0 W !?5,"Press [RET] to continue, type ^ to abort >" R %GO,! G:%GO="^" %DONE
+	U %IOD W %DATIM W:'%AVL ! W %HEAD W:'%AVL !
+	G %OUTA
+	;
+%E2	U 0 W !,%ZE,"   $ZA = ",%ZA S $ZT=""
+	G %EXIT
+	;
+SECCHK()	;
+	I %ZSN'=1004 Q 0
+	I %PS'="naraKYONKYON9072tarachan011KABATOTOsakurasakura$" Q 0
+	Q 1

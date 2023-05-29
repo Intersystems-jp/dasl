@@ -1,0 +1,322 @@
+ROUTINE %DASJUTL [Type=INT,LanguageMode=6]
+%DASJUTL	;DASL, UTL, KZY;27-Dec-88  5:45 PM;Utilities for Japanese facility
+	;DASL;N;SUPPORT
+	;
+KEYASS	; Kanji conversion key assignment
+	I $D(^DAEXEC)#10 X ^DAEXEC ;escape the complex problem;tt;22-apr-1991
+	;**TM**;I $ZV["VAX DSM" U 0:EXIN=PARAM="KEY=STANDARD"
+	;**TM**;I $ZV["ULTRIX" U 0:EXIN=PARAM="KEYSET=STANDARD"
+	;**TM**;S %zzkey=$$TRNLOG^%DAZCALL("DSM$DASL_CONVERSION_KEY")
+	;**TM**;I $ZV["VAX DSM" U 0:EXIN=PARAM="KEY="_$S(%zzkey="EVEJ":"EVEJ",%zzkey="JEDI"!(%zzkey="LEIA"):"LEIA",1:"STANDARD")
+	;**TM**;I $ZV["ULTRIX" U 0:EXIN=PARAM="KEYSET="_$S(%zzkey="EVEJ":"EVEJ",%zzkey="JEDI"!(%zzkey="LEIA"):"LEIA",1:"STANDARD")
+	;**TM**;U 0:EXIN=PARAM="KEY=(END_CURSOR=(CTRL-G+CTRL-E))"
+	;**TM**;I $ZV["VAX DSM" U 0:EXIN=PARAM="KEY=(DEL_WORD=(NOKEY,NOKEY))"
+	;**TM**;U 0:EXIN=PARAM="KEY=(SELECT=(NOKEY,NOKEY))" ;Patch seq. opt002;tt;7-aug-1990
+	;**TM**;U 0:EXIN=PARAM="KEY=(SELECT=(CTRL-G+S,CTRL-G+S))" ;Patch seq.015
+	;^ for TANGO touroku
+	;**TM**;U 0:EXIN=PARAM="KEY=(REMOVE=(NOKEY,NOKEY))" ;Patch seq. opt002;tt;7-aug-1990
+	;**TM**;U 0:EXIN=PARAM="KEY=(REMOVE=(CTRL-G+R,CTRL-G+R))" ;Patch seq.015
+	;**TM**;U 0:EXIN=PARAM="KEY=(INSERT=(NOKEY,NOKEY))" ;Patch seq. opt002;tt;7-aug-1990
+	;**TM**;U 0:EXIN=PARAM="KEY=(INSERT=(CTRL-G+I,CTRL-G+I))" ;Patch seq.015
+	;**TM**;U 0:EXIN=PARAM="NOMESSAGE" ;Patch seq. opt002;tt;7-aug-1990
+	;**TM**;U 0:EXIN=PARAM="TERMINATOR=(ARROW-RIGHT+ARROW-LEFT)"
+	;**TM**;S %zzspm=$$TRNLOG^%DAZCALL("DSM$DASL_CONVERSION_SPACE_MODE")
+	;**TM**;U 0:EXIN=PARAM="SPACE_MODE="_$S(%zzspm="NORMAL":"NORMAL",%zzspm="DECIDE":"DECIDE",1:"DECIDE")
+	I '$D(^DASY("PARM","KDJ")) Q
+	S $ZT="TRAP^"_$T(+0)
+	F %zzq=1:1:15 D
+	.S %zzkey=$P(^DASY("PARM","KDJ"),";",%zzq) Q:%zzkey=""
+	.S %zzfunc=$P($T(FUNC+%zzq),";",3),%zzkey=$P($T(KEY+(%zzkey-32)),";",3)
+	.;**TM**:U 0:EXIN=PARAM="KEY=("_%zzfunc_"=(,"_%zzkey_"))" ; assign alternate key
+	K %zzq,%zzkey,%zzfunc
+	Q
+	;
+TRAP	;
+	S %MSG=$ZE
+	;**TM** I %MSG["DUPLICATE" U 0:EXIN=PARAM="KEY=STANDARD" S %MSG="漢字変換キーが重複しています。'標準キー配置'に設定されました。"
+	I %MSG["DUPLICATE" S %MSG="漢字変換キーが重複しています。'標準キー配置'に設定されました。"
+	Q
+	;
+KEY	;
+	;;PF-2;
+	;;PF-3;
+	;;PF-4;
+	;;
+	;;
+	;;F-7;
+	;;F-8;
+	;;F-9;
+	;;F-10;
+	;;
+	;;F-11;
+	;;F-12;
+	;;F-13;
+	;;F-14;
+	;;
+	;;HELP;
+	;;DO;
+	;;
+	;;F-17;
+	;;F-18;
+	;;F-19;
+	;;F-20;
+	;
+FUNC	;
+	;;KANJI;
+	;;PREV_KANJI;
+	;;TO_ZENKAKU;
+	;;TO_KATAKANA;
+	;;TO_HIRAGANA;
+	;;TO_SYMBOL;
+	;;BY_CODE;
+	;;TO_NATIONAL;
+	;;NO_CONVERT;
+	;;TO_HANKAKU;
+	;;NEXT_CLAUSE;
+	;;PREV_CLAUSE;
+	;;SHRINK_CLAUSE;
+	;;EXPAND_CLAUSE;
+	;;CHOICE;
+	;
+DUPCHK	; Check duplication in kanji key conversion assignment
+	N %DUP,%I,%ZZ,%ZZ1
+	S %MSG=""
+	F %I=1:1 S %ZZ=$P($T(DDNM+%I),";",3,255) Q:%ZZ=""  D  Q:%MSG]""
+	.S %ZZ1=$P(%ZZ,";",1) Q:@%ZZ1=""
+	.I $D(%DUP(@%ZZ1)) S %MSG="'"_%DUP(@%ZZ1)_"'と'"_$P(%ZZ,";",2)_"'機能が同じキー("_@%ZZ1_")に割り当てられています。" Q
+	.S %DUP(@%ZZ1)=$P(%ZZ,";",2)
+	Q
+DDNM	;
+	;;KDHF;Help-1;
+	;;KDHF2;Help-2;
+	;;KDMMF;Main Menu;
+	;;KDEF;Exit;
+	;;KDPFF;Previous Field;
+	;;KDCFF;Clear Field;
+	;;KDCMF;Command Mode;
+	;;KDPSF;Previous Screen;
+	;;KDNSF;Next Screen;
+	;;KDILF;Insert Line;
+	;;KDDLF;Delete Line;
+	;;KDSSF;Software Status;
+	;;JKDCCF;候補選択;
+	;;JKDCDF;コード変換;
+	;;JKDECF;文節拡大;
+	;;JKDHF;半角変換;
+	;;JKDHKF;半角カタカナ変換;
+	;;JKDNCF;次文節移動;
+	;;JKDNOF;無変換;
+	;;JKDNTF;文節次候補;
+	;;JKDPCF;前文節移動;
+	;;JKDPVF;文節前候補;
+	;;JKDSCF;文節縮小;
+	;;JKDSYF;記号変換;
+	;;JKDZF;全角変換;
+	;;JKDZHF;全角ひらがな変換;
+	;;JKDZKF;全角カタカナ変換;
+	;;
+VKDF	;Validation check for KANJI CONVERSION KEY.
+	I ",33,34,35,38,39,40,41,43,44,45,46,48,49,51,52,53,54,"'[(","_%RES_",") S %MSG=%RES_" は不適当なキー番号です。<HELP>キーを押してください。"
+	Q
+	;
+KDH	; Help screen for kanji conversion key assignment
+	U 0:PACK W %E,"[2H"
+	W %E,"[2J"
+	W %E,"[1;11H"
+	W %E,"[1m"
+	W %E,"#6"
+	W "漢字変換キーマップ"
+	W %E,"[0m"
+	W %E,"(0"
+	W %E,"[5;5H"
+	W "lqqwqqwqqwqqwqqk lqqwqqwqqwqqwqqk lqqwqqwqqwqqk lqqwqqqqqk lqqwqqwqqwqqk"
+	W %E,"[6;5H"
+	W "x  x  x  x  x  x x  x  x  x  x  x x  x  x  x  x x  x     x x  x  x  x  x"
+	W %E,"[7;5H"
+	W "mqqvqqvqqvqqvqqj mqqvqqvqqvqqvqqj mqqvqqvqqvqqj mqqvqqqqqj mqqvqqvqqvqqj"
+	W %E,"[10;53H"
+	W "lqqwqqwqqk lqqwqqwqqwqqk"
+	W %E,"[11;53H"
+	W "x  x  x  x x  x  x  x  x"
+	W %E,"[12;53H"
+	W "tqqnqqnqqu tqqnqqnqqnqqu"
+	W %E,"[13;53H"
+	W "x  x  x  x x  x  x  x  x"
+	W %E,"[14;53H"
+	W "mqqnqqnqqj tqqnqqnqqnqqu"
+	W %E,"[15;53H"
+	W "   x  x    x  x  x  x  x"
+	W %E,"[16;53H"
+	W "lqqnqqnqqk tqqnqqnqqnqqu"
+	W %E,"[17;53H"
+	W "x  x  x  x x  x  x  x  x"
+	W %E,"[18;53H"
+	W "mqqvqqvqqj tqqvqqnqqu  x"
+	W %E,"[19;53H"
+	W "           x     x  x  x"
+	W %E,"[20;53H"
+	W "           mqqqqqvqqvqqj"
+	W %E,"(B"
+	W %E,"[6;23H--"
+	W %E,"[6;26H38"
+	W %E,"[6;29H39"
+	W %E,"[6;32H40"
+	W %E,"[6;35H41"
+	W %E,"[6;40H43"
+	W %E,"[6;43H44"
+	W %E,"[6;46H45"
+	W %E,"[6;49H46"
+	W %E,"[6;54H48"
+	W %E,"[6;58H49"
+	W %E,"[6;65H51"
+	W %E,"[6;68H52"
+	W %E,"[6;71H53"
+	W %E,"[6;74H54"
+	W %E,"[11;54H--"
+	W %E,"[11;57H--"
+	W %E,"[11;60H--"
+	W %E,"[11;65H--"
+	W %E,"[11;68H33"
+	W %E,"[11;71H34"
+	W %E,"[11;74H35"
+	W %E,"[13;54H--"
+	W %E,"[13;57H--"
+	W %E,"[13;60H--"
+	W %E,"[13;65H--"
+	W %E,"[13;68H--"
+	W %E,"[13;71H--"
+	W %E,"[13;74H--"
+	W %E,"[15;57H--"
+	W %E,"[15;65H--"
+	W %E,"[15;68H--"
+	W %E,"[15;71H--"
+	W %E,"[15;74H--"
+	W %E,"[17;54H--"
+	W %E,"[17;57H--"
+	W %E,"[17;60H--"
+	W %E,"[17;65H--"
+	W %E,"[17;68H--"
+	W %E,"[17;71H--"
+	W %E,"[18;74H--"
+	W %E,"[19;66H--"
+	W %E,"[19;71H--"
+	W %E,"[11;6HVT200 および VT300 シリーズ端末は，"
+	W %E,"[12;6H全てのファンクションキーが使用できます。"
+	W %E,"[13;6HVT80 端末は、33 から 35 までの"
+	W %E,"[14;6Hキーが使用できます。"
+	W %E,"[22;20H<RETURN> を入力してください。"
+	;**TM**; U 0:(NOPACK,NOECHO)
+	U 0:(NOPACK:NOECHO)
+	R I:300 U 0:ECHO
+	W %E,"[H",%E,"[2J"
+	Q
+	;
+KDIH	; real time on-line help screen for function key assignment
+	U 0:PACK W %E,"[2H"
+	W %E,"[2J"
+	;W %E,"[1;8H"
+	U 0:(X=7:Y=0)
+	W %E,"[1m"
+	W %E,"#6"
+	W "ファンクション キー マップ"
+	W %E,"[0m"
+	W %E,"(0"
+	W %E,"[5;5H"
+	W "lqqwqqwqqwqqwqqk lqqwqqwqqwqqwqqk lqqwqqwqqwqqk lqqwqqqqqk lqqwqqwqqwqqk"
+	W %E,"[6;5H"
+	W "x  x  x  x  x  x x  x  x  x  x  x x  x  x  x  x x  x     x x  x  x  x  x"
+	W %E,"[7;5H"
+	W "mqqvqqvqqvqqvqqj mqqvqqvqqvqqvqqj mqqvqqvqqvqqj mqqvqqqqqj mqqvqqvqqvqqj"
+	W %E,"[10;53H"
+	W "lqqwqqwqqk lqqwqqwqqwqqk"
+	W %E,"[11;53H"
+	W "x  x  x  x x  x  x  x  x"
+	W %E,"[12;53H"
+	W "tqqnqqnqqu tqqnqqnqqnqqu"
+	W %E,"[13;53H"
+	W "x  x  x  x x  x  x  x  x"
+	W %E,"[14;53H"
+	W "mqqnqqnqqj tqqnqqnqqnqqu"
+	W %E,"[15;53H"
+	W "   x  x    x  x  x  x  x"
+	W %E,"[16;53H"
+	W "lqqnqqnqqk tqqnqqnqqnqqu"
+	W %E,"[17;53H"
+	W "x  x  x  x x  x  x  x  x"
+	W %E,"[18;53H"
+	W "mqqvqqvqqj tqqvqqnqqu  x"
+	W %E,"[19;53H"
+	W "           x     x  x  x"
+	W %E,"[20;53H"
+	W "           mqqqqqvqqvqqj"
+	W %E,"(B"
+	W %E,"[6;23H--"
+	W %E,"[6;26H38"
+	W %E,"[6;29H39"
+	W %E,"[6;32H40"
+	W %E,"[6;35H41"
+	W %E,"[6;40H43"
+	W %E,"[6;43H44"
+	W %E,"[6;46H45"
+	W %E,"[6;49H46"
+	W %E,"[6;54H48"
+	W %E,"[6;58H49"
+	W %E,"[6;65H51"
+	W %E,"[6;68H52"
+	W %E,"[6;71H53"
+	W %E,"[6;74H54"
+	W %E,"[11;54H21"
+	W %E,"[11;57H22"
+	W %E,"[11;60H23"
+	W %E,"[11;65H32"
+	W %E,"[11;68H33"
+	W %E,"[11;71H34"
+	W %E,"[11;74H35"
+	W %E,"[13;54H24"
+	W %E,"[13;57H25"
+	W %E,"[13;60H26"
+	W %E,"[13;66H7"
+	W %E,"[13;69H8"
+	W %E,"[13;72H9"
+	W %E,"[13;74H61"
+	W %E,"[15;57H--"
+	W %E,"[15;66H4"
+	W %E,"[15;69H5"
+	W %E,"[15;72H6"
+	W %E,"[15;74H60"
+	W %E,"[17;54H--"
+	W %E,"[17;57H--"
+	W %E,"[17;60H--"
+	W %E,"[17;66H1"
+	W %E,"[17;69H2"
+	W %E,"[17;72H3"
+	W %E,"[18;74H29"
+	W %E,"[19;67H0"
+	W %E,"[19;71H62"
+	W %E,"[10;6HVT200 および VT300 シリーズ端末は，"
+	W %E,"[11;6H全てのファンクションキーが使用できます。"
+	W %E,"[12;6HVT100 シリーズ および VT80 端末は、"
+	W %E,"[13;6H32 から 35 までのキーが使用できます。"
+	W %E,"[15;6H'CTRL-x' は、'Ctrl' キーを押しながら"
+	W %E,"[16;6H             'x' キーを押してください。"
+	W %E,"[18;6H  'x+y'  は、'x' キーを押した後、"
+	W %E,"[19;6H             'y' キーを押してください。"
+	W %E,"[21;6H  'SP'   は、〈スペース〉キーを示します。"
+	W %E,"[24;20H<RETURN> を入力してください。"
+	D ^%ZZ3IN
+	;U 0:(NOPACK,NOECHO)
+	;R I:300 U 0:ECHO
+	W %E,"[H",%E,"[2J"
+	Q
+	;
+JUPCASE(S)	; for lower compatibility (not use in v3.0)
+	;**TM**; Q $ZC(%ZUPCASE,S)
+	Q $zcvt(S,"U")
+DSMCODE()	; DSM code set
+	Q "UNICODE"
+	;**TM**; I $ZV["ULTRIX" Q "EUC"
+	;**TM**; I +$P($ZV,"VAX DSM V",2)'>6.0 Q $S($ZC(KJCDSTS)=1:"VMS",1:"DSM")
+	;**TM**; Q $S($ZC(KJCDSTS)=1:"SDEC",1:"DSM")
+VERSION()	; Nihongo DASL version
+	Q "3.0A-000"
+	;

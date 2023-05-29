@@ -1,0 +1,78 @@
+ROUTINE %DASDCPD [Type=INT,LanguageMode=6]
+%DASDCPD	;;4-Mar-92;V6.1 
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	;
+	I DB W " ; *** Xref and Ref initalizing *** - INIT^%DASDCPD",!
+	S %DDNM=""
+	S %DDNM=$S($G(^DASD(%SDNM,"P","D"))'="":^DASD(%SDNM,"P","D"),1:$P(^DASD(%SDNM,"P","G"),";"))
+	I %DDNM="" S %MSG="ポップアップ・スクリーンのデータが定義されていません。" ZT %MSG  ;;%%Z3-T
+	F VN=".PBXL",".PFL",".PLL",".PMX",".PNN",".PN",".PN2",".PNO",".PXP",".PXX",".PXXO",".PXXB",".PXXT",".PXW",".PXWO",".PXF",".PSPC",".PDATA",".PDATAL",".PSEARCEND",".PCURRENT" D SG W ""
+	S CM="S",COM="*"
+	I %DDNM["^" D         
+	.S A=%DDNM D QS S ARG="%XR="""_A_"""" D COM
+	.S ARG="%POPDT=""KEY""" D COM 
+	.S ARG="%XO=""""" D COM 
+	.S ARG="%CD=""""" D COM
+	.I $P(^DASD(%SDNM,"P","G"),";",2)<1 S %MSG="データ長の指定が不適当です。" ZT %MSG  ;;%%Z3-T
+	.S ARG=SM(".PMX")_"="_$P(^DASD(%SDNM,"P","G"),";",2) D COM,ENDL
+	.S SUB("POPONE")=""
+	I %DDNM'["^" D         
+	.
+	.D DATA^%DADDLD                                       
+	.S DR=%DN(%DDNM,"R"),%DDREF=$P(DR,";",1)
+	.I %DDREF="" S %MSG="DDN "_%DDNM_" のリファレンス情報が不適当です。" ZT %MSG  ;;%%Z3-T
+	.I "*#"[$E(%DDREF,$L(%DDREF)-1),$P(DR,";",4)="" S K=$E(%DDREF,1,$L(%DDREF)-3) S:K["(" K=K_")" S $P(DR,";",4,5)=K_";KEY"
+	.I $P(DR,";",4,6)=";;" S %MSG="DDN "_%DDNM_" のクロスリファレンス情報が不適当です。" ZT %MSG  ;;%%Z3-T
+	.S A=$P(DR,";",4) D QS S ARG="%XR="""_A_"""" D COM
+	.S POPDT=$P(DR,";",5) I POPDT="KWIC" S %MSG="ＫＷＩＣクロスリファレンスは使用できません。" ZT %MSG  ;;%%Z3-T
+	.S ARG="%POPDT="""_POPDT_"""" D COM
+	.I POPDT="ACR"!(POPDT="TRAN2")!(POPDT="NAME")!(POPDT="JNAME") S SUB("POPTWO")=""
+	.E  S SUB("POPONE")=""
+	.S ARG="%CD="""_$S(%DN(%DDNM,"OT")]"":"X",%DN(%DDNM,"T")="DATE":"D",%DN(%DDNM,"T")="TIME":"T",1:"")_"""" D COM
+	.S A=%DN(%DDNM,"OT")
+	.I $E(A)="%" S SUB(A)="",A="D "_A_"^"_%COMPNM 
+	.D QS S ARG="%XO="""_A_"""" D COM
+	.I %DN(%DDNM,"L")<1 S %MSG="DDN "_%DDNM_" のデータ長の指定が不適当です。" ZT %MSG  ;;%%Z3-T
+	.S ARG=SM(".PMX")_"="_%DN(%DDNM,"L") D COM,ENDL
+	;	
+POPT	;	
+	I DB W " ; ***  *** - POPT^%DASDCPD",!
+	W " S (%LS,%FS,%KY)="""",("_SM(".PSEARCEND")_","_SM(".PCURRENT")_")=0",!
+	W " K "_SM(".PNO")_","_SM(".PSPC")_" S "_SM(".PNO")_"=0,$P("_SM(".PSPC")_","" "","_SM(".PMX")_"+5)=""""",!
+	I '%SDPBX W " S %POPX=%POPX-1,%POPY=%POPY-1"
+	W " D OPGET(%POPW*2) I '",SM(".PCURRENT")," S %MSG=""表示するデータがありません。"",%F=0 D M S ",SM(".PXX"),"=0 G E",!   ;;%%Z3-T
+	W " I "_SM(".PNO")_",%POPW>"_SM(".PNO")_" S %POPW="_SM(".PNO"),!
+	S TMOSCN=$S(TMO]"":TMO,1:"%TMO")
+	W " S %U=2,%TM=",TMOSCN
+	I %SDPBX W " S:%POPX+",SM(".PMX"),"+5>%POPS %POPX=%POPS-",SM(".PMX"),"-5 S:%POPY+%POPW+1>23 %POPY=23-%POPW-1 S ",SM(".PFL"),"=%POPY,",SM(".PLL"),"=%POPY+%POPW+1",!
+	E  W " S:%POPX+",SM(".PMX"),"+3>%POPS %POPX=%POPS-",SM(".PMX"),"-3 S:%POPY+%POPW'<23 %POPY=23-%POPW S ",SM(".PFL"),"=%POPY+1,",SM(".PLL"),"=%POPY+%POPW",!
+	W " S (",SM(".PXX"),",",SM(".PXW"),")=1,(",SM(".PXWO"),",",SM(".PXXO"),")=0,",SM(".PXF"),"=""""",!
+	W " D CLEAR,RP,PDSP(1),DSP",!                                                       
+READ	;
+	I DB W " ; *** Call to read subroutine *** - READ^%DASDCPD",!
+	W "READ S %FND=0,%OLD=""""",!
+	W " D I I '%F G:%RES="""" E G READ",!
+	W " I (%F=""",KD("EX"),"""&%F)!%EX S ",SM(".PXX"),"=0 G E",!
+	W " I %F=""",KD("H"),""" D CDSP,^@%RES,Q,CLEAR,RP,PDSP(",SM(".PXX"),"-",SM(".PXW"),"+1),DSP G READ",!
+	W " I %POPW=1 S:%F=""",KD("PS"),""" %F=""17"" S:%F=""",KD("NX"),""" %F=18",!
+	W " I %F=""17""!(%F=""18"") D DO G READ",!
+	W " I %F=""",KD("PS"),""" D PREVP G READ",!
+	W " I %F=""",KD("NX"),""" D NEXTP G READ",!
+	W " S %MSG=""不適当な文字が入力されました。"",%F=0 D M G READ",!  ;;%%Z3-T
+	Q
+QS	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+COM	I $X+$L(ARG)>150 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	G:V2 SG2 S V1=V1+1 I V1>26 S V1=0,V2=1 G SG2
+	S SM=SCNV_$C(V1+64),SM(VN)=SM
+	Q
+SG2	S V1=V1+1 I V1>26 S V1=1,V2=V2+1
+	S SM=SCNV_$C(V2+64)_$C(V1+64),SM(VN)=SM
+	Q

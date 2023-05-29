@@ -1,0 +1,34 @@
+ROUTINE %DASGR [Type=INT,LanguageMode=6]
+%DASGR	; [DASL] INSTALL ;V3.0 ;DASL Library Globals Restore routine
+	;
+	;	Coded by K.Yamamoto	on 6-Feb-1989
+	;    Modified by tt               29-Apr-1990 for V2.0 %GTI format
+	;
+	; This routine restores some globals in specified device
+	; Stored global format must be %GTO format.
+	;
+	S $ZT="%ERR^"_$T(+0)
+	U 0:CTRAP=$C(3,26) W !!,"DASL Library Globals Restore",!!
+	S %QTY=1,%DEF="DSM$DASL_GLOBALS.SAV" D ^%IOS I '$D(%IOD) G %DONE
+	G %GO
+	;
+%COM	;
+	R %IOD O %IOD:READ
+	;
+%GO	U %IOD R %DATIM,%HEAD U 0
+	W !!,"Globals were saved on: ",%DATIM,!,"Header: ",%HEAD
+	S %NAM=""
+	;
+%FILE	U %IOD R X,Y I X'="**END**" D %NODE G %FILE
+	G %DONE:X=Y,%DIE
+	;
+%NODE	I $P(X,"(",1)=%NAM S @X=Y Q
+	U 0 S %NAM=$P(X,"(",1) W !,%NAM," starting at " D ^%T G %NODE
+	;
+%DIE	; Forced error
+	ZT "* Error restoring globals *"
+	;
+%ERR	S %ZE=$ZE,%ZA=$ZA,%ZB=$ZB
+	D ^%SHOWERR S $ZE="" C:$D(%IOD) %IOD
+	Q
+%DONE	C:$D(%IOD) %IOD K %NAM,%DIR,%HEAD,%DATIM,%IN,%DATA,%IOD,%ZIOD,COL Q

@@ -1,0 +1,12 @@
+ROUTINE %DASEC [Type=INT,LanguageMode=6]
+%DASEC	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;	%PPV  - Users security code
+	; 	%TTB  - Table name
+	;	%SEC  - Security flag set to 1 if valid
+	N %X
+	S %X=$P(^DATD(%TTB,"REF"),";",4)
+	I %PPV_%X["@" S %SEC=1 Q
+	F %N=1:1:$L(%PPV) I %X[$E(%PPV,%N) S %SEC=1 Q
+	Q

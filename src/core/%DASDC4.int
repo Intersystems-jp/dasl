@@ -1,0 +1,327 @@
+ROUTINE %DASDC4 [Type=INT,LanguageMode=6]
+%DASDC4	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	Q:'$D(NF(F))  W LR 
+	D:FL(F) READ G CFA^%DASDC6
+READ	;
+	I DB W " ; ** Peform Field Read - READ^%DASDC4",!
+	I DM D 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. 
+	. W " I '%EX S ",SM(F_".F"),"=1_(",SM(F_".F"),"#10)"
+	. 
+	. 
+	. I SC'=";",$D(SC(F)) W ",$P(",SCARY,SPC,",""",$S(FN(F)]"":FN(F),1:SM(F_".F")),"i""),$C(1),2)=",SM(F_".F")
+	. 
+	. W " D ",LP,":",SM(F_".F"),"=10",!
+	. Q
+	S COM="*" I SC'=";",'$D(SC(F)),SCATR'["$NR" S CM="D",ARG="SS:"_SP_"'="_SO D COM
+	S CM="S" I FT(F)["{NB" S ARG=SMS_"=1" D COM
+	S K=$S(NOE:0,PAD=" ":1,1:2)
+	S %DDNM=FN(F) 
+BREAK	S (D,%DDPIECE)=""
+	I %DDNM'="" S D=$$DELM^%DASDC(%DN(%DDNM,"PI")),%DDPIECE=%DN(%DDNM,"PI")
+	I %DDNM="" S D=$$DELM^%DASDC("") ;	;%%Z3-PATCH
+	I FT(F)["{NR}" S D=""
+	;%%Z3-COLOR+
+	N AT1 S AT=""
+	F %="{BO}","{BL}","{RV}","{UN}" I FT(F)[% S AT=AT_";"_$S(%="{BO}":1,%="{BL}":5,%="{RV}":7,%="{UN}":4)
+	I FT(F)["{GR}" S A=$P($P(FT(F),"{GR}",2),"{") D AGR^%DASDC3
+	S AT=$E(AT,2,999) 
+	;S AT=$S(FT(F)["{SP}":"S",1:"")_$S(REQ:"R",1:"")_$S(FT(F)["{FU}":"F",1:"")_$S(NOE:"N",1:"")_$S(FT(F)["{SL}":"L",1:"")_$S(FT(F)["{SA}":"T",1:"")_$S(FT(F)["{LQ}":"Q",1:"")_$S(FT(F)["{TE}NF":"M",FT(F)["{TE}":"M",1:"")
+	;S ARG="%W="""_FL(F)_";"_Y_";"_(X+$Zwidth(FP(F)))_";"_K_";"_LR_";"_AT_";"_F_";"_FK_$S(FT(F)["{FK}":$P($P(FT(F),"{FK}",2),"{"),1:"")_";"_D_";"_$S(SC]""&((":"_SK_":")[":UD:"):0,1:1)_""""  ;;%%Z3-X6
+	S AT1=$S(FT(F)["{SP}":"S",1:"")_$S(REQ:"R",1:"")_$S(FT(F)["{FU}":"F",1:"")_$S(NOE:"N",1:"")_$S(FT(F)["{SL}":"L",1:"")_$S(FT(F)["{SA}":"T",1:"")_$S(FT(F)["{LQ}":"Q",1:"")_$S(FT(F)["{TE}NF":"M",FT(F)["{TE}":"FM",1:"") ;	;%%Z3-PATCH
+	S ARG="%W="""_FL(F)_";"_Y_";"_(X+$Zwidth(FP(F)))_";"_K_";"_LR_";"_AT1_";"_F_";"_FK_$S(FT(F)["{FK}":$P($P(FT(F),"{FK}",2),"{"),1:"")_";"_D_";"_$S(SC]""&((":"_SK_":")[":UD:"):0,1:1)_";"_AT_""""  ;;%%Z3-X6
+	;%%Z3-COLOR-
+	D COM S ARG="%OLD="_FV D COM
+	I TIM]"" S ARG="%TM="_TIM D COM 
+	I $D(CV(F)) S ARG="%"_CV(F)_"I=""""" D COM
+	S ARG="" S:NOE ARG="NOECHO"
+	S:'CNV ARG=ARG_$S(ARG'="":":",1:"")_"NOCON" 
+	W $$USE^%DAIO(0,ARG)
+	I BATCH>10 S CM="H",ARG=BATCH-10 D COM 
+	I FP(FN)="","RC"[$P(F0(FN),";",3),FL(F),'TAL S CM="D",ARG=LP_"x" D COM 
+	;%%Z3-COLOR+
+	;S AT=""
+	;F %="{BO}","{BL}","{RV}","{UN}" I FT(F)[% S AT=AT_";"_$S(%="{BO}":1,%="{BL}":5,%="{RV}":7,%="{UN}":4)
+	;;;I FT(F)["{GR}" S A=$P($P(FT(F),"{GR}",2),"{") D AGR^%DASDC3
+	;%%Z3-COLOR-
+	I AT'="" S CM="W",ARG="%E,""["_AT_"m""" D COM
+	S CM="D",ARG="I" D COM 
+	I AT'="" S CM="W",ARG="%E,""[m""" D COM
+	I FP(FN)="","RC"[$P(F0(FN),";",3),FL(F),'TAL S CM="D",ARG=LP D COM 
+	I EX]"" S LN=EX_".R" D LG S CM="S",ARG=SMS_"(0)="""_LB_"""" D COM 
+	I $$LOOKUP D 
+	. D ENDL
+	. W " I %F="_KD("SE")_" S (%F,%T)="""",%RES=""*"""
+	. D ENDL
+	S CM="G" I SC'=";",SK]"",'DM D SCKEY
+	S ARG="F:"_$S('DM:"%F",1:"%EX") D COM
+	I FV(F)]"" S ARG=LS_":%T" S:DM ARG=ARG_"!%F" D COM
+	D ENDL
+VALID	;
+	I DB W " ; *** Perform Field Validations - VALID^%DASDC4",!
+	S FLAG("MOD")=0,FLAG("NOP")=0
+	F VALID=2:1 S K=$P(FV(F),"{",VALID),A=$P(K,"}",2,99) Q:K=""  S FLAG("VAL")=$P(FV(F),"{",VALID+1)]"" D @("V"_$E(K,1,2))
+UPDATE	;
+	S COM=""
+	I 'FLAG("MOD"),FV(F)]"" D 
+	. S CM="D",ARG="J1" D COM 
+	. I BATCH=1 D  
+	. . S CM="S:%MSG'=""""",ARG="%LE=%RES" D COM 
+	. . S CM="G",ARG=LR D COM 
+	. I BATCH'=1 D  
+	. . S CM="S",ARG="%F="_KD("EX") D COM 
+	. . S CM="G",ARG="F" D COM
+	. D ENDL
+	I DB W " ; *** Store Validated Value - UPDATE^%DASDC4",!
+	W LS
+	I DM S CM="I",ARG="'%F" D COM
+	I FLAG("MOD") D 
+	. S CM="D",ARG="J" D COM 
+	. I BATCH=1 D  
+	. . S CM="S:%MSG]""""",ARG="%LE=%RES" D COM  ;;%%Z3-DASLV61_BUGS-8
+	. . S CM="G:%MSG]""""",ARG=LR D COM  ;;%%Z3-DASLV61_BUGS-8
+	. I BATCH'=1 D  
+	. . S CM="I",ARG="%MSG]""""" D COM
+	. . S CM="S",ARG="%F="_KD("EX") D COM
+	. . S CM="G",ARG="F" D COM,ENDL 
+	S K=$S(F0(F)["L"!(FP(F)]""):"",F0(F)["R":2,1:3)
+	W:FLAG("NOP")=1 " D B:'%FND" W:FLAG("NOP")=0 " D B" W K,! S:K]"" SUB(K)=""
+	I BATCH=1 W " S %LE="""""
+	I DM D 
+	. 
+	. 
+	. W " S ",SM(F_".F"),"=",SM(F_".F"),"#10"
+	. I SC'=";",$D(SC(F)) W ",$P(",SCARY,SPC,",""",$S(FN(F)]"":FN(F),1:SM(F_".F")),"i""),$C(1),2)=",SM(F_".F")
+	. 
+	. W " W:'",SM(F_".F")," ",EQ,"[",$S(+Y=+SC:""","_Y_"+"_SP_"-"_SO_",""",1:Y),";",X,"H"",$J("""",",FL(F)+$Zwidth(FP(F)),")",!  ;;%%Z3-G
+	. 
+	. S CM="G",COM="*" I SC'=";",SK]"" D SCKEY
+	. 
+	. 
+	. S ARG="F:%F" D COM
+	S FLAG("IT")=$S('$D(TR(F)):0,TR(F)["I":1,1:0) 
+	S CM="S",COM="*" I 'FLAG("IT") S ARG=FV_"=%RES" D COM
+	I 'FLAG("IT"),$D(CV(F)) S ARG=FN(F)_"=%"_CV(F)_"I" D COM
+	I FLAG("IT") S ARG="(%EXT,"_FV_")=%RES" D COM S LB=LB(".TR-"_FN(F)),CM="D",ARG=LB_"i" D COM
+	I $D(SC(F)) D SCSAV,ENDL 
+	Q
+SCKEY	;
+	S SK=":"_SK_":"
+	I '$D(SC(F)) G SCKEYF:SK[":F:" Q
+	I SK[":UD:" S ARG="XM:%F=17!(%F=18)" D COM,SCKEYF
+	I SK'[":UD:",SK[":F:" D SCKEYF
+	I SK[":I:" S ARG="XI:%F="""_KD("IN")_"""" D COM
+	I SK[":D:" S ARG="XD:%F="""_KD("DEL")_"""" D COM
+	Q
+SCKEYF	;
+	S ARG="X26:%F="""_KD("NX")_""",X25:%F="""_KD("PS")_"""" D COM S (SUB("SCROLLF"),SUB("SCROLLB"))=""
+	Q
+SCSAV	;
+	S VN=$S(FN(F)]"":FN(F),$D(SM(F_".V")):SM(F_".V"),1:"")
+	I VN="" S %MSG="スクロールフィールド'"_F_"'はデータネームを使用して下さい。" ZT %MSG  ;;%%Z1-T
+	S CM="S"_$S(DM:"",$E(SCARY)="^":":%RES'=%OLD",1:"")
+	S ARG=SCARY_SPC_","""_VN_""")="_VN D COM
+	I FN(F)=""!'$D(SM(F_".V")) Q
+	S ARG=SCNAK_""""_VN_"i"")"
+	I 'DM,'$D(DM(F)),'$D(DS(F)) S ARG=ARG_"="_SM(F_".V") D COM Q
+	S ARG="$P("_ARG_",$C(1))="_SM(F_".V") D COM
+	Q
+VCO	D VM W " G ",LS,":",A," S %MSG=""",^%DAMSG(%FLANG,"C"),"""",! 
+	Q
+VZZ	S SUB(A)="" 
+VDO	D VM W " D ",A," G F:%EX" W:FLAG("VAL") ",",LS,":%MSG=""""" 
+	G MOD
+VDT	D QS W " S %=""",A,""" D VD^%DAUDTTM" 
+	W:FLAG("VAL") " G ",LS,":%MSG="""""
+	G MOD
+VDN	D QS W " S %=""",A,""" D VDN^%DAUDTTM" 
+	W:FLAG("VAL") " G ",LS,":%MSG="""""
+	G MOD
+VIN	S SUB("VINT")="" 
+	S J=$P(A,":",1) S:J="" J=0
+	S K=$P(A,":",2) S:K="" K=1E25
+	W " S %X=",J,",%Y=",K," D N" W:FLAG("VAL") " G ",LS,":$T"
+	G MOD
+VYN	S SUB("VYN")="" W " D L G ",LS,":$T",! 
+	Q
+VLU	S:$P(K,"$",2)["N" FLAG("NOP")=1
+	D LUSUB 
+	W:FLAG("NOP")=1 " D:'%FND Q" W:FLAG("NOP")=0 ",Q" 
+	W " G F:%EX" W:FLAG("VAL") ",",LS,":%MSG="""" G ",LS,":%RES=""*""&(%MSG]"""")" 
+	G MOD
+LUSUB	;
+	N %XPOP S %XPOP=""
+	S %LUARG=$P(A,"$",1),%LUITM=$P(%LUARG,"&",1),%LUQUAL=$P(A,"$",2)
+	I %LUQUAL["PO=" D 
+	. S %XPOP=$P($P(%LUQUAL,"PO=",2),",",1,4)
+	. 
+	. S %LUQUAL=$P(%LUQUAL,"PO="_%XPOP,1)_$P(%LUQUAL,"PO="_%XPOP,2)
+	S %DDNM=$S(%LUITM["^":FN(F),%LUITM]"":%LUITM,1:FN(F))
+	I %DDNM]"" D DATA^%DADDLD
+	S CM="S",COM="*" I %LUITM["^" D LUGBL
+	E  S:%LUITM="" %LUITM=%DDNM D LUDDN
+	S ARG="%CD="""_%LUQUAL_SM_$S(BATCH'=1:"BE",1:"")_"""" D COM
+	S A=FP(F) I A="",%DDNM]"" S A=%DN(%DDNM,"P")
+	D QS S ARG="%PR="""_A_"""" D COM
+	S A=$P(DR,";",4,6)
+	I A=";;" S %MSG="DDN'"_%DDNM_"'のクロスリファレンス情報が不適当です。" ZT %MSG  ;;%%Z1-T
+	D QS S ARG="%XL="""_A_"""" D COM
+	S A=$P(%LULK,";",1) D QS S ARG="%XT="""_A_"""" D COM 
+	S ARG="%XD="""_%DDNM_"""" D COM
+	S ARG="%XA="""_$S(%DDNM]"":$P(%DN(%DDNM,"R"),";",7),1:"")_""""
+	D COM,ENDL,LUADDN:$P(%LULK,";",2)]"",LUSEL:%LUARG["&"
+	I %XPOP'="" S CM="S",ARG="%XPOP="""_%XPOP_"""" D COM
+	S CM="D",ARG="^%DASDLU" D COM S COM="*"
+	K VD,VJ,VP,VR,%LULK,%DDAP,%LUADN,%LUITM,%LUARG,%LUQUAL
+	Q
+LUGBL	S DR=$S(%DDNM]"":%DN(%DDNM,"R"),1:"") 
+	S $P(DR,";",1,6)=";;;"_%LUITM_";KEY;",(SM,%LULK)="" 
+	Q
+LUDDN	I %DDNM="" S %MSG="Missing dataname for lookup in field "_F ZT %MSG  ;;%%Z3-DASLV61_BUGS-3.0
+	S DR=%DN(%DDNM,"R"),%LULK=^DADD(%DDNM,"LK"),%DDREF=$P(DR,";",1) 
+	I %DDREF="" S %MSG="ルックアップデータネーム'"_%DDNM_"'のリファレンスが不適当です。' " ZT %MSG  ;;%%Z1-T
+	I "*#"[$E(%DDREF,$L(%DDREF)-1),$P(DR,";",4)="" S K=$E(%DDREF,1,$L(%DDREF)-3) S:K["(" K=K_")" S $P(DR,";",4,5)=K_";KEY"
+	I %DN(%DDNM,"OT")]"" S SM="X",%LUADN=0 G LUAOTR
+	S SM=$S(%DN(%DDNM,"T")="DATE":"D",%DN(%DDNM,"T")="TIME":"T",1:"")
+	Q
+LUADDN	;
+	K VD,VJ,VP,VR
+	F %LUADN=2:2 S %DDNM=$P(%LULK,";",%LUADN) Q:%DDNM=""  D LUADDN1
+	S FLAG("OT")=0,K="",SM=1
+	F %LUADN=1:1 S K=$O(VP(K)) Q:K=""  D LUCOMP,QS S DR=A,A=VR D QS,LUACVT S ARG="%XL("_%LUADN_")="""_A_"??"_%DDAP_","_DR_"""" D COM
+	I FLAG("OT") S K="" F %LUADN=1:1 S K=$O(VD(K)) Q:K=""  S %DDNM=VD(K) I %DN(%DDNM,"OT")]"" D LUAOTR
+	D ENDL
+	Q
+LUADDN1	;
+	D DATA^%DADDLD S %DDAP=$P(%LULK,";",%LUADN+1),%DDLEN=%DN(%DDNM,"L")
+	I %DDAP["R" S %DDLEN=%DDLEN_"R",%DDAP=%DDAP-%DDLEN I %DDAP<11 S %MSG="'"_%LUITM_"'の Additional DDN, column/justification が不適当です。"_%DDAP ZT %MSG  ;;%%Z1-T
+	I $D(VJ(%DDAP)) S %MSG="'"_%LUITM_"'の Additional lookup DDNs が互いに上書きし合います。" ZT %MSG  ;;%%Z1-T
+	S VJ(%DDAP)=%DDLEN,VD(%DDAP)=%DDNM,VP(%DDAP)=$P(%DN(%DDNM,"R"),";",1,3)
+	S VPI(%DDAP)=%DN(%DDNM,"PI")
+	S %DDREF=$P(VP(%DDAP),";") S:'$D(VR(%DDREF)) VR(%DDREF)=0
+	S VR(%DDREF)=VR(%DDREF)+1 S:%DDREF["*" VR(%DDREF)=%DDNM
+	Q
+LUACVT	;
+	S %DDTYPE=%DN(VD(K),"T")
+	S FLAG=$S(%DN(VD(K),"OT")]"":"X",%DDTYPE="DATE":"DT",%DDTYPE="TIME":"TM",1:"")
+	I FLAG="" S:A]"" A="S "_A Q
+	S:A]"" A=A_"," 
+	I FLAG="X" S A="S "_A_"%EXT="_$C(34,34,34,34)_",%INT="_DR_" X:$L(%INT) %XO("_%LUADN_")",DR="%EXT",FLAG("OT")=1 Q
+	S A="S "_A_"%"_FLAG_"I="_DR_" D "_FLAG_"IX^%DAUDTTM",DR="%"_FLAG_"X" Q
+	Q
+LUAOTR	;
+	S A=%DN(%DDNM,"OT")
+	I $E(A)="%" S SUB(A)="",ARG="D "_A_"^"_%COMPNM 
+	D QS S ARG="%XO"_$S(%LUADN:"("_%LUADN_")",1:"")_"="""_A_"""" D COM
+	S A=%DN(%DDNM,"IT")
+	I $E(A)="%" S SUB(A)="",ARG="D "_A_"^"_%COMPNM 
+	D QS S ARG="%XI"_$S(%LUADN:"("_%LUADN_")",1:"")_"="""_A_"""" D COM
+	Q
+LUSEL	;
+	K VD,VJ,VP,VR F K=1:1 S SM=$P(%LUARG,"&",K+1) Q:SM=""  D LUSEL1
+	S SM=1 F K=1:1:K-1 D LUCOMP,QS,LUSEL2
+	D ENDL
+	Q
+LUSEL1	S (%DDNM,VD(K))=$P(SM,"!"),VD(K)=$P(SM,"!",2,9),VJ(K)=0
+	S VP(K)=$P(^DADD(%DDNM,"REF"),";",1,3),%DDREF=$P(VP(K),";")
+	S VPI(K)=^DADD(%DDNM,"PIECE")
+	S:'$D(VR(%DDREF)) VR(%DDREF)=0 S VR(%DDREF)=VR(%DDREF)+1
+	I %DDREF["*" S VR(%DDREF)=%DDNM
+	Q
+LUSEL2	S DR=A,A=VR D QS S ARG="%XV("_K_")="""_A_"?"_DR_$P(VD(K),"!")
+	S A=$P(VD(K),"!",2) D QS
+	S ARG=ARG_$S($E(A)?1A:"""""""_"_A_"_""""""",1:A)_"""" D COM
+	Q
+LUCOMP	;
+	S VP=VP(K),%DDREF=$P(VP,";"),%DDPIECE=VPI(K)
+	S %DDXTRCT=$P(VP,";",3),VR="" I VR(%DDREF)=1 S A=%DDREF
+	E  I VR(%DDREF)?.N S (VR(%DDREF),A)="%AD"_SM,VR=A_"="_%DDREF,SM=SM+1
+	E  S A=VR(%DDREF)
+	S A="$G("_A_")" 
+	D PIECE^%DASDC(%DDPIECE,.A,%DDXTRCT)
+	I 'VJ(K) Q 
+	S FLAG=+$O(VJ(K)) I 'FLAG S FLAG=$S($E(SAT)="l":80,1:132)
+	S %DDAP=K,%DDLEN=+VJ(K) I %DDAP+%DDLEN'<FLAG D LUTRNC
+	I VJ(K)["R" S A="$J("_A_","_%DDLEN_")"
+	Q
+LUTRNC	;
+	I $O(VJ(K))="" S %DDLEN=FLAG-%DDAP 
+	E  S %DDLEN=FLAG-%DDAP-1 
+	S:%DDLEN<1 %DDAP=%DDAP-1,%DDLEN=1 S A="$E("_A_",1,$ZPosition("_A_","_%DDLEN_"))"  ;;%%Z1-G
+	Q
+VNM	S SUB("VNAME")="" W " D A" W:FLAG("VAL") " G ",LS,":%MSG=""""" 
+	G MOD
+VJN	;%%Z1-M Japanese Name Validation
+	S SUB("VJNAME")="" W " D JA" W:FLAG("VAL") " G ",LS,":%MSG="""""
+	G MOD
+	;%%Z1-M
+VNU	S SUB("VNUM")="" 
+	S J=$P(A,":",1) S:J="" J=0
+	S K=$P(A,":",2) S:K="" K=1E25
+	S A=$P(A,":",3) S:A="" A=18
+	W " S %X=",J,",%Y=",K,",%T=",A," D O"
+	I FLAG("VAL") W " G ",LS,":%MSG=""""" 
+	G MOD
+VPA	D VM W " G ",LS,":%REST?",A," S %MSG=""",^%DAMSG(%FLANG,"P"),"""",! 
+	Q
+VTB	S SUB("VTABLE")="" I A["^" W " S %="",""_",A,"_"",""" 
+	E  W " S %="",",A,","""
+	W " D T G ",LS,":%MSG=""""",! 
+	Q
+VTS	S SUB("VTABLEM")="" I A["^" W " S %="",""_",A,"_"",""" 
+	E  W " S %="",",A,","""
+	W " D TS G ",LS,":%MSG=""""",! 
+	Q
+VTC	S SUB("VTABLEX")="" I A["^" W " S %="",""_",A,"_"",""" 
+	E  W " S %="",",A,","""
+	W " D H" W:FLAG("VAL") " G ",LS,":%MSG=""""" 
+	G MOD
+VTM	D QS 
+	W " S %=""",A,""" D VT^%DAUDTTM" W:FLAG("VAL") " G ",LS,":%MSG="""""
+	G MOD
+VXE	D VM W " X ",A," G F:%EX" W:FLAG("VAL") ",",LS,":%MSG=""""" 
+	G MOD
+MOD	W ! S FLAG("MOD")=1 
+	Q
+VM	W:VALID>2 " S %MSG=""""" 
+	Q
+LOOKUP()	
+	N FLAG,STRING,I,J
+	S FLAG=0 
+	I KD("SE")="" Q FLAG 
+	S STRING=FV(FN) D LOOKUP2 Q:FLAG=1 1
+	F I=1:1 Q:'$D(FC(FN,I))  S STRING=FC(FN,I) D LOOKUP2 Q:FLAG=1  
+	Q FLAG
+LOOKUP2	I STRING'["{LU}" Q
+	S STRING=$P(STRING,"{LU}",2,99)
+	F J=1:1:$L(STRING) Q:$E(STRING,J)="{"  I $E(STRING,J)="L" S FLAG=1 Q
+	I STRING["{LU}" S STRING="{LU}"_$P(STRING,"{LU}",2,99)
+	G LOOKUP2
+QS	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG
+LG	;
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>150 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM  ;;%%Z1-A
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q  ;;%%Z1-A
+ENDL	W:$X ! S COM=""
+	Q

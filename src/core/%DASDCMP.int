@@ -1,0 +1,45 @@
+ROUTINE %DASDCMP [Type=INT,LanguageMode=6]
+%DASDCMP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+SELECT	;
+	W !,"Compile Screens",! S %VAR("TYPE")="S" D SELECT^%DAUDMP
+	;+%%Z3-COLOR
+	I $$TRNLOG^%DAZCALL("DSM$DASL_GRAPHIC_COMPILE")="ON" S %GCCF=1
+	E  S %GCCF=0
+	;-%%Z3-COLOR
+	S SDNM="" F SI=1:1 S SDNM=$O(^DATG($J,"U","S",SDNM)) Q:SDNM=""  D COMP
+	K SI,SDNM
+	Q
+CLEAN	;
+	K ^DANX("S") S X=^DASDH K ^DASDH S ^DASDH=X
+	Q
+ALL	;
+	W !,"Compiling all screens",!!
+	S SDNM="" F  S SDNM=$O(^DASD(SDNM)) Q:SDNM=""  D COMP
+	K SDNM
+	Q
+BCHONE	;
+	W !,"Compile one screen",!!
+	G COMP
+BCHSEL	;
+	W !,"Compile selected screens",!!
+	S SDNM="" F  S SDNM=$O(^DATG($J,"U","S",SDNM)) Q:SDNM=""  D COMP
+	K SDNM
+	Q
+COMP	;
+	S $ZT="ERRC^%DASDCMP"
+	W ?5,SDNM,?22,$P(^DASD(SDNM,"A"),";",2),!
+	S %MSG="" L ^DASD(SDNM) D ^%DASDC L
+	I %MSG]"" W $C(27),"[1m",%MSG,$C(27),"[0m",!!
+	Q
+ERRC	L  U 0 W "Error  ",$ZE,!! K SS(SDNM)
+	Q
+DASLC	;
+	S $ZT="ERRDASL^%DASDCMP",%MSG=""
+	ZA ^DASD(SDNM) D ^%DASDC ZD ^DASD(SDNM)
+	Q
+ERRDASL	;
+	S %MSG=$S(%MSG]"":%MSG,$ZE]"":$ZE,1:"コンパイル中にエラーが発生しました。"_SDNM)
+	ZD:SDNM'="" ^DASD(SDNM)
+	Q

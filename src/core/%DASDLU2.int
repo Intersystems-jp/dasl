@@ -1,0 +1,218 @@
+ROUTINE %DASDLU2 [Type=INT,LanguageMode=6]
+%DASDLU2	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I $D(XLIN) G READ
+PAINT	;
+	U 0:PACK
+	W %E,"[r" S %SCN=$E(%SCN,1,2) 
+	S XCOL=$P(%XPOP,",",1)  ;;%%Z3-POPUP_SPACE 
+	S XLIN=$P(%XPOP,",",2) 
+	S XHIG=$P(%XPOP,",",3) 
+	S XWID=$P(%XPOP,",",4) 
+	S XTD=1 
+	S XBD=XHIG-2 
+	S $P(XQ,"q",133)=""
+	;+%%Z3-COLOR
+	S TOP=%E_"["_XLIN_";"_XCOL_"H"_%E_"#5"_$S($D(%GC("PB")):%E_%GC("PB"),1:"")_%E_"(0l"_$E(XQ,1,XWID-2)_"k"_%E_"[m"_%E_"(B"  ;;%%Z3-POPUP_SPACE
+	S BODY=%E_"#5"_$S($D(%GC("PB")):%E_%GC("PB"),1:"")_%E_"(0x"_%E_"[m"_$S($D(%GC("PT")):%E_%GC("PT"),1:"")_$E(%U(1),1,XWID-2)_%E_"[m"_$S($D(%GC("PB")):%E_%GC("PB"),1:"")_"x"_%E_"[m"_%E_"(B"  ;;%%Z3-POPUP_SPACE
+	S BOTTOM=%E_"["_(XLIN+XHIG-1)_";"_XCOL_"H"_%E_"#5"_$S($D(%GC("PB")):%E_%GC("PB"),1:"")_%E_"(0m"_$E(XQ,1,XWID-2)_"j"_%E_"[m"_%E_"(B"  ;;%%Z3-POPUP_SPACE
+	;-%%Z3-COLOR
+	S %LN=XLIN+1,%NP=1 
+	W TOP
+	F I=1:1:XHIG-2 W %E,"[",XLIN+I,";",XCOL,"H",BODY
+	W BOTTOM
+	W %E_"["_(XLIN+1)_";"_(XCOL+1)_"H"  ;;%%Z3-POPUP_SPACE
+	;+%%Z3-COLOR
+	W:$D(%GC("PT")) %E,%GC("PT")
+	F %I=1:1:XHIG-2 D DISPLAY S %LN=%LN+1,%NP=%NP+1
+	W %E,"[m"
+	;-%%Z3-COLOR
+	S %LN=XLIN+1,%NP=1 
+	;W %E,"[7m" D DISPLAY W %E,"[m"
+	W %E,"[7m" W:$D(%GC("PS")) %E,%GC("PS") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	U 0:NOPACK
+	G READ
+REFRESH	;
+	W TOP
+	F I=1:1:XHIG-2 W %E,"[",XLIN+I,";",XCOL,"H",BODY
+	W BOTTOM
+	W %E_"["_(XLIN+1)_";"_(XCOL+2)_"H"
+	N TMP S TMP=%NP_";"_%LN
+	S %NP=XTD,%LN=XLIN+1
+	;+%%Z3-COLOR
+	W:$D(%GC("PT")) %E,%GC("PT")
+	F %I=1:1:XHIG-2 D DISPLAY S %LN=%LN+1,%NP=%NP+1
+	W %E,"[m"
+	;-%%Z3-COLOR
+	S %NP=$P(TMP,";"),%LN=$P(TMP,";",2)
+	;W %E,"[7m" D DISPLAY W %E,"[m"
+	W %E,"[7m" W:$D(%GC("PS")) %E,%GC("PS") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	U 0:NOPACK
+	Q
+READ	I $P(%XL,";",2)'="KEY",%KY'=""&('$D(%XT(%NP+XHIG))) Q 
+	I $P(%XL,";",2)="KEY",'$D(%XT(%NP+XHIG)),((%LV'=""&($E(%LS,1,$L(%LV))=%LV))!(%LV=""&(%LS'=""))) Q
+	S %W="132;"_(24)_";"_(80)_";2;READ",%OLD=""
+	W %E,"[?25l" 
+	D I
+	W %E,"[?25h" 
+	I %F=41 S %FND=-1,%RES=""  Q
+	I %F=24 S %FND=%NP,%RES="" Q
+	I %F=0  S %FND=%NP,%RES="" Q  
+	S %FND=0
+	G READ
+NEXT	;
+	I XBD>%NN Q 
+	S XTD=XTD+XHIG-2
+	S XBD=XBD+XHIG-2
+	I XBD>%NN S XBD=%NN,XTD=XBD-XHIG+3
+	S %LN=XLIN+1 
+	S %NP=XTD
+	U 0:PACK
+	;+%%Z3-COLOR
+	W:$D(%GC("PT")) %E,%GC("PT")
+	F %I=1:1:XHIG-2 D DISPLAY S %LN=%LN+1,%NP=%NP+1
+	W %E,"[m"
+	;-%%Z3-COLOR
+	S %LN=XLIN+1 
+	S %NP=XTD
+	;W %E,"[7m" D DISPLAY W %E,"[m"
+	W %E,"[7m" W:$D(%GC("PS")) %E,%GC("PS") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	;;W %E,"[24;1H"," %NP=",%NP," %LN=",%LN," XTD=",XTD," XBD=",XBD," %NN=",%NN,"        "
+	U 0:NOPACK
+	Q
+PREV	;
+	G READ:XTD=1 
+	S XTD=XTD-XHIG+2
+	S XBD=XBD-XHIG+2
+	I XTD<1 S XTD=1,XBD=XHIG-2
+	S %NP=XTD
+	S %LN=XLIN+1 
+	U 0:PACK
+	;+%%Z3-COLOR
+	W:$D(%GC("PT")) %E,%GC("PT")
+	F %I=1:1:XHIG-2 D DISPLAY S %LN=%LN+1,%NP=%NP+1
+	W %E,"[m"
+	;-%%Z3-COLOR
+	S %LN=XLIN+1 
+	S %NP=XTD
+	;W %E,"[7m" D DISPLAY W %E,"[m"
+	W %E,"[7m" W:$D(%GC("PS")) %E,%GC("PS") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	;;W %E,"[24;1H"," %NP=",%NP," %LN=",%LN," XTD=",XTD," XBD=",XBD," %NN=",%NN,"        "
+	U 0:NOPACK
+	Q
+E	;
+	S %FND=-1 Q
+HLP	;
+	S %MSG=^%DAMSG(%FLANG,"ITEMH")
+	Q
+DISPLAY	;
+	W %E_"["_(%LN)_";"_(XCOL+1)_"H"  ;;%%Z3-POPUP_SPACE
+	W $E($S($D(%XT(%NP)):%XT(%NP),1:%U(1)),1,XWID-2) 
+	Q
+DOWN	;
+	G READ:%NP=%NN 
+	U 0:PACK
+	;D DISPLAY
+	W:$D(%GC("PT")) %E,%GC("PT") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	S %LN=%LN+1,%NP=%NP+1
+	I %NP>XBD D  
+	. S XBD=XBD+1,XTD=XTD+1
+	. S %LN=XLIN+1 
+	. S %NP=%NP-XHIG+3
+	. ;+%%Z3-COLOR
+	. W:$D(%GC("PT")) %E,%GC("PT")
+	. F %I=1:1:XHIG-3 D DISPLAY S %LN=%LN+1,%NP=%NP+1
+	. W %E,"[m"
+	. ;-%%Z3-COLOR
+	;W %E,"[7m" D DISPLAY W %E,"[m"
+	W %E,"[7m" W:$D(%GC("PS")) %E,%GC("PS") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	;;W %E,"[24;1H"," %NP=",%NP," %LN=",%LN," XTD=",XTD," XBD=",XBD," %NN=",%NN,"        "
+	U 0:NOPACK
+	Q
+UP	;
+	G READ:%NP=1 
+	U 0:PACK
+	;D DISPLAY 
+	W:$D(%GC("PT")) %E,%GC("PT") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	S %LN=%LN-1,%NP=%NP-1
+	I %NP<XTD D  
+	. S XTD=XTD-1,XBD=XBD-1
+	. S %LN=XLIN+1 
+	. ;+%%Z3-COLOR
+	. W:$D(%GC("PT")) %E,%GC("PT")
+	. F %I=1:1:XHIG-2 D DISPLAY S %LN=%LN+1,%NP=%NP+1
+	. W %E,"[m"
+	. ;-%%Z3-COLOR
+	. S %LN=XLIN+1,%NP=XTD
+	;W %E,"[7m" D DISPLAY W %E,"[m"
+	W %E,"[7m" W:$D(%GC("PS")) %E,%GC("PS") D DISPLAY W %E,"[m" ;	;%%Z3-COLOR
+	;;W %E,"[24;1H"," %NP=",%NP," %LN=",%LN," XTD=",XTD," XBD=",XBD," %NN=",%NN,"        "
+	U 0:NOPACK
+	Q
+Q0	;
+	S %SCN=""
+Q	Q:%EX&%OP  U 0:PACK D Q1:%SCN'="l;" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	S %O=1 G REFRESH
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'=";" W %E,"[;r"
+	S %SCN="l;",%LL=80 Q
+R	I %L(%Z)'="XSAAD" G @("R^"_%L(%Z))
+	F %X=2,5,7,9,11,13,15,17,20 I '%O(%X),%L(%X)="XSAAD" S %O(%X)=1 D @%X
+	;; Run-time
+GEN	;
+	S %FLANG=^%DAMSG I '$D(DB) S DB=0
+	I '$D(%PRTD) D  
+	. I DB S FILE=0 Q
+	. S FILE="DSM_DASL_S.TMP" C FILE O FILE:NEW U FILE
+	F I=1:1 S X=$T(+I) W X,! Q:X="X ;"
+	S TMOSCN="%TMO",BATCH=1,SMS="%XX",HELP=0,ROU=$T(),SAT="l"
+	F I="LPOPUP" S SUB(I)=""
+	N KD D KD^%DASDC,UTILSX^%DASDC5
+	W !! Q:FILE=0!($D(%PRTD))
+	U FILE:DISCON X "ZR  F I=1:1 R X ZI:X]"""" X I X="""" ZS "_$T()_" Q"
+	C FILE:DEL K FILE,SUB
+	Q
+	;; Run-time
+X	;
+I	U 0:NOECHO
+I0	S (%F,%Z)=0 I %EX S %F="41",(%MSG,%RES)="" G I3
+I1	S $ZT="I9^%DASDLU2",%INP="" U 0
+I4	R %RES#255:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41"
+	G I2:%F I %T=23 D Q0 G I0
+	S:%RES="?" %F="48"
+I2	I %MSG]"" S %MSG="" D M
+	I %F=17 G UP
+	I %F=18 G DOWN
+	I %F=25 G PREV
+	I %F=26 G NEXT
+	I %F="40" S %EX=1,%F="41" G I3
+	I %F="46" S %MSG=$T(+1)_" - "_$P(%W,";",7),%F=-1 D M G I0
+	I %F="33" S %F="48"
+	D I8:%F G I7:%F="48"
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	U 0:(ESC:CON:ECHO)
+	Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	I %RES]""!%Z S %=%OLD G READ
+	Q
+I9	U 0 I $ZE'["INTERRUPT",$ZE'["ESCAPE" ZQ 1 G @$ZT
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"
+	I %="M" S %EX=1
+	I %="T" S %MSG=$T(+1)_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W:$D(%GC("SM")) %E,%GC("SM") W $J("",%LL-$ZWidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)),%E,"[m" I '%F S %HF="" W *7
+	Q

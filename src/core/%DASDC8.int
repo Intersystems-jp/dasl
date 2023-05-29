@@ -1,0 +1,186 @@
+ROUTINE %DASDC8 [Type=INT,LanguageMode=6]
+%DASDC8	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+EVAL	;
+	D ENDL,LABEL I C]"" S CM="G",ARG=LR_FLAG("LB")_":'("_C_")" D COM
+	I A["<" G EVALP 
+	D NOD S:'DB $ZT="ERRFLD^%DASDC6" F Q=1:1 Q:'$D(NOD(Q))  D WRITE
+	K NOD D REPAINT,ENDL W LR,FLAG("LB")," ;",!
+	Q
+NOD	;
+	K NOD F J=1:1:$L(A,":") S FN=$P(A,":",J) D NOD1
+	Q
+NOD1	;
+	S DR=%DN(FN(FN),"R"),%DDREF=$P(DR,";")
+	S %DDPIECE=%DN(FN(FN),"PI")
+	I %DDPIECE?.N,%DDPIECE'="" S %DDPIECE=%DDPIECE_FLAG("DELIM")
+	I %DDPIECE="" S %DDPIECE=0
+	S %DDXTRCT=$P(DR,";",3) F Q=1:1 Q:'$D(NOD(Q))  Q:NOD(Q)=%DDREF
+	S NOD(Q)=%DDREF
+	S NOD(Q,%DDPIECE)=""
+	S NOD(Q,%DDPIECE,+%DDXTRCT,FN)=%DDXTRCT
+	Q
+WRITE	;
+	S %DDREF=NOD(Q),CM="D",ARG=NEV(%DDREF) D COM
+	I Q=1 S CM="S",ARG="%FND=%D" D COM S CM="G",ARG=LR_FLAG("LB")_":'%D" D COM
+	S J="" F Q=Q:0 S J=$O(NOD(Q,J)),K="" Q:J=""  F Q=Q:0 S K=$O(NOD(Q,J,K)),FN="" Q:K=""  F Q=Q:0 S FN=$O(NOD(Q,J,K,FN)) Q:FN=""  D WRT1
+	Q
+WRT1	;
+	S %DDNM=FN(FN),D=NOD(Q,J),%DDXTRCT=NOD(Q,J,K,FN)
+	I $D(CV(FN)) S ARG="("_%DDNM_",%"_CV(FN)_"I,"_SM(FN_".V")_")"
+	E  S ARG=$S('$D(TR(FN))!(%DN(%DDNM,"OT")=""):%DDNM,1:"("_%DDNM_",%INT)")
+	S CM="S",ARG=ARG_"=" 
+	I J S VAR="%T" D PIECE^%DASDC($S(J=0:"",1:J),.VAR,%DDXTRCT) S ARG=ARG_VAR
+	I 'J S ARG=ARG_"%T"
+	D COM,CVDTTM:$D(CV(FN)) I $D(TR(FN)),%DN(%DDNM,"OT")]"" D TROUT
+	Q:'$D(SC(FN))
+SCROLL	;
+	S CM="S",ARG=SCARY_SPC_","""_%DDNM_""")="_%DDNM D COM
+	S FLAG("CV")=$D(CV(FN)),FLAG("TR")=$D(TR(FN))
+	S FLAG("DM")=$D(DM(FN)),FLAG("DS")=$D(DS(FN))
+	I 'FLAG("CV"),'FLAG("TR") Q
+	S ARG=SCNAK_""""_%DDNM_"i"")"
+	S ARG=$S(FLAG("DM")!FLAG("DS"):"$P("_ARG_",$C(1))",1:ARG)
+	S ARG=ARG_"="_SM(FN_".V") D COM
+	Q
+CVDTTM	;
+	D ENDL S CM="I",ARG="%"_CV(FN)_"I?"_$S(CV(FN)="TM":"1.5N",1:".1""-""1N.N") D COM
+	S CM="D",ARG=CV(FN)_"IX^%DAUDTTM" D COM
+	S CM="S",ARG=SM(FN_".V")_"=%"_CV(FN)_"X" D COM,ENDL
+	Q
+TROUT	;
+	S %DDNM=FN(FN),LB=LB(".TR-"_%DDNM),CM="D",ARG=LB_"o" D COM
+	S CM="S",ARG=SM(FN_".V")_"=%EXT" D COM
+	Q
+EVALP	;
+	D NODP S FLAG=0
+	I $D(PLIST(1)) S FLAG=1 F Q=1:1 Q:'$D(NOD(Q))  D WRITEP I 'FLAG Q
+	F Q=1:1 Q:'$D(NOD(Q))  D WRITEP
+	D REPAINT,ENDL W LR,FLAG("LB") S ARG=""
+	I $D(PLIST) D KILTMP D:ARG]"" ENDL
+	W:ARG="" " ;",! K NOD,PDR,PLIST
+	Q
+KILTMP	;
+	S ARG="" F J=1:1:FLAG("%P") S ARG=ARG_"%P"_J_","
+	F J=1:1 Q:'$D(NOD(J))  I NOD(J)?1"%T".E S ARG=ARG_NOD(J)_","
+	I ARG]"" S CM="K",ARG=$E(ARG,1,$L(ARG)-1) D COM
+	Q
+NODP	;
+	K NOD,PDR,PLIST S (FLAG("%P"),FLAG)=0
+	I A["<" F J=1:1:$L(A,":") S FN=$P(A,":",J) D PLIST
+	F J=1:1:$L(A,":") S FN=$P(A,":",J) D NODP2
+	Q
+PLIST	;
+	S:FN?1"(".E FLAG=1,FN=$E(FN,2,99)
+	S:FLAG!(FN["<") PLIST(J)=$P(FN,"<",2,99) S:FN["<" FLAG=0,FN=$P(FN,"<",1)
+	G PLIST1:'$D(PLIST(J)) G PLIST1:PLIST(J)=""
+	S FLAG("#")="",PLIST=PLIST(J),P=$L(PLIST,"<")
+	N PARENT S PARENT="" ;	;%%Z3-Y
+	F K=P:-1:1 S D=$P(PLIST,"<",K) D PALIAS
+PLIST1	;
+	S $P(A,":",J)=FN
+	Q
+PALIAS	;
+	I D["#" S PDR(D)="1;"_$E(D,2,99)_";%P0",FLAG("#")=$E(D,2,99) G PALIAS1
+	G PALIAS1:$D(PDR(D))
+	S PDR=$P(%DN(D,"R"),";",1),(V,FLAG("%P"))=FLAG("%P")+1
+	I K=P S PDR(D)="0;%P"_V_";"_PDR G PALIAS1
+	S T=$P($P(PDR,"(",2),")",1)
+	F Q=1:1:$L(T,",") Q:$P(T,",",Q)=$P(%DN($P(PLIST,"<",K+1),"R"),";",7)  ;;%%Z2-Y
+	;I FLAG("#")="" S $P(T,",",Q)="%P"_(V-1),PDR(D)="0;%P"_V_";"_$P(PDR,"(",1)_"("_T_")"
+	I FLAG("#")="" S $P(T,",",Q)=$S(PARENT]"":$P(PDR(PARENT),";",2),1:"%P"_(V-1)),PDR(D)="0;%P"_V_";"_$P(PDR,"(",1)_"("_T_")" ;	;%%Z3-Y
+	E  S $P(T,",",Q)=FLAG("#"),PDR(D)="0;%P"_V_";"_FLAG("#")_"%P0"_$P(PDR,"(",1)_"("_T_")",FLAG("#")=""
+PALIAS1	;
+	S PLIST(J,P-K)=D
+	S PARENT=D ;	;%%Z3-Y
+	Q
+NODP2	;
+	S DR=%DN(FN(FN),"R") I $D(PLIST(J)) D PNOD
+	F Q=1:1 Q:'$D(NOD(Q))  Q:NOD(Q)=$P(DR,";",1)
+	S NOD(Q)=$P(DR,";"),V=%DN(FN(FN),"PI")
+	S NOD(Q,+V)=""""_$S(V?.N:FLAG("DELIM"),1:$E(V,$L(V)))_""""
+	S NOD(Q,+V,+$P(DR,";",3),FN)=$P(DR,";",3)
+	Q
+PNOD	;
+	S P=J I PLIST(P)="" F P=J+1:1 Q:PLIST(P)]""
+	I +PLIST(P)=1 S $P(DR,";",1)=$P(PLIST(P),";",3) Q
+	S K="" F P=P:0 S K=$O(PLIST(P,K)) Q:K=""  S D=PLIST(P,K) D PNOD1
+	S V=$P(PDR(D),";",2),PDR=$P(DR,";",1),T=$P($P(PDR,"(",2),")",1)
+	I V'["%P" S:D["#" D=$E(D,2,99)
+	F Q=1:1:$L(T,",") Q:$P(T,",",Q)=$P(%DN(D,"R"),";",7)
+	I $P(%DN(D,"R"),";",7)'=$P(T,",",Q) S %MSG="EVAL pointer in field "_F_" is not valid pointer in Data Dictionary." ZT
+	S $P(T,",",Q)=V
+	S PLIST(P)="1;"_V_";"_$S(V["%P":"",1:D_"%P0")_$P(PDR,"(",1)_"("_T_")"
+	S $P(DR,";",1)=$P(PLIST(P),";",3)
+	I P'=J F Q=J:1:P-1 S PLIST(Q)=PLIST(P)
+	Q
+PNOD1	;
+	Q:+PDR(D)=1  S PDR=$P(PDR(D),";",3)
+	F Q=1:1 Q:'$D(NOD(Q))  Q:NOD(Q)=PDR
+	S PDR=PDR_";"_$P(%DN(D,"R"),";",2,99),NOD(Q)=$P(PDR,";")
+	S V=%DN(D,"PI")
+	S NOD(Q,+V)=""""_$S(V?.N:FLAG("DELIM"),1:$E(V,$L(V)))_""""
+	S NOD(Q,+V,+$P(PDR,";",3),"<"_D)=$P(PDR,";",3)
+	S $P(PDR(D),";")=1 
+	Q
+WRITEP	;
+	S DR=NOD(Q),P="" Q:DR=""  I DR?1"%T".N G WRTP1
+	I DR["%P" S P=$F(DR,"%P"),P="%P"_$E(DR,P,P+($E(DR,P+1)?1N))
+	I P="%P0" S P=$P(DR,"%P0",1),DR=$P(DR,"%P0",2)
+	I FLAG,Q=1 S CM="S",ARG="%FND=0" D COM
+	I FLAG,P]"" S CM="G",ARG=LR_FLAG("LB")_":"_P_"=""""" D COM
+	I P]"" D EVQS:$F(DR,"""") S CM="S",ARG="%GR="""_DR_"""" S:'FLAG ARG=ARG_",%T=""""" D COM
+	S CM="D",ARG=$S(P="":NEV(DR),FLAG:"A1",1:"A1:"_P_"]""""") D COM
+	I Q=1,'FLAG S CM="S",ARG="%FND=%D" D COM
+	I Q=1!FLAG S CM="G",ARG=LR_FLAG("LB")_":'%D" D COM
+WRTP1	;
+	S J="" F Q=Q:0 S J=$O(NOD(Q,J)),K="" Q:J=""  F Q=Q:0 S K=$O(NOD(Q,J,K)),FN="" Q:K=""  F Q=Q:0 S FN=$O(NOD(Q,J,K,FN)) Q:FN=""  D WRTP2 I FLAG,FN=$P(A,":",1) S FLAG=0,(J,K,FN)="zzz"
+	Q
+EVQS	;
+	F V=1:1 S V=$F(DR,"""",V) Q:'V  S DR=$E(DR,1,V-1)_$E(DR,V-1,255)
+	Q
+WRTP2	;
+	I FLAG,FN'["<",FN'=$P(A,":",1) Q
+	I FLAG,NOD(Q)'?1"%T".E D CACHE
+	I FLAG,FN=$P(A,":",1) S CM="S",ARG="%FND=1" D COM
+	S V=$S(FN["<":$P(PDR($P(FN,"<",2)),";",2),1:FN(FN))
+	I $D(CV(FN)) S V="("_FN(FN)_",%"_CV(FN)_"I,"_SM(FN_".V")_")"
+	S D=NOD(Q,J),T=NOD(Q,J,K,FN),CM="S",ARG=$S('$D(TR(FN))!(%DN(FN(FN),"OT")=""):V,1:"("_V_",%INT)")_"="  ;;%%Z2-Y
+	S:K ARG=ARG_"$E(" S:J ARG=ARG_"$P(" S ARG=ARG_$S(DR?1"%T".N:DR,1:"%T")
+	I J S ARG=ARG_","_D_","_J_")"
+	I K S:T'["-" ARG=ARG_","_+T_")" S:T["-" ARG=ARG_","_+$P(T,"-",1)_","_+$P(T,"-",2)_")"
+	D COM I FLAG K NOD(Q,J,K,FN)
+	S %DDNM=FN(FN) I $D(CV(FN)) D CVDTTM 
+	I $D(TR(FN)),%DN(%DDNM,"OT")]"" D TROUT 
+	I $D(SC(FN)) D SCROLL 
+	Q
+CACHE	;
+	I $O(NOD(Q,J))]""!($O(NOD(Q,""))'=J) G CACHE2
+	I $O(NOD(Q,J,K))]""!($O(NOD(Q,J,""))'=K) G CACHE2
+	I $O(NOD(Q,J,K,FN))]""!($O(NOD(Q,J,K,""))'=FN) G CACHE2
+	S NOD(Q)=""
+	Q
+CACHE2	;
+	S NOD(Q)="%T"_Q,CM="S",ARG="%T"_Q_"=%T" D COM
+	Q
+REPAINT	;
+	K TMP F Q=1:1:$L(A,":") S FN=$P(A,":",Q) I FN'["%" S U=+F0(FN),V=$P(F0(FN),";",2),TMP(U,V)=$S($D(TMP(U,V)):TMP(U,V)_",",1:"")_LB(FN_".P")
+	I $D(TMP) D  
+	. W $$USE^%DAIO(0,"PACK")
+	. S COM="*",CM="D" F U=0:0 S U=$O(TMP(U)) Q:U=""  F V=0:0 S V=$O(TMP(U,V)) Q:V=""  S ARG=TMP(U,V) D COM
+	. W $$USE^%DAIO(0,"NOPACK") K TMP
+	Q
+LABEL	;
+	S FLAG("LB")=FLAG("LB")+1
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>WTLEN W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q

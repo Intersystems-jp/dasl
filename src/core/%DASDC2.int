@@ -1,0 +1,119 @@
+ROUTINE %DASDC2 [Type=INT,LanguageMode=6]
+%DASDC2	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+CSI	;
+	I DB W " ; *** Initialize Screen - CSI^%DASDC2",!
+	W " Q:%EX",!
+CAT	;
+	S SAT="l",PD="_",EX="E",(BX,COM,FK)="",SC=";",AC=0,BATCH=1,WTLEN=150,ED=0,TE=0  ;;%%Z1-Q;%%Z1-R
+	S FN=" in Screen Attributes or Actions"
+	F %=1:1 Q:'$D(FT(0,%))  S SATT=FT(0,%) D  
+	. F I=2:1 S AT=$P(SATT,"{",I) Q:AT=""  S A=$P(AT,"}",2) D @("T"_$E(AT,1,2))
+	D PNTS
+	W " S ",S1,"="""" F %Z=0,",%SDFL,":1:",%SDLL," S $P(",S1,","","",%Z+1)=%L(%Z),%L(%Z)="""",%O(%Z)=0",!
+	W " S %L(0)=""",$S(FLAG("DASL")=1:"%",1:""),%SDNM,"""" 
+	W:P0]"" " F %Z=",P0," S %L(%Z)=""",%COMPNM,"""",!
+	W " S " I %SDLL=23 W "%L(24)="""","
+	S TMOSCN=$S(TMO]"":TMO,1:"%TMO") 
+	W "%U=2,%TM=",TMOSCN W:BATCH $S(%SDLL=23:" W "_EQ_"["_%SDFL_";1H"_QEQ_"[J""",1:" F %Z="_%SDFL_":1:"_%SDLL_",24 W "_EQ_"["",%Z,"";1H"_QEQ_"#5"_QEQ_"[K""") W !  ;;%%Z1-Y;;%%Z2-patch seq 004
+	W "U0 D U,Q" W:FLAG("NSAME") " G W" W ! I FLAG("NSAME") D REINIT
+	W "W S %MSG="""",",SMS,"=1,",SMS,"(0)=""",EX,""""
+	I BATCH'=1 W " K ",BATV," S ",BATV,"=0,%ERROR="""""
+	W ! W:AC " S %X=%OPV D Z1,Z2 G Z:'$T",! 
+	G ^%DASDC6
+T13	S SAT="h" Q 
+TBA	S BATCH=$S(AT'["DB":0,1:10+$P(A,"$",2)) Q
+TBX	S BX=BX_"{"_A Q 
+TCP	S SUB("CP")="",AC=1 Q 
+TED	S ED=1 Q  ;;%%Z1-Q
+TFK	S FK=FK_A Q  ;	;%%Z2-X6
+TQS	S PD=" " Q 
+TTE	S TE=1 S:A["NF" TE=2 Q  ;;%%Z2-R
+TTO	S TMO=A Q 
+TEX	S LN=A_".R" D LG S EX=LB 
+	S NF($P(AT,"}",2))="",EX($P(AT,"}",2))=""
+TPM	Q 
+TSC	;
+	S SC=+A_";"_+$P(A,":",2) S SCATR="$"_$P(A,"$",2,99)
+	S F=0,ST=+SC,SB=$P(SC,";",2),SN=SB-ST,SUB("SCROLL")=""
+	F J=0:0 S F=$O(F0(F)) Q:F=""  I +F0(F)=+SC S SC(F)=""
+	I A["$GL" S SCARY="^"_$S(A'["$AR=":"DATG",1:$P($P(A,"=",2),"$",1))_"($J,""S"","""_$S(FLAG("DASL")=1:"%",1:"")_%SDNM_""",",SCNAK="^(" Q
+	S SCARY=$S(A'["$AR=":%SDNM,1:$P($P(A,"=",2),"$",1))_"(",SCNAK=SCARY_SPC_","
+	Q
+REINIT	;
+	K TMP S WTLEN=230,FLAG=0
+	W "S G E:%EX,U0:'%O" 
+	W:BATCH ^%DASY("MUMPS",%MUMPS,"U 0:PACK")_" D Q1:%SCN'=""",SAT,SC,""""
+	F Y=0:0 S Y=$O(P0(Y)) Q:Y=""  I 'P0(Y) F X=0:0 S X=$O(P0(Y,X)) Q:X=""  D LINE 
+	D NONP:'FLAG("DONP"),DONP:FLAG("DONP")
+	S WTLEN=150,CM="D",ARG="U"_$S(SC'=";":",SN1",1:"") D COM
+	I BX]"" F Y=0:0 S Y=$O(BX(Y)) Q:Y=""  S:'$D(TMP("P",Y)) TMP("P",Y)=""
+	F Y=0:0 S Y=$O(TMP("P",Y)) Q:Y=""  I 'P0(Y) D NXSMN:FLAG("DONP"),NXSMD:'FLAG("DONP")
+	K TMP I SC'=";" W " F ",SP,"=1:1:",SN+1," D SP",!," S ",SP,"=1 D SV"
+	W $$USE^%DAIO(0,"NOPACK") 
+	W:P0]"" " F %Z=",P0," S %O(%Z)=1"
+	D ENDL I DB'=1 K NSAME
+	Q
+LINE	;
+	S F="" F I=1:1 S F=$O(P0(Y,X,F)) Q:F=""  D LINE2
+	Q
+LINE2	;
+	I FL(F),'$D(NSAME(F)),'$D(DM(F)) D FLDP
+	D:$D(NSAME(F)) FLDE I '$D(DM(F)),FP(F)]"" S TMP("P",Y)=""
+	Q
+FLDP	;
+	S K="P"
+SETMP	;
+	S TMP(K,Y,X)=$S($D(TMP(K,Y,X)):TMP(K,Y,X)_",",1:"")_$S(K="P":LB(F_".P"),1:F)
+	Q
+FLDE	;
+	S K=$S(DM(F):"E",1:"P")
+	G SETMP
+DONP	;
+	F Y=0:0 S Y=$O(TMP("E",Y)) Q:Y=""  F X=0:0 S X=$O(TMP("E",Y,X)) Q:X=""  S TMP("E",Y)=$S(TMP("E",Y,X)[",":1,$D(TMP("E",Y))=11:1,1:0) Q:TMP("E",Y)
+	F Y=0:0 S Y=$O(TMP("E",Y)) Q:Y=""  D ERASEN W:FLAG !
+	Q
+NONP	;
+	S A="" F Y=0:0 S Y=$O(TMP("E",Y)) Q:Y=""  D ERASED
+	Q
+ERASEN	;
+	S X=TMP("E",Y),A="%O("_Y_")&"
+	I X,'FLAG W ! 
+	S FLAG=X I FLAG W " I %O(",Y,")" S A=""
+ERASED	F X=0:0 S X=$O(TMP("E",Y,X)) Q:X=""  F I=1:1 S F=$P(TMP("E",Y,X),",",I) Q:F=""  D ERASE1
+	Q
+ERASE1	S CM="W:"_A_SM(F_".F")
+	F K=0:1:FT(F)["{TL" S ARG=EQ_"["_$S(Y=+SC:""","_Y_"+"_SP_"-"_SO_",""",1:Y+K)_";"_X_"H"",$J("""","_(FL(F)+$Zwidth(FP(F)))_")" D COM  ;;%%Z1-G
+	Q
+NXSMN	;
+	S CM="D:'%O("_Y_")",ARG=Y D COM S CM="D:%O("_Y_")"
+NXSMD	;
+	F X=0:0 S X=$O(TMP("P",Y,X)) Q:X=""  S ARG=TMP("P",Y,X) D COM
+	Q
+PNTS	;
+	K P0 F Y=%SDFL:1:%SDLL I Y'=+SC S F=0 F I=1:1 S F=$O(F0(F)) Q:F=""  I +F0(F)=Y S P0(Y)=0,X=$P(F0(F),";",2),P0(Y,X,F)=""
+	I BX]"" D BOX^%DASDC3 S Y="" F I=1:1 S Y=$O(BX(Y)) Q:Y=""  S P0(Y)=0
+	I SC'=";" F Y=ST:1:SB S P0(Y)=1 
+	K TMP S (P0,Y)="" F I=1:1 S Y=$O(P0(Y)) Q:Y=""  S TMP(I)=Y
+	F I=1:1 Q:'$D(TMP(I))  D PNTS2
+	S P0=$E(P0,1,$L(P0)-1) K TMP
+	Q
+PNTS2	;
+	S Y=TMP(I),X=0 F J=I+1:1 Q:'$D(TMP(J))  Q:Y+1'=TMP(J)  S Y=TMP(J),X=X+1
+	I X S P0=P0_TMP(I)_$S(TMP(I)+X=Y&(X>1):":1:",1:",")_Y_",",I=J,Y=0 S:$D(TMP(I)) Y=TMP(I)
+	I Y S P0=P0_Y_","
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+LG	;
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S %MSG="未定義フィールド"_A_" - "_FN ZT %MSG  ;;%%Z1-T
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>WTLEN W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM  ;;%%Z1-G
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-G
+	Q  ;;%%Z1-A
+ENDL	I COM]"" W ! S COM=""
+	Q

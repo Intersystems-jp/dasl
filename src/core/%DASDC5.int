@@ -1,0 +1,506 @@
+ROUTINE %DASDC5 [Type=INT,LanguageMode=6]
+%DASDC5	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;; ;  Doubble semicolons a space and a semicolon
+ENDSC	W "E" I DB W " ; *** Screen Cleanup Routine - ENDSC^%DASDC5",!
+	I $$ATT^%DASDC9("{PM") 
+	E  I 'BATCH 
+	E  W " I %O"  ;;%%Z3-PATCH-DASLVL61_BUGS-30 
+	E  I %SDLL>22 W " W ",EQ,"[",%SDFL,";1H",QEQ,"[J"","_EQ_"[;r"" S %SCN=$E(%SCN)",!
+	E  W " W "_EQ_"[;r"" S %SCN=$E(%SCN) F %Z=",%SDFL,":1:",%SDLL,",24 W ",EQ,"["",%Z,"";1H",QEQ,"[K""",!
+	W:%SDFL=1 " S %O=0" W " F %Z=0,",%SDFL,":1:",%SDLL," S %O(%Z)=0,%L(%Z)=$P(",S1,","","",%Z+1)",!
+	S WTLEN=150,(VN,COM)="",CM="K"
+	F K=1:1 S VN=$O(SM(VN)) Q:VN=""  S ARG=SM(VN) D COM
+	I SC'=";",SCATR'["$NO" S ARG=$E(SCARY,1,$L(SCARY)-1) S:SCARY["^" ARG=ARG_")" D COM
+	W " Q" D ENDL
+REPAINT	;
+	W "Q0 S %SCN=""""",!
+PAINTQ	;
+	W "Q Q:%EX&%OP "
+	I BATCH W " "_^%DASY("MUMPS",%MUMPS,"U 0:PACK")
+	W " D Q1:%SCN'=""",SAT,SC,""" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"""" D R",!
+	W ^%DASY("MUMPS",%MUMPS,"U 0:NOPACK")_" S %O=1 Q",!
+PAINTQ1	;
+	W "Q1" 
+	W " I $E(%SCN)'=""",SAT,"""" 
+	W " W ",EQ,"[2J",QEQ,"[?3",$E(SAT),"""" 
+	;**TM**; W " U 0:EXIN=PARAM=""WIDTH=",$S($E(SAT)="l":"80",1:"132"),""""  ;;%%Z3-E
+	W " U 0"  ;;%%Z3-E
+	W " F %=1:1:24 S %O(%)=0",! 
+	I BATCH D  
+	. W " I $E(%SCN,2,9)'=""",SC,"""!($E(%SCN)'=""",SAT,""")"  ;;%%Z3-Y 
+	. W " W ",EQ,"[",SC,"r""",! 
+	W " S %SCN=""",SAT,SC,""",%LL=",$S($E(SAT)="l":80,1:132)
+	W " Q",!
+PAINTR	;
+	G CANNED:$D(FLAG("NOR"))
+	W "R I %L(%Z)'=""",%COMPNM,""" G @(""R^""_%L(%Z))",!
+	I SC'=";" D PAINTS
+	I BATCH W " F %X=",$S(P0]"":P0,1:%SDFL_":1:"_%SDLL)," I '%O(%X),%L(%X)=""",%COMPNM,""" S %O(%X)=1 D @%X",!
+	W:SC'=";" " S ",SP,"=%,",SPC,"=%S D:%SPS SG,XP" W " Q",!
+CANNED	;
+	S HELP=$S(%SDTYPE="DATA":"D",%SDTYPE="OPTION":"O",1:0)
+	S COM="",ROU=%COMPNM D UTILS W !
+	Q
+PAINTS	;
+	W " S %SPS=1 I '+$O(",SCARY,""""")) S %SPS=0 D SN1",!
+	I 'BATCH W " D SV Q",! Q
+	W " D SV S %=",SP,",%S=",SPC,",",SPC,"=",SWT
+	W " I %SPS D XP I %Z>",ST,",%Z<",(SB+1)," F %T=",ST,":1:%Z-1 Q:'",SPF,"  D SU",!
+	Q
+UTILS	S SUB(1)="",SUB($S(BATCH=1:"N",BATCH=0:"",1:"D")_"BATCH")=""
+	I BATCH=1 S SUB("HELP"_$S(HELP=0:"S",1:HELP))=""
+	;+%%Z3-COLOR
+	I BATCH=1 D
+	. I $G(%GCCF) S SUB("MESSAGEC")="",SUB("NBATCHC")="" D  Q
+	.. I $D(SUB(2)) K SUB(2) S SUB("2C")=""
+	.. I $D(SUB(3)) K SUB(3) S SUB("3C")=""
+	. S SUB("MESSAGE")="",SUB("NBATCHO")=""
+	;-%%Z3-COLOR
+	I '$D(KD) N KD D KD^%DASDC 
+UTILSX	I '$D(HKEYDEF) N HKEYDEF D KEYDEF^%DASDC  ;;%%Z3-L
+	I '$D(%MUMPS) S %MUMPS=^%DASY("MUMPS")
+	F I=1:1 S H=$P($T(UTIL+I),";",3,255) Q:H=""  S T=$P(H,";",2,255),H=$P(H,";",1),C=$D(SUB(H)) D SUBR
+	S F="" F I=0:0 S F=$O(SUB(F)) Q:F=""  I 'SUB(F) D LOAD
+	S F="" F I=0:0 S F=$O(SUB(F)) Q:F=""  I 'SUB(F) S %MSG="サブルーチン'"""_F_"""'が見つかりません。" ZT %MSG  ;;%%Z1-T
+	Q
+SUBR	I C,DB W " ; *** ",T," - SUBR^%DASDC5",!
+	F I=I+1:1 S L=$P($T(UTIL+I),";",3,255) Q:L=""  D:L["%kjxx" KJXX D:L[";%%Z"  I C,$E(L,2)'=";" D:L["??" SUBT S L=$$BASEDIT^%DAZCALL(L,128) W L,!  ;;%%Z2-Z;%%Z3-CODE
+	.S X=$F(L,";;%%Z") I X S L=$E(L,1,X-6) Q  ;;%%Z2-Z
+	.S X=$F(L,";%%Z") Q:'X  S L=$E(L,1,X-5) Q  ;;%%Z2-Z
+	I C S SUB(H)=1
+	Q
+KJXX	;;%%Z3-CODE +++
+	I $$DSMCODE^%DASJUTL="DSM" Q
+	S I=I+1,L=$S(L["KJOFF":" .S %RES=%INP_%RES",1:$P($T(UTIL+I),";",3,255))
+	Q
+	;;%%Z3-CODE ---
+LOAD	;
+	S COM=$E(F,2,9) I '$D(^DASDC(COM)) S %MSG="サブルーチン コマンド'"_F_"'が未定義です。" ZT %MSG  ;;%%Z1-T
+	I DB W " ; *** ",F," - ",^DASDC(COM,"D")," - LOAD^%DASDC5",!
+	W F S SUB(F)=1 F I=0:0 S I=$O(^DASDC(COM,"S",I)) Q:I=""  W ^(I),!
+	Q
+SUBT	S $ZT="SUBERR^%DASDC5"
+SUB	;
+	S X=$F(L,"??") Q:'X  S Y=$F(L,"??",X)
+	S @("E="_$E(L,X,Y-3)),L=$E(L,1,X-3)_E_$E(L,Y,255)
+	G SUB
+SUBERR	;
+	S %MSG=$E(L,X,Y-3)_" が'%DASDC5'で未定義です。%DACVRT を実行しましたか？"  ;;%%Z1-T
+	ZT %MSG
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+LG	;
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>WTLEN W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+REPLACE(STRING,OLD,NEW)	
+	S STRING=$P(STRING,OLD,1)_NEW_$P(STRING,OLD,2)
+	Q STRING
+UTIL	;;Utility Routines
+	;;NBATCH;Interactive Input Routine
+	;;I I $D(??SMS??(??SMS??-1)),??SMS??(??SMS??-1)=$P(%W,";",5) S ??SMS??=??SMS??-1
+	;; E  S ??SMS??(??SMS??)=$P(%W,";",5)
+	;; D I6
+	;;I0 S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="??KD("EX")??",(%MSG,%RES)="" G I3
+	;; S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1  ;;%%Z1-E;%%Z1-Q
+	;; S %=$P(%W,";",6),%ZT=(%["M")  ;;%%Z1-E
+	;; S %KD="??^DASY("PARM","KD")??"  ;;%%Z3-v30a
+	;;I1 S ??^%DASY("MUMPS",%MUMPS,"$ZT")??="I9^??ROU??"??$$USE^%DAIO(0,"CTRAP=%ESC")?? W %E,%P
+	;;I4 I '%ZT D EDIT^%DASDFED ;;%%Z1-E;%%Z1-R
+	;; I %ZT D TERM^%DASDFED
+	;; I $P(%W,";",8)'="" D
+	;; .S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	;; .S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	;; I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0  ;;%%Z3-S
+	;; I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2  ;;%%Z2-Y
+	;; D I14 G I2:%F
+	;;;; BUG FIX
+	;; I +%W<$ZWidth(%RES),$P(%W,";",6)'["M" S %MSG=??^%DAMSG(%FLANG,"L")?? D M S %INP=$E(%RES,1,$ZPosition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$ZWidth(%INP):$E(%U(%U)),1:"") G I1  ;;%%Z3-EDIT;%%Z3-patch 1993/3/4
+	;; I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1  ;;%%Z1-E;%%Z1-R;%%Z3-PATCH
+	;; I %T=8 S %F="??KD("PF")??" G I2
+	;; ; COMMENT IN CANNED CODE
+	;; I %T=10 S %F="??KD("CL")??" G I2
+	;; I %T=23 D Q0 G I0
+	;; I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>??$S(SAT="l":79,SAT="h":131)??):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	;; I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5  ;;%%Z1-R
+	;; I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G ;;%%Z1-E;%%Z2-Y;%%Z3-COLOR
+	;; E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$ZWidth(%RES)+1,$S(%W<$ZWidth(%OLD):%W,1:$ZWidth(%OLD))) D G ;;%%Z1-G;%%Z1-Z;%%Z2-Z;%%Z3-COLOR
+	;; S:%RES="?" %F="??KD("H")??"
+	;;I2 I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	;; I %MSG]"" S %MSG="" D M
+	;; I %F=19,'%ZT D  G I1  ;;%%Z1-E;%%Z1-R
+	;; .I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	;; .S %INP=%RES,%INPP=0 U 0 W *7 Q
+	;; I %F=20,'%ZT D  G I1  ;;%%Z1-E;%%Z1-R
+	;; .I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	;; .S %INP=%RES,%INPP=1 U 0 W *7 Q
+	;; I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2  ;;%%Z2-R
+	;; I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2  ;;%%Z2-R
+	;; I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2  ;;%%Z2-R
+	;; I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2  ;;%%Z2-R
+	;; I %F,%F="??KD("M")??" S %EX=1,%F="??KD("EX")??" G I3  ;;%%Z1-Y
+	;; I %F,%F="??KD("LE")??",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1 ;;%%Z3-PATCH;;%%Z3-Y
+	;; I %F,%F="??KD("LE")??",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1 ;;%%Z3-PATCH;;%%Z3-Y
+	;; I %F,%F="??KD("CL")??" S %Z=2,%="" D G S %INP="" G I1  ;;%%Z1-Y;%%Z1-Y
+	;; I %F,%F="??KD("SS")??" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"??^%DAMSG(%FLANG,"JSD")??",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0  ;;%%Z1-Y;%%Z3-Z
+	;; I %F,%F="??KD("H2")??" S %F="??KD("H")??"  ;;%%Z1-Y
+	;; D I8:%F G I7:%F="??KD("H")??"&%F  ;;%%Z1-Y
+	;; I %F=32??$$USE^%DAIO(0,"NOECHO")?? W %E,"=",%E,%P G I10
+	;;I3 S %TM=??TMOSCN??,%HF="",%T=%RES=""
+	;;
+	;;BATCH;Batch Input Routine
+	;;I I $D(??SMS??(??SMS??-1)),??SMS??(??SMS??-1)=$P(%W,";",5) S ??SMS??=??SMS??-1
+	;; E  S ??SMS??(??SMS??)=$P(%W,";",5)
+	;; D I6
+	;;I0 S %F=0,??^%DASY("MUMPS",%MUMPS,"$ZT")??="I9^??ROU??"
+	;; I %INPUT?.N S %INPUT=%INPUT+1,%RES=%INPUT(%INPUT)
+	;; E  U %INPUT R %RES U 0
+	;; D I14
+	;; S ??BATV??=??BATV??+1,??BATV??(??BATV??)=%RES
+	;; I %REST'?.ANPZFWCHARZZHWKATAZ S %MSG="??^%DAMSG(%FLANG,"I")??" D M S %F="??KD("EX")??" Q  ;;%%Z1-E
+	;; I $ZWidth(%RES)>%W S %MSG=??^%DAMSG(%FLANG,"L")?? D M S %F="??KD("EX")??" Q  ;;%%Z1-G
+	;; I %RES="" S %RES=%OLD D I14
+	;; S %=$P(%W,";",6)
+	;; I %RES]"",%'["S" D P
+	;; I %RES="",%["R" S %MSG="??^%DAMSG(%FLANG,"R")??" D M S %F="??KD("EX")??" Q
+	;; I %["F",$ZWidth(%RES)<%W S %MSG=??^%DAMSG(%FLANG,"F")?? D M S %F="??KD("EX")??" Q  ;;%%Z1-G
+	;; I %?1N.E,%RES[$C(+%) S %MSG=??^%DAMSG(%FLANG,"Z")?? D M S %F="??KD("EX")??" Q
+	;; S %INP=%RES
+	;;I3 S %MSG="",%T=%RES=""
+	;;
+	;;DBATCH;Batch/Debug Input Routine
+	;;I I $D(??SMS??(??SMS??-1)),??SMS??(??SMS??-1)=$P(%W,";",5) S ??SMS??=??SMS??-1
+	;; E  S ??SMS??(??SMS??)=$P(%W,";",5)
+	;; D I6
+	;;I0 S %F=0,??^%DASY("MUMPS",%MUMPS,"$ZT")??="I9^??ROU??"
+	;; I %INPUT?.N S %INPUT=%INPUT+1,%RES=%INPUT(%INPUT)
+	;; E  U %INPUT R %RES U 0
+	;; D I14
+	;; S ??BATV??=??BATV??+1,??BATV??(??BATV??)=%RES
+	;; I %REST'?.ANPZFWCHARZZHWKATAZ S %MSG="??^%DAMSG(%FLANG,"I")??" D M S %F="??KD("EX")??" Q  ;;%%Z1-Q
+	;; I $ZWidth(%RES)>%W S %MSG=??^%DAMSG(%FLANG,"L")?? D M S %F="??KD("EX")??" Q  ;;%%Z1-G
+	;; I %RES="" S %RES=%OLD D I14
+	;; S %=$P(%W,";",6)
+	;; I %RES]"",%'["S" D P
+	;; I %RES="",%["R" S %MSG="??^%DAMSG(%FLANG,"R")??" D M S %F="??KD("EX")??" Q
+	;; I %["F",$ZWidth(%RES)<%W S %MSG=??^%DAMSG(%FLANG,"F")?? D M S %F="??KD("EX")??" Q  ;;%%Z1-G
+	;; I %?1N.E,%RES[$C(+%) S %MSG=??^%DAMSG(%FLANG,"Z")?? D M S %F="??KD("EX")??" Q
+	;; S %INP=%RES W %E,%P,$E(%RES,1,$ZPosition(%RES,%W)),$S(%W-$ZWidth(%RES)'<1:$E(%U(2),1,%W-$ZWidth(%RES)),1:"") ;%%Z1-G;%%Z2-patch-seq.010
+	;;I3 S %MSG="",%T=%RES=""
+	;;
+	;;1;Clear backup list if current field is the exit field
+	;; S:??SMS??(0)=??SMS??(??SMS??) ??SMS??(1)=??SMS??(0),??SMS??=1
+	;;
+	;;NBATCH;Reset device parameters - Set up for help text
+	;;??$$USE^%DAIO(0,"ESC:CON:ECHO:CTRAP=""""")??
+	;; Q
+	;;I6 S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+	;;I7 I %HF]"" S %RES=%HF G I3
+	;;
+	;;HELPD;Help Text and Screen in globals for Data Screens
+	;; S:%RES'="" %LE=%RES
+	;; S %=??%COMPHL??("??%SDNM??",??SMS??(??SMS??)),%HF=$P(%,$C(0)),%MSG=$P(%,$C(0),2)
+	;; I %MSG="" G I7:%HF]"" S %MSG="??^%DAMSG(%FLANG,"NHELP")??"
+	;; D M G I0
+	;;
+	;;HELPO;Help Screen for Option Screens
+	;; S %HF="??%COMPHL??"
+	;; D HLP,M G I0
+	;;
+	;;HELPS;Help Text from subroutine - Text screens, reports, %DASDLU
+	;; D HLP,M G I0
+	;;
+	;;NBATCH;Finish input
+	;;I8 S %=%OLD G G  ;;%%Z1-E
+	;; Q
+	;;I9??$$USE^%DAIO(0,"CTRAP=""""") ?? ??^%DASY("MUMPS",%MUMPS,"CTRAP/ESCAPE/READERR")??  ;;%%Z1-E
+	;;I5 S %MSG="??^%DAMSG(%FLANG,"I")??" D M,I8 G I0
+	;;I10 R %#1:%TM I  S %T=$S($ZB'="":27,1:13),%F=$S($ZB'="":$$Function^%DASLIN($P($ZB,"[",2)),1:0)
+	;; ;**TM**;I  S %T=??^%DASY("MUMPS",%MUMPS,"$ZB#256")??,%F=??^%DASY("MUMPS",%MUMPS,"$ZB\256")??
+	;; E  S %F="??KD("EX")??" G I11
+	;; I %T=27 G I10:%F=32 G I11:%F&(%F="??KD("PS")??"!(%F="??KD("NX")??")) S:%F="??KD("H2")??"&%F %F="??KD("H")??" I %F="??KD("H")??"&%F&($T(+0)'="??HKEYDEF??") S %RES="??HKEYDEF??" G I3  ;;%%Z1-L;%%Z1-Y
+	;; S:%?1L %=$C($A(%)-32)
+	;; I "??KD("ALLGOLD")??"'[(","_%_",")!%T!%F S %MSG="??^%DAMSG(%FLANG,"UFUN")??",%F=0 D M G I12
+	;; S %F=$S("??KD("GEX")????KD("GM")??"[%:"??KD("EX")??",%="??KD("GDEL")??":"??KD("DEL")??",%="??KD("GIN")??":"??KD("IN")??",%="??KD("GPS")??":"??KD("PS")??",%="??KD("GNX")??":"??KD("NX")??",%="??KD("GH")??":"??KD("H")??",1:"??KD("C")??")
+	;; G I7:%F="??KD("H")??"&%F  ;;%%Z1-Y
+	;; I %="M" S %EX=1
+	;; I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"??^%DAMSG(%FLANG,"JSD")??",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12  ;;%%Z3-Z
+	;;I11 D I13 G I3
+	;;I12 D I13 U:$P(%W,";",6)'["N" 0:??$$USE^%DAIO("","ECHO")?? G I0
+	;;I13 W %E,">" Q
+	;;I14 S %REST=??$S(^%DASY("PARM","CSF")="Y":$S(^%DASY("PARM","CS")'=";":"$TR(%RES,"""_$P(^%DASY("PARM","CS"),";")_""","""_$P(^%DASY("PARM","CS"),";",2)_""")",1:"%RES"),1:"%RES")??
+	;; Q
+	;;I22 S %=$P(%W,";",6),%X=0
+	;; I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	;; I %'["S",%'["T",%'["L" S %X=136
+	;; S:%["Q" %X=%X+288
+	;;;; S:%X %RES=??$$REPLACE(^%DASY("MUMPS",%MUMPS,"$ZC(%BASEDIT,P1,%X)"),"P1","%RES")??
+	;; S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	;; I %RES="" S:%["R" %MSG="??^%DAMSG(%FLANG,"R")??",%F=-1 Q
+	;; I %["F",$ZWidth(%RES)<%W S %MSG=??^%DAMSG(%FLANG,"F")??,%F=-1 Q  ;;%%Z1-G
+	;;;; Filter Pieces of Pieces
+	;; S %=$P(%W,";",9)
+	;; F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG=??^%DAMSG(%FLANG,"Z")??,%F=-1 Q
+	;; Q
+	;;;; Convert '"' --> '""' ;;%%Z1-Z
+	;;;;I19(%zz)    N %zzin,%zz1,%zz2
+	;;;; S %zzin=%zz,%zz="",%zz1=1 F  S %zz2=$F(%zzin,"""",%zz1) Q:%zz2=0  S %zz=%zz_$E(%zzin,%zz1,%zz2-1)_"""" S %zz1=%zz2
+	;;;; S %zz=%zz_$E(%zzin,%zz1,255) Q %zz
+	;;
+	;;BATCH;ditto
+	;; Q
+	;;I6 S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+	;;I9 U 0??^%DASY("MUMPS",%MUMPS,"ENDOFILE")??
+	;; S %MSG="??^%DAMSG(%FLANG,"EOF")??",%F="??KD("EX")??" Q
+	;;I14 S %REST=??$S(^%DASY("PARM","CSF")="Y":$S(^%DASY("PARM","CS")'=";":"$TR(%RES,"""_$P(^%DASY("PARM","CS"),";")_""","""_$P(^%DASY("PARM","CS"),";",2)_""")",1:"%RES"),1:"%RES")??
+	;; Q
+	;;
+	;;DBATCH;ditto
+	;; Q
+	;;I6 S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+	;;I9 U 0??^%DASY("MUMPS",%MUMPS,"ENDOFILE")??
+	;; S %MSG="??^%DAMSG(%FLANG,"EOF")??",%F="??KD("EX")??" Q
+	;;I14 S %REST=??$S(^%DASY("PARM","CSF")="Y":$S(^%DASY("PARM","CS")'=";":"$TR(%RES,"""_$P(^%DASY("PARM","CS"),";")_""","""_$P(^%DASY("PARM","CS"),";",2)_""")",1:"%RES"),1:"%RES")??
+	;; Q
+	;;
+	;;2;Update PC Repaint Right Justified Field
+	;;B2 S:%F'="??KD("EX")??" ??SMS??=??SMS??+1 Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%U(%U),1,%W-$ZWidth(%RES)),%RES,%E,"[m" Q  ;;%%Z1-G;;%%Z3-COLOR
+	;;
+	;;2C;Update PC Repaint Right Justified Field;%%Z3-COLOR
+	;;B2 S:%F'="??KD("EX")??" ??SMS??=??SMS??+1 Q:'%U  W:$D(%GC("DP")) %E,%GC("DP") W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%U(%U),1,%W-$ZWidth(%RES)),%RES,%E,"[m" Q  ;;%%Z1-G
+	;;
+	;;3;Update PC Repaint Center Justified Field
+	;;B3 S:%F'="??KD("EX")??" ??SMS??=??SMS??+1 Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%U(%U),1,%W-$L(%RES)\2),%RES,$E(%U(%U),1,%W+1-$ZWidth(%RES)\2),%RES,%E,"[m" Q  ;;%%Z1-G;%%Z3-COLOR
+	;;
+	;;3C;Update PC Repaint Center Justified Field;%%Z3-COLOR
+	;;B3 S:%F'="??KD("EX")??" ??SMS??=??SMS??+1 Q:'%U  W:$D(%GC("DP")) %E,%GC("DP") W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%U(%U),1,%W-$L(%RES)\2),%RES,$E(%U(%U),1,%W+1-$ZWidth(%RES)\2),"[m" Q  ;;%%Z1-G
+	;;
+	;;1;Update PC
+	;;B S:%F'="??KD("EX")??" ??SMS??=??SMS??+1 Q:%RES=%INP  S %=%RES
+	;;
+	;;LPOPUP;Read and processing for POPUP lookups
+	;;I U 0:(:"+S")
+	;;I0 S (%F,%Z)=0 I %EX S %F="??KD("EX")??",(%MSG,%RES)="" G I3
+	;;I1 S $ZT="I9^%DASDLU2",%INP="" U 0
+	;;I4 R %RES#255:%TM I  S %T=$S($ZB'="":27,1:13),%F=$S($ZB'="":$$Function^%DASLIN($P($ZB,"[",2)),1:0)
+	;; E  S %F="??KD("EX")??"
+	;; G I2:%F I %T=23 D Q0 G I0
+	;; S:%RES="?" %F="??KD("H")??"
+	;;I2 I %MSG]"" S %MSG="" D M
+	;; I %F=17 G UP
+	;; I %F=18 G DOWN
+	;; I %F=??KD("PS")?? G PREV
+	;; I %F=??KD("NX")?? G NEXT
+	;; I %F="??KD("M")??" S %EX=1,%F="??KD("EX")??" G I3
+	;; I %F="??KD("SS")??" S %MSG=$T(+1)_" - "_$P(%W,";",7),%F=-1 D M G I0
+	;; I %F="??KD("H2")??" S %F="??KD("H")??"
+	;; D I8:%F G I7:%F="??KD("H")??"
+	;; I %F=32 U 0:(:"+S") W %E,"=",%E,%P G I10
+	;;I3 S %TM=%TMO,%HF="",%T=%RES=""
+	;; U 0:(:"-S")
+	;; Q
+	;;I7 I %HF]"" S %RES=%HF G I3
+	;; D HLP,M G I0
+	;;I8 I %RES]""!%Z S %=%OLD G READ
+	;; Q
+	;;I9 U 0 I $ZE'["INTERRUPT",$ZE'["ESCAPE" ZQuit 1 G @$ZT
+	;;I10 R %#1:%TM I  I  S %T=$S($ZB'="":27,1:13),%F=$S($ZB'="":$$Function^%DASLIN($P($ZB,"[",2)),1:0)
+	;; E  S %F="??KD("EX")??" G I11
+	;; I %T=27 G I10:%F=32
+	;; S:%?1L %=$C($A(%)-32)
+	;; I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="??^%DAMSG(%FLANG,"UFUN")??",%F=0 D M G I12  ;;%%Z3-Y
+	;; S %F=$S("??KD("GEX")????KD("GM")??"[%:"??KD("EX")??",%="??KD("GDEL")??":"??KD("DEL")??",%="??KD("GIN")??":"??KD("IN")??",%="??KD("GPS")??":"??KD("PS")??",%="??KD("GNX")??":"??KD("NX")??",%="??KD("GH")??":"??KD("H")??",1:"??KD("C")??")
+	;; G I7:%F="??KD("H")??"
+	;; I %="M" S %EX=1
+	;; I %="T" S %MSG=$T(+1)_" - "_$P(%W,";",7),%F=-1 D M G I12
+	;;I11 D I13 G I3
+	;;I12 D I13 U:$P(%W,";",6)'["N" 0:(:"-S") G I0
+	;;I13 W %E,">" Q
+	;;M W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	;; X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	;; W:$D(%GC("SM")) %E,%GC("SM") W $J("",%LL-$ZWidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)),%E,"[m" I '%F S %HF="" W *7  ;;%%Z1-G;%%Z3-COLOR
+	;; Q
+	;;
+	;;NBATCHO;Output Routines;%%Z3-COLOR
+	;;G Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZPosition(%,%W)),$S(%W-$ZWidth(%)'<1:$E(%U(%U),1,%W-$ZWidth(%)),1:"") Q  ;;%%Z1-G;%%Z2-patch-seq.010
+	;;J S:$ZWidth(%RES)>%W %MSG=??^%DAMSG(%FLANG,"L")?? Q:%MSG=""  ;;%%Z1-G
+	;;J1 D M S %=%OLD G G
+	;;
+	;;NBATCHC;Output Routines for Color;%%Z3-COLOR
+	;;G Q:'%U  W:$D(%GC("??$E(%SDTYPE)??P")) %E,%GC("??$E(%SDTYPE)??P") W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZPosition(%,%W)),$S(%W-$ZWidth(%)'<1:$E(%U(%U),1,%W-$ZWidth(%)),1:""),%E,"[m" Q  ;;%%Z1-G;%%Z2-patch-seq.010
+	;;J S:$ZWidth(%RES)>%W %MSG=??^%DAMSG(%FLANG,"L")?? Q:%MSG=""  ;;%%Z1-G
+	;;J1 D M S %=%OLD G G
+	;;
+	;;MESSAGE;Output Routines;%%Z3-COLOR
+	;;M W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	;; X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	;; W $J("",%LL-$ZWidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)) I '%F S %HF="" W *7  ;;%%Z1-G
+	;; Q
+	;;
+	;;MESSAGEC;Color Output Routines;%%Z3-COLOR
+	;;M W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	;; X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	;; W $J("",%LL-$ZWidth(%MSG)) W:$D(%GC("SM")) %E,%GC("SM") W $E(%MSG,1,$ZPosition(%MSG,%LL)),%E,"[m" I '%F S %HF="" W *7  ;;%%Z1-G
+	;; Q
+	;;
+	;;BATCH;Output Routines
+	;;G Q
+	;;J S:$ZWidth(%RES)>%W %MSG=??^%DAMSG(%FLANG,"L")?? Q:%MSG=""
+	;;J1 D M S %=%OLD G G
+	;;M X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	;; Q
+	;;
+	;;DBATCH;Output Routines
+	;;G Q:'%U  W %E,%P,$E(%,1,$ZPosition(%,%W)),$S(%W-$ZWidth(%)'<1:$E(%U(%U),1,%W-$ZWidth(%)),1:"") Q  ;%%Z1-G;%%Z2-patch-seq.010
+	;;J S:$ZWidth(%RES)>%W %MSG=??^%DAMSG(%FLANG,"L")?? Q:%MSG=""  ;;%%Z1-G
+	;;J1 D M S %=%OLD G G
+	;;
+	;;NBATCH;Function Key Routine
+	;;F I (%F="??KD("EX")??"&%F)!%EX G E:??SMS??(??SMS??)=??SMS??(0),@??SMS??(0)  ;;%%Z1-Y
+	;; I %F="??KD("PF")??"&%F S:??SMS??>1 ??SMS??=??SMS??-1  ;;%%Z1-Y
+	;; E  I %F'="??KD("H")??" S %F=0 S %MSG="??^%DAMSG(%FLANG,"I")??" D M
+	;; E  D ^@%RES,Q
+	;; G:??SMS??(??SMS??)'="" @??SMS??(??SMS??) G E
+	;;
+	;;BATCH;Batch Error Processor
+	;;F S %ERROR=%MSG,%MSG="" D M G @??SMS??(0)
+	;;
+	;;DBATCH;Batch Error Processor
+	;;F S %ERROR=%MSG,%MSG="" D M G @??SMS??(0)
+	;;
+	;;NAME;Name Conversion Routine
+	;;C S %W=$S(%X?.E1L.E:$$UPCASE^%DAIO(%X),1:%X)
+	;; S %Y=$P(%W,",",1) D C1 S %Z=%Y,%Y=$P($P(%W,",",2)," ",2) D C1
+	;; S:%Z_", "_%Y=%X %X="" Q
+	;;C1 F %I=1:1:$L(%Y) S:$E(%Y,%I)'?.U %Y=$E(%Y,1,%I-1)_$E(%Y,%I+1,255),%I=%I-1
+	;; Q
+	;;
+	;;JNAME;Japanese Name Conversion Routine  ;;%%Z1-M
+	;;JC S %Y=$P(%X,"　",1) D JC1 S %Z=%Y,%Y=$P(%X,"　",2) D JC1
+	;; S:%Z_"　"_%Y=%X %X="" Q
+	;;JC1 F %I=1:1:$L(%Y) S:$E(%Y,%I)'?.ZFWCHARZZHWKATAZ %Y=$E(%Y,1,%I-1)_$E(%Y,%I+1,255),%I=%I-1
+	;; Q
+	;;
+	;;ACR;ACR Conversion Routine
+	;;D S %Z=%X\1,%Y=$P(+%X,".",2)_" " Q
+	;;
+	;;KWIC;KWIC Normalization and Stopword Check
+	;;K S %Y="" F %Z=1:1:$L(%X) S %Y=%Y_$S($E(%X,%Z)?1UN:$E(%X,%Z),$E(%X,%Z)?1L:$C($A(%X,%Z)-32),1:"")
+	;; S:$L(%Y)<2!(",??^DASY("PARM","STOP")??,"[(","_%Y_",")) %Y="" Q
+	;;
+	;;XREFN;Numeric XREF Normalization
+	;;K1 D K2 S:%?.1"-"1N.N!(%?.1"-".N1"."1N.N) %=+% Q
+	;;
+	;;XREFS;Standard XREF Normalization, input value in %
+	;;;;K2 S %=??$$REPLACE(^%DASY("MUMPS",%MUMPS,"$ZC(%BASEDIT,P1,168)"),"P1","%")?? Q
+	;;K2 S %=$$BASEDIT^%DAIO(%,168) Q
+	;;
+	;;VYN;Logical Validation
+	;;L I %RES="Y"!(%RES="N") S %MSG="" Q
+	;; S %MSG="??^%DAMSG(%FLANG,"Y")??" Q
+	;;
+	;;VINT;Integer Validation
+	;;N I %RES?.1"-"1N.N,%RES'<%X,%RES'>%Y S %MSG="",%RES=+%RES Q
+	;; ??^%DAMSG(%FLANG,"N")?? Q
+	;;
+	;;VNUM;Numeric Validation
+	;;O I (%RES?.1"-".N0.1".".N!(%RES?.1"+".N0.1".".N)),%RES'<%X,%RES'>%Y,$L($P(+%RES,".",2))'>%T S %MSG="",%RES=+%RES Q  ;;%%Z2-Y;%%Z3-DASLV61_BUGS-4
+	;; X ^%DAMSG(%FLANG,"O") Q
+	;;
+	;;VTABLE;Table Validation
+	;;T I %RES'[",",%[(","_%RES_",") S %MSG="" Q
+	;; S %MSG=??^%DAMSG(%FLANG,"T")?? Q
+	;;
+	;;VTABLEM;Table Validation
+	;;TS S %MSG="" F %X=1:1:$L(%RES,",") I %'[(","_$P(%RES,",",%X)_",") S %MSG=??^%DAMSG(%FLANG,"U")?? Q
+	;; Q
+	;;
+	;;VTABLEX;Table Extended Validation
+	;;H S %T=$F(%,","_%RES) I %RES'[",",%T S %MSG="",%RES=%RES_$P($E(%,%T,99),",",1) Q
+	;; S %MSG=??^%DAMSG(%FLANG,"T")?? Q
+	;;
+	;;VNAME;Name Validation
+	;;A I $L(%RES,",")>5 S %MSG="??^%DAMSG(%FLANG,"A")??" Q
+	;; S %MSG="",%Z=%RES,%="" F %I=1:1 S %RES=$P(%Z,",",%I) Q:%RES=""  D P S %=%_", "_%RES S %RES=$P(%REST,",",%I) D P I %RES'?@$S(%I<3:"."" ""1A.AP",1:".ANP") S %MSG="??^%DAMSG(%FLANG,"A")??" Q  ;;%%Z1-Y
+	;; I %MSG]"" S %RES=%INP Q
+	;; I %MSG="",%I=1 S %MSG="??^%DAMSG(%FLANG,"D")??"
+	;; I %MSG="",%I<3 S %MSG="??^%DAMSG(%FLANG,"B")??"
+	;; S %RES=$E(%,3,256) Q
+	;;
+	;;VJNAME;Japanese Name Validation  ;;%%Z1-M
+	;;JA S %MSG="",%="" D P F %I=1:1:$L(%RES) S:$E(%RES,%I)="　" %RES=$E(%RES,1,%I-1)_" "_$E(%RES,%I+1,255)
+	;;;; S %RES=$ZC(%BASEDIT,%RES,152)
+	;; S %RES=$$BASEDIT^%DAIO(%RES,152)
+	;; F %I=1:1 S %Z=$P(%RES," ",%I) Q:%Z=""  S %=%_"　"_%Z I %Z'?1ZFWCHARZZHWKATAZ.E S %MSG="??^%DAMSG(%FLANG,"JNA")??" Q
+	;; I %MSG]"" S %RES=%INP Q
+	;; I %MSG="",%I=1 S %MSG="??^%DAMSG(%FLANG,"JND")??"
+	;; I %MSG="",%I<3 S %MSG="??^%DAMSG(%FLANG,"JNB")??"
+	;; S %RES=$E(%,2,256) Q
+	;;
+	;;1;Trim Spaces
+	;;P F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")  ;;%%Z1-E
+	;; F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")  ;;%%Z1-E
+	;; S %RES=$E(%RES,%X,%Y) Q
+	;;
+	;;CP;Checkpoint Handler
+	;;Z S %MSG="??^%DAMSG(%FLANG,"S")?? " D M H 2 G E
+	;;Z1 S %SPV=$P(^DASY("STATUS"),";",4),%WRITE=$S(%SPV="=":0,1:1)
+	;; S %SPV=%SPV_"+",%FPV=$S(%SPV["@":%PPV,%PPV["@":%SPV,1:"")
+	;; I %FPV="" F %I=1:1:$L(%SPV) I %PPV[$E(%SPV,%I) S %FPV=%FPV_$E(%SPV,%I)
+	;; Q
+	;;Z2 I %FPV_%X["@" Q
+	;; F %I=1:1:$L(%FPV) I %X[$E(%FPV,%I) Q
+	;; Q
+	;;
+	;;SCROLL;Scroll Region Routines
+	;;XMB Q:??SP??=1  S ??SP??=??SP??-1,%SPS=0
+	;; S ??SPF??=??SPC??,??SPC??=??SPB??,??SPB??=$P(??SCARY????SPC??),";",2)
+	;; D SG G XM2
+	;;XM I %F G @??SMS??(??SMS??):%F=17&(??SP??=1)!(%F=18&(??SP??=??SL??))
+	;; S ??SP??=??SP??+$S(%F=17:-1,1:1),%SPS=0
+	;; I ??SP??>??SL?? S ??SL??=??SL??+1,(??SPE??,??SWB??,%Q)=??SPC??+1\1,??SPB??=??SPC??,??SPC??=0 D SM1,SP:??SO??+??SN??'<??SP?? G XM2
+	;; I %F=17 S ??SPF??=??SPC??,??SPC??=??SPB??,??SPB??=$P(??SCARY????SPC??),";",2)
+	;; E  S ??SPB??=??SPC??,??SPC??=??SPF??,??SPF??=+??SCARY????SPC??)
+	;; D SG
+	;;XM2 I ??SO??>??SP?? S ??SO??=??SO??-1,%=??ST??,??SWT??=??SPC?? D XW,XT
+	;; I ??SO??+??SN??<??SP?? S ??SO??=??SO??+1,%=??ST??,??SWB??=??SPC??,??SWT??=+??SCARY????SWT??) D XB
+	;;XQ S %SPS=1 D SV G:%F&(%F'="??KD("EX")??") @??SMS??(??SMS??) Q
+	;;XI D SM I %Q=-1 S %F=0,%MSG="??^%DAMSG(%FLANG,"SI")??" D M G @??SMS??(??SMS??)
+	;; S ??SL??=??SL??+1,%I=-1 S:??SP??=??SO?? ??SWT??=??SPC?? S %S=??SPC??,%SPS=0 D XS S ??SPC??=%S D XW G XQ
+	;;XS S %=??SP??-??SO??+??ST?? W %E,"[",%,";??SB??r" D XB:%I>0,XT:%I<0 W %E,"[??ST??;??SB??r" Q
+	;;XD I ??SP??=??SL?? S %S=??SL??,??SL??=??SP??-1 D SM2,SP S ??SL??=%S G XQ
+	;; S:??SP??=??SO?? ??SWT??=+??SCARY????SWT??) S %Q=(??SO??+??SN??<??SL??) I %Q S ??SWB??=+??SCARY????SWB??)
+	;; S ??SL??=??SL??-1,%I=1,%SPS=0 S:??SPB?? $P(??SCARY????SPB??),";",1)=??SPF?? S $P(??SCARY????SPF??),";",2)=??SPB??
+	;; K ??SCARY????SPC??) S ??SPC??=??SPF??,??SPF??=+??SCARY????SPC??) I '%Q D XS,SG G XQ
+	;; S %S=??SPC??,??SPC??=??SWB?? D SG,XS S ??SPC??=%S D SG G XQ
+	;;XT W %E,"[",%,";1H",%E,$S(%=??SB??:"[K",1:"M") D @% Q
+	;;XB W %E,"[??SB??;1H",%E,$S(%=??SB??:"[K",1:"D") Q:??SO??+??SN??>??SL??  S %=??SP?? D ??SB?? S ??SP??=% Q
+	;;XP S %Q=??SCARY????SPC??),??SPF??=+%Q,??SPB??=$P(%Q,";",2) Q
+	;;XW S:??SO??+??SN??<??SL?? ??SWB??=$P(??SCARY????SWB??),";",2) Q
+	;;
+	;;SCROLLF;Scroll Forward (Next Screen)
+	;;X26 D XF:??SO??+??SN??<??SL?? G @??SMS??(??SMS??)
+	;;XF S (%S,??SPC??)=+??SCARY????SWB??),%X=??SL??-??SO??-??SN?? D XP
+	;; F ??SO??=??SO??+1:1:??SO??+??SN??+1 S %=??ST?? D XB Q:??SO??+??SN??=??SL??
+	;; I ??SO??+??SN??<??SL?? S ??SWB??=??SPB??,??SWT??=%S G SS
+	;; F %=1:1:%X S ??SWT??=+??SCARY????SWT??)
+	;; S ??SWB??=??SPC?? G SS
+	;;
+	;;SCROLLB;Scroll Backward (Previous Screen)
+	;;X25 D XU:??SO??>1 G @??SMS??(??SMS??)
+	;;XU S ??SPF??=0,(%S,??SPC??)=$P(??SCARY????SWT??),";",2),%X=??SO??-1
+	;; F ??SO??=??SO??-1:-1:??SO??-??SN+1?? S %=??ST?? D XT Q:??SO??=1  S ??SPC??=$P(??SCARY????SPC??),";",2)
+	;; I ??SO??>1 S ??SWT??=+??SCARY????SPC??),??SWB??=%S G SS
+	;;;; F %=1:1:%X S ??SWB??=$P(??SCARY????SWB??),";",2)
+	;; S ??SWB??=??SPC?? F %=1:1:??SN?? S ??SWB??=$O(??SCARY????SWB??))
+	;; S ??SWT??=??SPC?? G SS
+	;;

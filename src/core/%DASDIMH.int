@@ -1,0 +1,37 @@
+ROUTINE %DASDIMH [Type=INT,LanguageMode=6]
+%DASDIMH	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+HELP	U 0:PACK W %E,"[2H" 
+	I $E(SAT)'="l" W $C(27),"[?3l" S %LL=80 U 0:EXINPUT=(PARAM="WIDTH=80")  ;;%%Z1-E
+	W %E,"[1mAttach/Advance",%E,"[m - フィールドへのアタッチ        ",%E,"(0lqqqqqqqwqqqqqqqwqqqqqqqwqqqqqqqk",%E,"(B",!  ;;%%Z3-T
+	W "                 および 次フィールドへの移動   ",%E,"(0x       x       x       x       x",%E,"(B",!  ;;%%Z3-T
+	W "                                               ",%E,"(0x",%E,"(B "
+	W %E,"[1mGold",%E,"[m  ",%E,"(0x",%E,"(B ",%E,"[1mHelp",%E,"[m  ",%E,"(0x",%E,"(B       ",%E,"(0x",%E,"(B       ",%E,"(0x",%E,"(B",!
+	W %E,"[1mBox",%E,"[m - ボックス起点 および 作成                 ",%E,"(0x       x       x       x       x",%E,"(B",!  ;;%%Z3-T
+	W "                                               ",%E,"(0tqqqqqqqnqqqqqqqnqqqqqqqnqqqqqqqu",%E,"(B",!
+	W %E,"[1mCancel",%E,"[m - フィールドの修正前への復帰            ",%E,"(0x  ",%E,"[1ml",%E,"[m    x   ",%E,"[1m^",%E,"[m   x    ",%E,"[1mk",%E,"[m  x       x",%E,"(B",!  ;;%%Z3-T
+	W "         および デタッチ                       ",%E,"(0x",%E,"(B   ",%E,"[1m\",%E,"[m   ",%E,"(0x   ",%E,"[1mx",%E,"[m   x   ",%E,"[1m/",%E,"[m   x",%E,"(B",%E,"[1mCancel",%E,"[m ",%E,"(0x",%E,"(B",!  ;;%%Z3-T
+	W "                                               ",%E,"(0x       x       x       x       x",%E,"(B",!
+	W %E,"[1mDelete",%E,"[m - フィールドの削除                      ",%E,"(0tqqqqqqqnqqqqqqqnqqqqqqqnqqqqqqqu",%E,"(B",!  ;;%%Z3-T
+	W "                                               ",%E,"(0x       x       x       x       x",%E,"(B",!
+	W %E,"[1mDetach",%E,"[m - フィールドからのデタッチ および 更新  ",%E,"(0x  ",%E,"[1m<q",%E,"[m   x",%E,"(B  ",%E,"[1mBox",%E,"[m  ",%E,"(0x   ",%E,"[1mq>",%E,"[m  x",%E,"(B",%E,"[1mDelete",%E,"[m ",%E,"(0x",%E,"(B",!  ;;%%Z3-T
+	W "                                               ",%E,"(0x       x       x       x       x",%E,"(B",!
+	W %E,"[1mEdit/Create",%E,"[m - 既存フィールドの修正             ",%E,"(0tqqqqqqqnqqqqqqqnqqqqqqqnqqqqqqqu",%E,"(B",!  ;;%%Z3-T
+	W "              および 新規フィールドの作成      ",%E,"(0x       x       x       x       x",%E,"(B",!
+	W "                                               ",%E,"(0x",%E,"(B   ",%E,"[1m/",%E,"[m   ",%E,"(0x   ",%E,"[1mx",%E,"[m   x",%E,"(B   ",%E,"[1m\",%E,"[m   ",%E,"(0x",%E,"(B       ",%E,"(0x",%E,"(B",!
+	W %E,"[1mExit",%E,"[m - (F10 or GOLD/E) - スクリーンデザイナ終了"  ;;%%Z3-T
+	W %E,"(0x  ",%E,"[1mm",%E,"[m    x",%E,"(B   ",%E,"[1mv",%E,"[m   ",%E,"(0x    ",%E,"[1mj",%E,"[m  x",%E,"(B ",%E,"[1mEdit/",%E,"[m ",%E,"(0x",%E,"(B",!
+	W "                                               "
+	W %E,"(0tqqqqqqqvqqqqqqqnqqqqqqqu       x",%E,"(B",!
+	W %E,"[1mPointer Keys",%E,"[m - 表示方向へのカーソル および     "  ;;%%Z3-T
+	W %E,"(0x               x       x",%E,"(B",%E,"[1mCreate",%E,"[m ",%E,"(0x",%E,"(B",!
+	W "               フィールドの移動                "  ;;%%Z3-T
+	W %E,"(0x",%E,"(B",%E,"[1mAttach/Advance",%E,"[m ",%E,"(0x",%E,"(B",%E,"[1mDetach",%E,"[m ",%E,"(0x       x",%E,"(B",!
+	W "                                               "
+	W %E,"(0x               x       x       x",%E,"(B",!
+	W "                                               ",%E,"(0mqqqqqqqqqqqqqqqvqqqqqqqvqqqqqqqj",%E,"(B",!
+	U 0:(NOPACK,NOECHO) R !,?27,"Press RETURN to continue ",I:300 U 0:ECHO
+	W %E,"[H",%E,"[2J" 
+	Q
+TEST	S %E=$C(27),SAT="ll" W # G HELP

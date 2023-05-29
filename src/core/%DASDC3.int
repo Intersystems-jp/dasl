@@ -1,0 +1,413 @@
+ROUTINE %DASDC3 [Type=INT,LanguageMode=6]
+%DASDC3	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I DB W " ; *** EVAL and FILE subroutines - ^%DASDC3",!
+	I $O(FN("<"))["<" W "A1 S %T="""",%D=$D(@%GR)#2 S:%D %T=@%GR Q",!
+	S DR="" F I=0:0 S DR=$O(NEV(DR)) Q:DR=""  S X=DR D GETNAK W NEV(DR)," S %T="""",%D=$D(",DR,")#2 S:%D %T=",X," S %V=%T Q",!
+	S F="%" F I=1:1 S F=$O(FN(F)) Q:F'["%"  S LN=F_".F" D LG S LF=LB D FILE
+	S F="" F I=1:1 S F=$O(TR(F)) Q:F=""  S %DDNM=FN(F) D TRANS
+	S WTLEN=200  ;;%%Z1-A
+	F Y=%SDFL:1:%SDLL I $D(P0(Y)) W Y D LINED
+	S WTLEN=150,F=0 F I=1:1 S F=$O(F0(F)) Q:F=""  D CFIELD
+	G ^%DASDC5
+GETNAK	;
+	;%%Z2-patch seq 012+
+	S X=$S(X'["(":X,$L(X,"(")<3:"^("_$P($P(X,"(",2),",",$L($P(X,"(",2),",")),1:"^("_$P($P(X,"(",2,99),",",$L($P(X,"(",2,99),",")))
+	;%%Z2-patch seq 012-
+	Q
+TRANS	;
+	S LN=".TR-"_%DDNM D LG I %DN(%DDNM,"IT")="" G TRANSO
+	W LB,"i" S CM="S",COM="*",ARG="%INT=""""" D COM
+	S CM="I",ARG="%EXT]"_$C(34,34) D COM S ARG=%DN(%DDNM,"IT")
+	I $E(ARG)="%" S SUB(ARG)="",ARG="D "_ARG
+	W " ",ARG,!
+	S CM="S",COM="*",ARG=%DDNM_"=%INT" D COM W " Q",! S COM="*"
+	I %DN(%DDNM,"OT")="" Q
+TRANSO	;
+	W LB,"o" S CM="S",COM="*",ARG="%EXT=""""" D COM
+	S CM="I",ARG="%INT]"_$C(34,34) D COM S ARG=%DN(%DDNM,"OT")
+	I $E(ARG)="%" S SUB(ARG)="",ARG="D "_ARG
+	W " ",ARG,! S COM="*" W " Q",!
+	Q
+LINESO	;
+	S (AT,OAT)="" F Y=%SDFL:1:OPLIN-2 I $D(P0(Y))!$D(BX(Y)) D LINEO1 W:Y=%SDFL " S %Z=%Z+2 I %L(%Z)]"""",%L(%Z)'=""",%COMPNM,""" W %E,""[m"" G @(""R^""_%L(%Z))",!  ;;%%Z1-L
+	S COM="*" D CHAT:OAT]"" K AT,OAT,FLAG
+	Q
+LINED	;
+	S (AT,OAT)=""
+	I SC'=";",Y'<ST,Y'>SB W " S ",SP,"=",SO,$S(Y=ST:"",1:"+"_(Y-ST))," G SP",! Q
+LINEO1	;
+	S COM="",(FLAG("TALL"),TMP,FLAG,TAL,WID)=0
+	F X=0:0 S X=$O(P0(Y,X)) Q:X=""  S FN="" F I=1:1 S FN=$O(P0(Y,X,FN)) Q:FN=""  S TMP(X)=$S($D(TMP(X)):TMP(X)_",",1:"")_FN S:FT(FN)["{TL" (FLAG("TALL"),TAL)=1 S:FT(FN)["{WD" WID=1
+	I $D(BX(Y)) F X=0:0 S X=$O(BX(Y,X)) Q:'X  S TMP(X)=$S($D(TMP(X)):TMP(X)_",",1:"")_"*"
+	F X=0:0 S X=$O(TMP(X)) Q:X=""  F I=1:1 S FN=$P(TMP(X),",",I) Q:FN=""  D PAINTM S (TAL,WID)=0
+	I TMP S CM="W",ARG=EQ_"(B""" D COM
+	K TMP
+	I %SDTYPE="OPTION" W ! Q
+	D CHAT:AT'=OAT
+	W:FLAG("TALL") ! W " Q",!
+	Q
+LINESC	;
+	S Y=+SC,(F,TMP,FN,TAL,WID)=0,(AT,OAT)=""
+	F  S FN=$O(SC(FN)) Q:FN=""  I FP(FN)]""!FL(FN) S X=$P(F0(FN),";",2),TMP(X)=$S($D(TMP(X)):TMP(X)_",",1:"")_FN S:FT(FN)["{WD" WID=1
+	S X=""
+	F  S X=$O(TMP(X)) Q:X=""  F I=1:1 S FN=$P(TMP(X),",",I) Q:FN=""  S FLAG=0 D PAINT:FN'="*",BOXSC:FN="*" S (TAL,WID)=0
+	D CHAT:AT'=OAT K TMP
+	Q
+CFIELD	;
+	S DF="""""",PAD=PD,TIM="",(CNV,FLAG)=1,(DM,REQ,NOE,TAL,WID)=0
+	S (EX,AT,SK,FV)="",OAT=-1
+	I FL(F) S FV=$S($D(SM(F_".V")):SM(F_".V"),1:FN(F))
+	S Y=+F0(F),X=$P(F0(F),";",2)
+	I $D(SC(F)) S Y="""_("_Y_"+"_SP_"-"_SO_")_"""
+	I 'FL(F),'X,'$D(NF(F)) Q
+	F I="F","P","R","S" S LN=F_"."_I D LG S @("L"_I)=LB
+	I DB W F," ; *** Field subroutines - CFIELD^%DASDC3",!
+	E  W " ;",F,!
+	F K=2:1 S A=$P(FT(F),"{",K) Q:A=""  D @("A"_$E(A,1,2))
+	I 'X W LR G CFA^%DASDC6 
+	D FILE 
+	S FN=F,VN=FV 
+	I $D(DM(F)) W LP I 'BATCH W " Q",! S COM="" G CPX
+	I $D(DM(F)),BATCH K TMP D PAINT G CPQ
+	G CPX:'FL(F) 
+	W LP I 'BATCH W " Q",! S COM="" G CPX
+	;%%Z3-COLOR+
+	I $G(%GCCF) S COM="" D  G CPQ
+	. I TAL W " F %I=0,1 W ",EQ,"["",",Y,"+%I,"";",X,"H",QEQ,"#"",3+%I D",!
+	. E  W " W %E,""[",Y,";",X+$Zwidth(FP(F)),"H""" W:WID ",%E,""#6"""  ;;%%Z1-G
+	. I TAL W " ."
+	. W " W:$D(%GC(""DP"")) %E,%GC(""DP"")"
+	. I AT]"" W " W %E,""[",$E(AT,2,99),"m""" S COM="W"
+	. I TAL W !," ."
+	. S K=PAD="_"+1 S CM="W" D JSTFY S ARG="%E,""[m""" D COM ;	;%%Z2-patch seq.010
+	;%%Z3-COLOR-
+	;;;
+	I TAL W " F %I=0,1 W ",EQ,"["",",Y,"+%I,"";",X,"H",QEQ,"#"",3+%I"
+	E  W " W %E,""[",Y,";",X+$Zwidth(FP(F)),"H""" W:WID ",%E,""#6"""  ;;%%Z1-G
+	I AT]"" W ",%E,""[",$E(AT,2,99),"m"""
+	;S K=PAD="_"+1 D JSTFY W:AT]"" ",%E,""[0m"""
+	S K=PAD="_"+1 S (COM,CM)="W" D JSTFY I AT]"" S ARG="%E,""[0m""" D COM ;	;%%Z2-patch seq.010
+CPQ	W:TAL ! W " Q",! S COM=""
+	I FP(FN)="","RC"[$P(F0(FN),";",3),FL(F),'TAL D
+	.W LP_"x"
+	.W " W %E,""[",Y,";",X+$Zwidth(FP(F)),"H""" W:WID ",%E,""#6"""  ;;%%Z1-G
+	.;%%Z3-COLOR+
+	.I $G(%GCCF) S COM="" D  Q
+	.. W " W:$D(%GC(""DP"")) %E,%GC(""DP"")"
+	.. I AT]"" W " W %E,""[",$E(AT,2,99),"m""" S COM="W"
+	.. S K=PAD="_"+1,A="L" S CM="W" D JSTFYRC S ARG="%E,""[m""" D COM
+	..W " Q",! S COM=""
+	.;%%Z3-COLOR-
+	.I AT]"" W ",%E,""[",$E(AT,2,99),"m"""
+	.;S K=PAD="_"+1,A="L" D JSTFYRC W:AT]"" ",%E,""[0m"""
+	.S K=PAD="_"+1,A="L" S (COM,CM)="W" D JSTFYRC I AT]"" S ARG="%E,""[0m""" D COM ;	;%%Z2-patch seq.010
+	.W " Q",! S COM=""
+CPX	G ^%DASDC4
+ABL	S AT=AT_";5" Q
+ABO	S AT=AT_";1" Q
+ADF	S DF=$E(A,4,255) Q
+ADM	S DM=1 Q
+AED	Q  ;;%%Z1-Q
+AEX	S EX=$E(A,4,255) Q
+AFK	Q  ;	;%%Z2-X6
+AFU	Q 
+ALC	S CNV=0 Q
+ALQ	S CNV=0 Q
+AKY	;
+	I SC=";" S %MSG="フィールド'"_F_"'での'KEY'アトリブートが不適当です。" ZT %MSG  ;;%%Z1-T
+	S SK=SK_$E(A,4,255)_":" Q
+ANB	Q
+ANE	S NOE=1 Q
+ANR	Q
+AQF	S PAD=" " Q
+ARQ	S REQ=1 Q
+ARV	S AT=AT_";7" Q
+ASP	Q
+ASL	Q
+ASA	Q
+ATL	S TAL=1 Q
+ATE	Q
+ATO	S TIM=$E(A,4,255) Q
+AUN	S AT=AT_";4" Q
+AWD	S WID=1 Q
+AGR	;%%Z3-COLOR+
+	N L,B F L=2:1 S B=$P(A,"$",L) Q:B=""  D
+	. I $E(B,1,2)="FC"!($E(B,1,2)="BC") S AT=AT_";"_+$G(^%DASY("GRAPHIC",$P(B,"=",2)_$E(B))) Q
+	. S AT=AT_";"_+$G(^%DASY("GRAPHIC",B))
+	Q
+	;%%Z3-COLOR-
+PAINTM	G PAINTB:FN="*",PAIOPT:%SDTYPE="OPTION" I FP(FN)=""!$D(DM(FN)) G PMAYBE
+PAINT	B:$D(TMP)=10
+	G:FN="*" PAINTB I $D(TMP),TMP D CHMODE
+	I $D(DS(FN)) S VN=FN_".A" D SG
+PAIOPT	S CM="W"_$S($D(DM(FN)):":"_SM(FN_".F"),1:"")
+	S K=Y I $D(SC(FN)),K?1N.N S K="""_("_Y_"+"_SP_"-"_SO_")_"""
+	;;%%Z3-COLOR;I TAL W " F %I=0,1 ",CM," ",EQ,"["",",K,"+%I,"";",X,"H",QEQ,"#"",3+%I" S COM=CM,ARG=""""
+	;;E  S ARG=EQ_"["_K_";"_X_"H" S:WID ARG=ARG_QEQ_"#6"
+	;%%Z3-COLOR===================================TEST====================
+	I $G(%GCCF) D
+	. I TAL W " F %I=0,1 ",CM," ",EQ,"["",",K,"+%I,"";",X,"H",QEQ,"#"",3+%I D" S COM=CM,ARG=""""
+	. E  S ARG=EQ_"["_K_";"_X_"H" S:WID ARG=ARG_QEQ_"#6" S ARG=ARG_"""" D COM S COM=SM,ARG=""""
+	. I TAL W !," . "
+	. S CM="W:$D(%GC(""DP""))"_$S($D(DM(FN)):"&("_SM(FN_".F")_")",1:""),ARG="%E,%GC(""DP"")" D COM
+	. I TAL W !," . "
+	. S CM="W"_$S($D(DM(FN)):":"_SM(FN_".F"),1:""),ARG=""""
+	E  D
+	. I TAL W " F %I=0,1 ",CM," ",EQ,"["",",K,"+%I,"";",X,"H",QEQ,"#"",3+%I" S COM=CM,ARG=""""
+	. E  S ARG=EQ_"["_K_";"_X_"H" S:WID ARG=ARG_QEQ_"#6"
+	;%%Z3-COLOR===================================TEST====================
+	S AT="" F K=1,4,5,7 S J=$P("{BO,,,{UN,{BL,,{RV",",",K) I FT(FN)[J S AT=AT_";"_K
+	;%%Z3-COLOR+
+	I FT(FN)["{GR" S A=$P($P(FT(FN),"{GR}",2),"{") D AGR
+	;%%Z3-COLOR-
+	I OAT'=-1,OAT]"",OAT'=AT S ARG="%E,""[0m"","_ARG,OAT="" 
+	I OAT=AT S AT="" 
+	I FP(FN)="" S ARG=ARG_"""" D COM G PAINT2
+	;%%Z3-COLOR+
+	N NRF S NRF=0
+	S K="" I $D(DS(FN)),'FL(FN) S ARG=ARG_""","_SM_",""" S K=",%E,""[0m"""
+	E  I AT]"" S ARG=ARG_QEQ_"["_$E(AT,2,99)_"m" S:OAT=-1 NRF=1 S:OAT'=-1 OAT=AT,FLAG=1 S AT=""
+	;S K="" I $D(DS(FN)),'FL(FN) S ARG=ARG_""","_SM_",""" S K=",%E,""[0m"""
+	;E  I AT]"" S ARG=ARG_QEQ_"["_$E(AT,2,99)_"m" S:OAT=-1 K=",%E,""[0m""" S:OAT'=-1 OAT=AT,FLAG=1 S AT=""
+	;%%Z3-COLOR+
+	S A=FP(FN) D QS S ARG=ARG_A_""""_K D COM
+PAINT2	G:'FL(FN) PAINT3
+	S VN=$S($D(SM(FN_".V")):SM(FN_".V"),1:FN(FN)),K=$S(FT(FN)["{QF":" ",1:PD)="_"+1
+	;%%Z2-patch-seq.010+
+	;W:$D(DS(FN)) ",",SM W:AT]"" ",",EQ,"[",$E(AT,2,255),"m""" D JSTFY
+	;I $D(DS(FN))!($D(DM(FN))&(AT]"")) W ",%E,""[0m"""
+	I $D(DS(FN)) S ARG=SM D COM
+	I AT]"" S ARG=EQ_"["_$E(AT,2,255)_"m""" D COM
+	D JSTFY
+	;%%Z3-COLOR+
+	;I $D(DS(FN))!($D(DM(FN))&(AT]"")) S ARG="%E,""[0m""" D COM
+	;%%Z2-patch-seq.010-
+PAINT3	I $G(%GCCF) S ARG="%E,""[m""" D COM S (OAT,AT)="" Q
+	I $G(NRF)!$D(DS(FN))!($D(DM(FN))&(AT]"")) S ARG="%E,""[0m""" D COM
+	;%%Z3-COLOR-
+	I FLAG=0,AT]"" S OAT=AT
+	Q
+PMAYBE	;
+	;%%Z3-Y(patch);I 'FL(FN),FP(FN)="" S:%MSG="" %MSG="注意 - フィールド'"_FN_"'はＸ／Ｙが等しく、長さやプロンプトがありません。" Q  ;;%%Z1-T
+	I 'FL(FN),FP(FN)="" S:%MSG="" %MSG="フィールド'"_FN_"'はＸ／Ｙが指定されているにもかかわらず、長さやプロンプトがありません。" ZT %MSG ;;%%Z1-T
+	I $D(TMP),TMP D CHMODE
+	D:OAT]"" CHAT S CM="D",ARG=LB(FN_".P") D COM
+	Q
+CHMODE	;
+	S CM="W",ARG=EQ_"(B""" D COM S TMP=0
+	Q
+CHAT	;
+	S CM="W",ARG="%E,""[0m""",OAT="" D COM
+	Q
+JSTFY	;
+	;I FT(FN)["{NE" W ",$E(%U(",K,")" W:FL(FN)>1 ",1,$ZPosition(%U(",K,"),",FL(FN),")" W ")" Q  ;;%%Z1-G
+	I FT(FN)["{NE" S ARG="$E(%U("_K_")" S:FL(FN)>1 ARG=ARG_",1,$ZPosition(%U("_K_"),"_FL(FN)_")" S ARG=ARG_")" D COM Q  ;	;%%Z1-G;%%Z2-patch-seq.010
+	S A=$P(F0(FN),";",3)
+	;JSTFYR	; 16-JUN-1989 
+JSTFYRC	;I FP(FN)]""!(A="L"),FL(FN)'>127 W ",$E(",VN,"_%U(",K,")" W:FL(FN)>1 ",1,$ZPosition(",VN,"_%U(",K,"),",FL(FN),")" W ")" Q  ;;%%Z1-G
+	;I FP(FN)]""!(A="L"),FL(FN)>127 W ","_VN_",$E(%U(",K,"),1,$ZPosition(%U(",K,"),",FL(FN),"-$Zwidth(",VN,")))" Q  ;;%%Z1-G
+	I FP(FN)]""!(A="L"),FL(FN)'>127 S ARG="$E("_VN_",1,$ZPosition("_VN_","_FL(FN)_")),$S("_FL(FN)_"-$Zwidth("_VN_")'<1:$E(%U("_K_"),1,"_FL(FN)_"-$Zwidth("_VN_")),1:"""")" D COM Q  ;	;%%Z1-G;%%Z2-patch-seq.010
+	I FP(FN)]""!(A="L"),FL(FN)>127 S ARG=VN_",$E(%U("_K_"),1,$ZPosition(%U("_K_"),"_FL(FN)_"-$Zwidth("_VN_")))" D COM Q  ;;%%Z1-G
+	;I A="R" W ",$E(%U(",K,"),1,$ZPosition(%U(",K,"),",FL(FN),"-$Zwidth(",VN,"))),",VN Q  ;;%%Z1-G
+	;I A="C" W ",$E(%U(",K,"),1,$ZPosition(%U(",K,"),",FL(FN),"-$Zwidth(",VN,")\2)),",VN,",$E(%U(",K,"),1,$ZPosition(%U(",K,"),",FL(FN)+1,"-$Zwidth(",VN,")\2))"  ;;%%Z1-G
+	I A="R" S ARG="$E(%U("_K_"),1,$ZPosition(%U("_K_"),"_FL(FN)_"-$Zwidth("_VN_"))),"_VN D COM Q  ;	;%%Z1-G;%%Z2-patch-seq.010
+	I A="C" S ARG="$E(%U("_K_"),1,$ZPosition(%U("_K_"),"_FL(FN)_"-$Zwidth("_VN_")\2)),"_VN_",$E(%U("_K_"),1,$ZPosition(%U("_K_"),"_(FL(FN)+1)_"-$Zwidth("_VN_")\2))" D COM ;%%Z1-G;%%Z2-patch-seq.010
+	Q
+BOXSC	S CM="W",ARG=EQ_"["_"""_("_Y_"+"_SP_"-"_SO_")_"""_";"_X_"H"
+	G PB1
+PAINTB	D:OAT]"" CHAT S CM="W",ARG=EQ_"["_Y_";"_X_"H"
+PB1	;%%Z3-COLOR+
+	I $G(%GCCF) D  Q
+	. I ARG]"" S ARG=ARG_"""" D COM
+	. S CM="W:$D(%GC(""DB""))",ARG="%E,%GC(""DB"")" D COM S CM="W",ARG=""""
+	. I $$CHBX(BX(Y,X)),'TMP S ARG="%E,""(0" S TMP=1
+	. I '$$CHBX(BX(Y,X)),TMP S ARG="%E,""(B" S TMP=0
+	. I BX(Y,X)[$C(0) D
+	.. N I F I=1:1:($L(BX(Y,X),$C(0))-1) S ARG=ARG_$P(BX(Y,X),$C(0),I)_"""" D COM S ARG="%E,"""
+	.. S ARG=ARG_$P(BX(Y,X),$C(0),$L(BX(Y,X),$C(0)))_"""" D COM S ARG=""
+	. E  S ARG=ARG_BX(Y,X)_""",%E,""[m""" D COM S ARG=""
+	;
+	;I BX(Y,X)?.L,'TMP S ARG=ARG_""",%E,""(0" S TMP=1
+	;I BX(Y,X)'?.L,TMP S ARG=ARG_""",%E,""(B" S TMP=0
+	I $$CHBX(BX(Y,X)),'TMP S ARG=ARG_""",%E,""(0" S TMP=1
+	I '$$CHBX(BX(Y,X)),TMP S ARG=ARG_""",%E,""(B" S TMP=0
+	;
+	I BX(Y,X)[$C(0) D
+	. N I F I=1:1:($L(BX(Y,X),$C(0))-1) S ARG=ARG_$P(BX(Y,X),$C(0),I)_"""" D COM S ARG="%E,"""
+	. S ARG=ARG_$P(BX(Y,X),$C(0),$L(BX(Y,X),$C(0)))_"""" D COM
+	E  S ARG=ARG_BX(Y,X)_"""" D COM
+	;S ARG=ARG_BX(Y,X)_"""" D COM
+	;%%Z3-COLOR-
+	Q
+CHBX(BX)	;%%Z3-COLOR
+	N I,K,FLAG
+	I BX'[$C(0) Q:BX?.L 1 Q 0
+	S FLAG=1 F I=1:1:$L(BX) D  Q:'FLAG
+	. I $E(BX,I)=$C(0) D  Q
+	.. S I=I+1 I $E(BX,I)'="[" S FLAG=0 Q
+	.. F K=I+1:1:$L(BX) Q:$E(BX,K)'?1N&($E(BX,K)'=";")
+	.. I $E(BX,K)'="m" S FLAG=0 Q
+	.. S I=K
+	. E  I $E(BX,I)'?1L S FLAG=0 Q
+	Q FLAG
+QS	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+FILE	;
+	Q:'$D(FI(F))  S %DDNM=FN(F),DR=%DN(%DDNM,"R")
+	S %DDXREF=$P(DR,";",4),%DDTRIG=$P(DR,";",8)
+	Q:%DDTRIG=""&(%DDXREF="")
+	S %DDPIECE=%DN(%DDNM,"PI")
+	S %DDXTRCT=$P(DR,";",3)
+	S %DDXTYP=$P(DR,";",5),%DDXKEY=$P(DR,";",6)
+	I %DDTRIG]"",%DDTRIG'["^" S %NAME=%DDTRIG D SCREEN^%DANAME S %DDTRIG=%NAME
+	W LF S A="%" D EVSUB W " Q:%=",%DDNM," "
+	I %DDTRIG]"" W " S %OLD=% D ",%DDTRIG I %DDXREF="" W " Q",! Q
+	I %DDXREF["(" S %DDXREF=$E(%DDXREF,1,$L(%DDXREF)-1)_","
+	E  S %DDXREF=%DDXREF_"("
+	S %DDTRX=%DN(%DDNM,"XT") 
+	D @("FI"_$E(%DDXTYP,1,5)) W " Q",!
+	Q
+EVSUB	;
+	I '%DDPIECE,'%DDXTRCT W " S ",A,"=%T" Q
+	S VAR="%T"
+	D PIECE^%DASDC(%DDPIECE,.VAR,%DDXTRCT)
+	W " S ",A,"=",VAR
+	Q
+	;+%%ZZ2-patch seq.005 -kokokara Q:AC="KL" -> I AC'="KL" ... W !
+FISTRIN	S SUB("XREFS")="" 
+	W " D K2 K:%]"""" ",%DDXREF,"%,",%DDXKEY,")"
+	I AC'="KL" W " I ",%DDNM,"]"""" S %=",%DDNM," D K2 S ",%DDXREF,"%,",%DDXKEY,")=$S(%=",%DDNM,":"""",1:",%DDNM,")"
+	W !
+	Q
+FINUMER	;
+	S SUB("XREFN")="",SUB("XREFS")=""
+	W " D K1 K:%]"""" ",%DDXREF,"%,",%DDXKEY,")"
+	I AC'="KL" W " I ",%DDNM,"]"""" S %=",%DDNM," D K1 S ",%DDXREF,"%,",%DDXKEY,")=$S(%=",%DDNM,":"""",1:",%DDNM,")"
+	W !
+	Q
+FINAME	S SUB("NAME")="" 
+	W " S %X=% D C K:%]"""" ",%DDXREF,"%Z,%Y,",%DDXKEY,")" Q:AC="KL"
+	W " I ",%DDNM,"]"""" S %X=",%DDNM," D C S ",%DDXREF,"%Z,%Y,",%DDXKEY,")=%X",!
+	Q
+FIJNAME	;;%%Z1-M +++
+	S SUB("JNAME")=""
+	W " S %X=% D JC K:%]"""" ",%DDXREF,"%Z,%Y,",%DDXKEY,")"
+	I AC'="KL" W " I ",%DDNM,"]"""" S %X=",%DDNM," D JC S ",%DDXREF,"%Z,%Y,",%DDXKEY,")=%X"
+	W !
+	Q
+	;;%%Z1-M ---
+FIACR	S SUB("ACR")="" 
+	W " S %X=% D D K:%]"""" ",%DDXREF,"%Z,%Y,",%DDXKEY,")"
+	I AC'="KL" W " I ",%DDNM,"]"""" S %X=",%DDNM," D D S ",%DDXREF,"%Z,%Y,",%DDXKEY,")=%X"
+	W !
+	Q
+FITRAN1	;
+	W " S %EXT=% "_%DDTRX,!," K:%INT]"""" ",%DDXREF,"%INT,",%DDXKEY,")"
+	I AC'="KL" W " I ",%DDNM,"]"""" S %EXT=",%DDNM," "_%DDTRX_" S:%INT'="""" ",%DDXREF,"%INT,",%DDXKEY,")=%EXT"
+	W !
+	Q
+FITRAN2	;
+	W " S %EXT=% "_%DDTRX,!
+	W " K:%INT1'=""""&(%INT2'="""") ",%DDXREF,"%INT1,%INT2,",%DDXKEY,")"
+	I AC'="KL" D
+	. W " Q:",%DDNM,"=""""",!," S %EXT=",%DDNM," "_%DDTRX,!
+	. W " S:%INT1'=""""&(%INT2'="""") ",%DDXREF,"%INT1,%INT2,",%DDXKEY,")=%EXT"
+	W !
+	Q
+FIKWIC	S SUB("KWIC")="" 
+	S %DDKWIC=$P(DR,";",9) 
+	I %DDKWIC'="",%DDKWIC?1"^".AN S %DDKWIC=%DDKWIC_"(%Y)"
+	E  I %DDKWIC'="",%DDKWIC'?1"^".AN S %DDKWIC=$E(%DDKWIC,1,$L(%DDKWIC)-1)_",%Y)"
+	W " I %]"""" F %I=1:1:$L(%,"" "") S %X=$P(%,"" "",%I) D K I %Y]"""" K ",%DDXREF,"%Y,",%DDXKEY,")",!
+	I AC'="KL" D
+	. I %DDKWIC="" W " I ",%DDNM,"]"""" F %I=1:1:$L(",%DDNM,","" "") S %X=$P(",%DDNM,","" "",%I) D K I %Y]"""" S ",%DDXREF,"%Y,",%DDXKEY,")=$S(%Y=",%DDNM,":"""",1:",%DDNM,")"
+	. E  W " I ",%DDNM,"]"""" F %I=1:1:$L(",%DDNM,","" "") S %X=$P(",%DDNM,","" "",%I) D K I %Y]"""",'$D("_%DDKWIC_") S ",%DDXREF,"%Y,",%DDXKEY,")=$S(%Y=",%DDNM,":"""",1:",%DDNM,")"
+	. K %DDKWIC
+	W !
+	Q
+	;-%%ZZ2-patch seq.005 -kokomade Q:AC="KL" -> I AC'="KL" ... W !
+BOX	;
+	;%%Z3-COLOR+
+	;K TMP F I=1:1 S A=$P(BX,"{",I+1) Q:A=""  D BYX
+	N TMPC S TMPC=""
+	K TMP F I=1:1 S A=$P(BX,"{",I+1) Q:A=""  D BOXC:BX["$FC"!(BX["$BC"),BYX
+	;%%Z3-COLOR-
+	F Y=1:1:24 D BY 
+	K TMP Q
+BOXC	;%%Z3-COLOR
+	N K,L,B,F
+	F K="F","B" D
+	. S F=0 F L=2:1:3 S B=$P(A,"$",L) Q:B=""  I $E(B)=K S TMPC=TMPC_$S(TMPC="":"",1:";")_$G(^%DASY("GRAPHIC",$P(B,"=",2)_K)),F=1 Q
+	. I 'F S TMPC=TMPC_$S(TMPC="":"",1:";")_$G(^%DASY("GRAPHIC","DEF"_K)) Q
+	S A=$P(A,"$")
+	Q
+BYX	;
+	S X=+A,Y=$P(A,":",2),C=$P(A,":",5)
+	G BYXH:$P(A,":",4)=1,BYXV:$P(A,":",3)=1
+	S:C="" C="l" D BYXC
+	S:C?1L C="q" F K=1:1:$P(A,":",3)\$Zwidth(C)-2 D BYXC  ;;%%Z1-G
+	S:C?1L C="k" S Q=X D BYXC 
+	S:C?1L C="x" F K=1:1:$P(A,":",4)-2 S Y=Y+1,X=+A D BYXC S X=Q D BYXC
+	S:C?1L C="m" S X=+A,Y=Y+1 D BYXC
+	S:C?1L C="q" F K=1:1:$P(A,":",3)\$Zwidth(C)-2 D BYXC  ;;%%Z1-G
+	S:C?1L C="j" D BYXC
+	Q
+BYXH	S:C="" C="o" D BYXC 
+	S:C?1L C="q" F K=1:1:$P(A,":",3)\$L(C)-2 D BYXC
+	S:C?1L C="p" D BYXC
+	Q
+BYXV	S:C="" C="r" D BYXC 
+	S:C?1L C="x" F K=1:1:$P(A,":",4)-2 S Y=Y+1,X=+A D BYXC
+	S:C?1L C="s" S Y=Y+1,X=+A D BYXC
+	Q
+BYXC	;
+	;%%Z3-COLOR+
+	;I C?1L S TMP(Y,X)=$S($D(TMP(Y,X)):$E($P($T(@$A(TMP(Y,X))),";",3),$A(C)-105),1:C),X=X+$Zwidth(C)  ;;%%Z1-G
+	;E  F J=1:1:$L(C) S TMP(Y,X)=$E(C,J),X=X+$Zwidth($E(C,J))  ;;%%Z1-G
+	I C?1L S TMP(Y,X)=$S($D(TMP(Y,X)):$E($P($T(@$A(TMP(Y,X))),";",3),$A(C)-105),1:C),TMPC(Y,X)=TMPC,X=X+$Zwidth(C)  ;;%%Z1-G
+	E  F J=1:1:$L(C) S TMP(Y,X)=$E(C,J),TMPC(Y,X)=TMPC,X=X+$Zwidth($E(C,J))  ;;%%Z1-G
+	;%%Z3-COLOR-
+	I SC'=";",Y'<+SC,Y'>$P(SC,";",2) S %MSG="・ワ・テ・ッ・ケ、ャ・ケ・ッ・?。シ・?ホホー?ニ?、ヒ、「、?、゛、ケ。」" ZT %MSG ;;%%Z3-T
+	Q
+BY	S X=0 
+BYLP	S A="",K=$O(TMP(Y,X)) Q:'K
+	;%%Z3-COLOR+
+	S TMPC=""
+	;F X=K:1 Q:'$D(TMP(Y,X))  S C=TMP(Y,X) S:"op"[C C="q" S:"rs"[C C="x" S A=A_C 
+	F X=K:1 Q:'$D(TMP(Y,X))  D:TMPC'=$G(TMPC(Y,X))  S C=TMP(Y,X) S:"op"[C C="q" S:"rs"[C C="x" S A=A_C 
+	. S TMPC=TMPC(Y,X)
+	. I TMPC]"" S A=A_$C(0)_"["_TMPC_"m"
+	S:A[($C(0)_"[") A=A_$C(0)_"[m"
+	S BX(Y,K)=A
+	G BYLP
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+LG	;
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>WTLEN W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+106	;;junvnvjvujnuvnu
+107	;;ukwnnwkwkuuunwu
+108	;;nwltnlwwlttnnwt
+109	;;vntmnmvvtmtnvnt
+110	;;nnnnnnnnnnnnnnn
+111	;;vwlmnoqqlmtnvwt
+112	;;jkwvnqpqkjnuvwu
+113	;;vwwvnqqqwvnnvwn
+114	;;ukltnlkwrxtunwx
+115	;;jutmnmjvxstuvnx
+116	;;nnttntnntttnnnt
+117	;;uunnnnunuununnu
+118	;;vnnvnvvvnvnnvnn
+119	;;nwwnnwwwwnnnnwn
+120	;;uuttntunxxtunnx

@@ -1,0 +1,103 @@
+ROUTINE %DASDCT [Type=INT,LanguageMode=6]
+%DASDCT	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	;
+	S VN=".1" D SG S S1=SM
+	S VN=".S" D SG S SMS=SM
+	S VN="RET" D SG
+	S VN="PAGE" D SG
+	S VN="OLDPG" D SG
+	S:%SDLL>22 %SDLL=23 S T=%SDLL-%SDFL S:T<1 T=1
+	W " Q:%EX",!
+	W " F %Z=",%SDFL,":1:",%SDLL," S %O(%Z)=0 W %E,""["",%Z,"";1H"",%E,""[2K"",%E,""#5""",!
+	W " S ",S1,"="""" F %Z=0,",%SDFL,":1:",%SDLL," S $P(",S1,","","",%Z+1)=%L(%Z),%L(%Z)="""",%O(%Z)=0",!
+	W " S %L(0)=""",%SDNM,""",%L(",%SDFL,")=""",%COMPNM,""""
+	I %SDLL=23 W ",%L(24)="""""
+	S TMOSCN=$S(TMO]"":TMO,1:"%TMO")
+	W ",%MSG="""",",SM("PAGE"),"=1,%TM=",TMOSCN,!
+	W " D Q G WAIT",!
+LINES	;
+	S (LINE,PAGE)=0
+	F %SDTLC=0:0 S %SDTLC=$O(^DASD(%SDNM,"T","T",%SDTLC)) Q:%SDTLC=""  S %SDTEXT=^(%SDTLC),LINE=LINE+1 D LINE
+	I LINE-1#T W " F %=",LINE-1#T+1,":1:",T-1," W !",!
+READ	;
+	W "RET" D ONEPG:PAGE=1,MULTPG:PAGE>1
+	;%%Z3-COLOR+
+	;W " W %E,""["",40-($Zwidth(",SM("RET"),")+1\2),""C"",",SM("RET")," Q",!  ;;%%Z1-G
+	I $G(%GCCF) W " W:$D(%GC(""TP"")) %E,%GC(""TP"") W %E,""["",40-($Zwidth(",SM("RET"),")+1\2),""C"",",SM("RET"),",%E,""[m"" Q",!  ;;%%Z1-G
+	E  W " W %E,""["",40-($Zwidth(",SM("RET"),")+1\2),""C"",",SM("RET")," Q",!  ;;%%Z1-G
+	;%%Z3-COLOR+
+	W "HLP S %MSG=""",HELP,""" Q",!,"WAIT S ",SM("OLDPG"),"=",SM("PAGE"),!
+	W "READ S ",SMS,"=1,",SMS,"(0)=""E"",%W=""",$Zwidth(PAGE),";",%SDLL,";""_(41+($Zwidth(",SM("RET"),")+1\2)+($Zwidth(",SM("RET"),")+1#2))_"";1;READ;;0"",%OLD=""""",!  ;;%%Z1-G
+	W " D I S:%F=17 %RES=""B"",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F"  ;;%%Z1-S
+	I PAGE=1 W ",E",! G REPAINT
+	W !
+	W " I %RES=""B"" S ",SM("PAGE"),"=$S(",SM("PAGE"),"=1:1,1:",SM("PAGE"),"-1)",!
+	W " E  I %RES?1N.N S ",SM("PAGE"),"=$S(%RES>",PAGE,":",PAGE,",+%RES=0:1,1:+%RES)",! ;	;%%Z3-PATCH
+	W " E  S ",SM("PAGE"),"=",SM("PAGE"),"+1",!
+	W " I ",SM("PAGE"),">",PAGE," G E",!
+	W " I ",SM("PAGE"),"=",SM("OLDPG")," W %E,%P,%E,""[K"" G WAIT",!
+	W ^%DASY("MUMPS",%MUMPS,"U 0:PACK")," W %E,""[",%SDLL,";1H"",%E,""[K""",!
+	W " D @",SM("PAGE"),^%DASY("MUMPS",%MUMPS,"U 0:NOPACK")," G WAIT",!
+REPAINT	;
+	W "R I %L(%Z)'=""",%COMPNM,""" G @(""R^""_%L(%Z))",!
+	W " W %E,""[",%SDFL,";1H""",!
+	W " F %Z=",%SDFL,":1:",%SDLL," S %O(0)=1",!," G @",SM("PAGE"),!
+	S (FLAG("NOR"),FT(0))="",SCATR="$NO",BATCH=1 
+	S SAT="l",SC=%SDFL_";"_%SDLL
+	D ENDSC^%DASDC5
+KILL	;
+	K %SDTEXT,%SDTLC,T,LINE,PAGE
+	Q
+ONEPG	;
+	W " S ",SM("RET"),"=""<RETURN> を押すと終了します""",!  ;;%%Z1-Z
+	S HELP="<RETURN> または <Exit>（終了）入力して下さい"  ;;%%Z1-Z
+	Q
+MULTPG	;
+	W " S ",SM("RET"),"=""",PAGE," ページ中 ""_",SM("PAGE"),"_"" ページ; <RETURN> を押すと ""_$S(",SM("PAGE"),"=",PAGE,":""終了"",1:""続行"")_""します。""",!  ;;%%Z1-Z
+	S HELP="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）"
+	Q
+LINE	;
+	S X=%SDTEXT I $E(X)="$",$$UPCASEQ^%DAZCALL($E(X,1,5))="$PAGE" D PAGE Q
+	D QUOTES,EXPR
+	I LINE-1#T=0,LINE>1 W " G RET",!
+	I LINE-1#T=0 S PAGE=PAGE+1 W PAGE," ;",!
+	;%%Z3-COLOR+
+	I $G(%GCCF) D  Q
+	. I X="" W " W !",!
+	. E  W " W:$D(%GC(""TT"")) %E,%GC(""TT"") W """,X,""",%E,""[m"",!",!
+	;%%Z3-COLOR-
+	I X="" W " W !",!
+	E  W " W """,X,""",!",!
+	Q
+PAGE	;
+	I LINE-1#T W " F %=",LINE-1#T+1,":1:",T," W !",!
+	W " G RET",! S LINE=0
+	Q
+QUOTES	;
+	F P=1:1 S P=$F(X,"""",P) Q:'P  S X=$E(X,1,P-1)_$E(X,P-1,99)
+	Q
+EXPR	;
+	S P=0 F I=1:1 S P=$F(X,"#",P) Q:'P  D BAR  ;;%%Z2-I
+	Q
+BAR	;
+	I $E(X,P)="#" S X=$E(X,1,P-1)_$E(X,P+1,99) Q  ;;%%Z2-I
+	S I=P,P=$F(X,"#",P) S:'P P=99  ;;%%Z2-I
+	S X=$E(X,1,I-2)_""","_$E(X,I,P-2)_","""_$E(X,P,99),P=P+1
+	Q
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>150 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	G:V2 SG2 S V1=V1+1 I V1>26 S V1=0,V2=1 G SG2
+	S SM=SCNV_$C(V1+64),SM(VN)=SM
+	Q
+SG2	S V1=V1+1 I V1>26 S V1=1,V2=V2+1
+	S SM=SCNV_$C(V2+64)_$C(V1+64),SM(VN)=SM
+	Q

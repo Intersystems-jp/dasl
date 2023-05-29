@@ -1,0 +1,287 @@
+ROUTINE %DASDC7 [Type=INT,LanguageMode=6]
+%DASDC7	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	;
+	S FN="",%MSG=1 F I=0:0 S FN=$O(SC(FN)) Q:FN=""  I +F0(FN) S %MSG="" Q
+	I %MSG S %MSG="スクロール領域の先頭行にフィールドがありません。" ZT %MSG  ;;%%Z1-T
+	W "SN" I DB W " ; *** Initialize scroll variables - BEGIN^%DASDC7",!
+	S FN="",(FLAG("S0"),FLAG("$DATE"),FLAG("$TIME"))=0,COM="*"
+	F I=0:0 S FN=$O(SC(FN)) Q:FN=""  D INITVD^%DASDC6 I $D(DM(FN)) S FLAG("S0")=1
+	I FLAG("S0") D ENDL W "S0" S FN=0 F I=0:0 S FN=$O(SC(FN)) Q:FN=""  D INITD^%DASDC6
+	W " Q" D ENDL
+PAINT	;
+	W "SP" I DB W " ; *** Scroll paint - PAINT^%DASDC7",!
+	I 'BATCH W " Q",! S COM="" G FILL
+	W " I ",SP,">",SL," W %E,""["",",ST,"+",SP,"-",SO,","";1H"",%E,""[K"" Q",!
+	W " I %SPS D SG,SU:",SPF,!
+	D LINESC^%DASDC3 W:DB=3 " D SDBG:%SPS" W " Q",! S COM=""
+FILL	;
+	W "SF" I DB W " ; *** Scroll Fill - FILL^%DASDC7",!
+	W " S %SPS=1,",SPC,"=+$O(",SCARY,""""")) I '",SPC," D SN1 S %SPS=0 G SF1",!
+	I FLAG("S0") W " D S0"
+	W " S (",SPF,",",SWT,")=",SPC,",",SPB,"=0 F ",SP,"=2:1 S ",SPF,"=$O(",SCARY,SPF,")) D S1 Q:",SPF,"=""""",!  ;;%%Z2-Y
+	W " S ",SPC,"=",SWT," D XP S ",SL,"=$S(",SP,"-1:",SP,"-1,1:1),",SO,"=1",!
+FILL2	;
+	W "SF1"_^%DASY("MUMPS",%MUMPS,"U 0:PACK")_" F ",SP,"=1:1:",SN+1," D SP",!
+	W ^%DASY("MUMPS",%MUMPS,"U 0:NOPACK")," S ",SWB,"=$S('",SPB,":1,",SL,"<",SN+1,":",SPC,",1:",SPB,"),",SPE,"=",SPC,!  ;;%%Z2-Y
+	W "SS" I DB W " ; *** reset scroll pointer and locals - FILL2^%DASDC7",!
+	W " S ",SP,"=",SO,",",SPC,"=",SWT," D SG,XP",!
+	W "SV" I DB W " ; *** Update scroll user variables - FILL2^%DASDC7",!
+	W " S %SL=",SL,",%SP=",SPC,",%SCX=",SP,"=",SL,",%SN=",SP
+	W:DB=3 " D SDBG" W " Q",!
+	W "SN1" I DB W " ; *** initialize scroll variables - FILL2^%DASDC7",!
+	W " S (",SP,",",SO,",",SL,",",SPC,",",SWT,",",SWB,",",SPE,")=1,(",SPF,",",SPB,")=0,",SCARY,"1)=""0;0"" G SM2",!
+LOCALS	W "SG" I DB W " ; *** Scroll Sub. - get locals from scroll array - LOCASLD^%DASDC7",!
+	S (FN,COM)="",CM="S",FLAG("NKD")=SCNAK'["^"
+	F I=1:1 S FN=$O(SC(FN)) Q:FN=""  D LOCALS1
+	W " Q" S COM="*" D ENDL
+UPDPT	W "SU" I DB W " ; *** Scroll - Update Pointers - UPDPT^%DASDC7",!
+	W " S ",SPB,"=",SPC,",",SPC,"=",SPF,",",SPF,"=+",SCARY,SPC,") Q",!
+FILL3	;
+	W "S1" I DB W " ; *** Fill Subroutine - Set up pointer node and perform conversions - FILL3^%DASDC7",!
+	W " S ",SCARY,SPC,")=+",SPF,"_"";""_",SPB S (COM,CM)="S"
+	S FLAG("NKD")=SCNAK'["^",FN="" F I=0:0 S FN=$O(SC(FN)) Q:FN=""  D FILL4
+	S CM="S",ARG=SPB_"="_SPC_","_SPC_"="_SPF D COM
+	W " Q" D ENDL
+INSERT	;
+	W "SM" I DB W " ; *** Scroll - insert a new line - INSERT^%DASDC7",!
+	W " S %Q=((",SPC,"+",SPB,")/2)*1 I %Q=",SPB," S %Q=-1 Q",!
+	W " S $P(",SCARY,SPC,"),"";"",2)=%Q",!
+	W "SM1 S:",SPB," $P(",SCARY,SPB,"),"";"",1)=%Q S ",SCARY,"%Q)=",SPC,"_"";""_",SPB,",",SPF,"=",SPC,",",SPC,"=%Q",!
+	W "SM2 D SN" S FLAG("NKD")=SCNAK'["^",FN="",CM="S"
+	F I=0:0 S FN=$O(SC(FN)) Q:FN=""  D INSERT1
+	W " Q" S COM="*" D ENDL
+	Q:DB'=3
+DEBUG	;
+	W "SDBG W %E,""[21;1H"",%E,""[0K"",""Integers=> Current="",",SP,",%E,""[21;25HWindow Top="",",SO,",%E,""[21;50HEntries in Array="",",SL,!
+	W " S:'$D(",SWB,") ",SWB,"=0"
+	W " W %E,""[22;1H"",%E,""[0K"",""Pointers=> Window Top="",",SWT,",""   Window Bottom="",",SWB,!
+	W " W %E,""[23;1H"",%E,""[0K"",""Current="",",SPC,",""   Forward="",",SPF,",""   Back="",",SPB,!," Q",!
+	Q
+LOCALS1	;
+	Q:'FL(FN)  D SCVN,FLAGS
+	S ARG=VN_"="_$S(FLAG("NKD"):SCNAK,1:SCARY_SPC_",")_""""_VN_""")"
+	S FLAG("NKD")=1 D COM
+	I 'FLAG("CV"),'FLAG("TR"),'FLAG("DM"),'FLAG("DS") Q
+	S ARG=SCNAK_""""_VN_"i"")"
+	I 'FLAG("DM"),'FLAG("DS"),FLAG("CV")!FLAG("TR") S ARG=SM(FN_".V")_"="_ARG D COM Q
+	S ARG="%Q="_ARG D COM 
+	I FLAG("CV")!FLAG("TR") S ARG=SM(FN_".V")_"=$P(%Q,$C(1))" D COM 
+	I FLAG("DM") S ARG=SM(FN_".F")_"=$P(%Q,$C(1),2)" D COM 
+	I FLAG("DS") S ARG=SM(FN_".A")_"=$P(%Q,$C(1),3)" D COM 
+	Q
+INSERT1	;
+	Q:'FL(FN)  D SCVN,FLAGS
+	S ARG=$S(FLAG("NKD")=1:SCNAK,1:SCARY_SPC_","),FLAG("NKD")=1
+	S DF=FT(FN)["{DF",CM="S"
+	S ARG=ARG_""""_VN_""")="_$S(DF:VN,1:$C(34,34)) D COM
+	I 'FLAG("CV"),'FLAG("TR"),'FLAG("DM"),'FLAG("DS") Q
+	S (ARG,DF)=$S(DF&(FLAG("CV")!FLAG("TR")):SM(FN_".V"),1:"")
+	I FLAG("DM") S ARG=ARG_$S(DF]"":"_",1:"")_"$C(1)_"_SM(FN_".F")
+	I FLAG("DS") S ARG=ARG_$S(FLAG("DM"):"_$C(1)_",1:$S(DF]"":"_",1:"")_"$C(1,1)_")_SM(FN_".A")
+	S ARG=SCNAK_""""_VN_"i"")="_$S(ARG="":$C(34,34),1:ARG) D COM
+	Q
+FILL4	;
+	Q:'FL(FN) 
+	D NODDN:FN(FN)="",FLAGS
+	I 'FLAG("CV"),'FLAG("TR"),'FLAG("DM"),'FLAG("DS") Q
+	S ARG="" D OUTTRN:FLAG("TR"),CONVT:FLAG("CV")
+	I FLAG("DM") D FILL5:ARG="" S ARG=ARG_$S(FLAG("CV")!FLAG("TR"):"_",1:"")_"$C(1)_"_SM(FN_".F")
+	I FLAG("DS") D FILL5:ARG="" S ARG=ARG_$S(FLAG("DM"):"_$C(1)_",1:$S(FLAG("CV")!FLAG("TR"):"_",1:"")_"$C(1,1)_")_SM(FN_".A")
+	S CM="S" D COM
+	Q
+FILL5	;
+	S ARG=SCNAK D NKDLEV:FLAG("NKD")=0 S ARG=ARG_""""_FN(FN)_"i"")="
+	Q
+EVALS	;
+	D INISEF,@("NOD"_$S(A["<":"P",1:"")_"^%DASDC8")
+	D ENDL,LABEL W " D SN"
+	W " S ",KEYDDN,"="""" F ",SPC,"=1:1 S ",KEYDDN,"=$O(",KEYDR,") Q:",KEYDDN,"=""""  D ",LR,FLAG("LB"),!
+	I %XX2["IN" D 
+	.S CM="S",ARG=SCARY_SPC_")=0"_SEMI_"("_SPC_"-1)",FLAG("NKD")=SCNAK'["^" D COM
+	.S CM="D",ARG="SM2" D COM S COM="*" D ENDL
+	G:BATCH'=1 EVALS4
+	W " S %FND=",SPC,"-1 S:",SPC,">",SL," ",SL,"="
+	I %XX2'["IN" W "$S(%FND:%FND,1:1),$P(",SCARY,SL,"),"";"",1)=0"
+	E  W SPC
+	W " S (%SPS,",SO,",",SWT,",",SPC,")=1 D XP,SF1"
+EVALS4	;
+	W " G ",LR,FLAG("LB")+1 S COM="*" D ENDL
+	W LR,FLAG("LB") F Q=0:0 S Q=$O(NOD(Q)) Q:Q=""  D EVALS2
+	I KEYKT="*" S FN=KEYFLD,ARG=KEYDDN D EVKEY 
+	D EVINI W " Q" S COM="*" D ENDL 
+	D LABEL W LR,FLAG("LB") I '($D(PLIST)\10) W " ;"
+	E  D KILTMP^%DASDC8
+	S COM="*" D ENDL,EFKILL
+	Q
+EVALS2	;
+	S CM="S",DR=NOD(Q),FLAG("NKD")=-1
+	I Q=1,KEYDR=DR S X=KEYDR D GETNAK S ARG="%T="_X D COM S NOD(Q)="%T"
+	I KEYDR'=DR D EVOTHND
+	I Q=1 S CM="S",ARG=SCARY_SPC_")=("_SPC_"+1)"_SEMI_"("_SPC_"-1)",FLAG("NKD")=SCNAK'["^" D COM
+	S J="" F Q=Q:0 S J=$O(NOD(Q,J)),K="" Q:J=""  F Q=Q:0 S K=$O(NOD(Q,J,K)),FN="" Q:K=""  F Q=Q:0 S FN=$O(NOD(Q,J,K,FN)) Q:FN=""  D EVALS3
+	Q
+EVOTHND	;
+	S P=$F(DR,"%P") I 'P S P="" G EVOTHN2
+	S P="%P"_$E(DR,P,P+($E(DR,P+1)?1N))
+	I P="%P0" S P=$P(DR,"%P0",1),DR=$P(DR,"%P0",2) S:P=KEYDDN P=""
+EVOTHN2	;
+	S X=DR D GETNAK S CM="S",ARG="%T"_Q_"=$S("
+	S:P]"" ARG=ARG_P_"="""":""""," S ARG=ARG_"$D("_DR_")#2:"_X_",1:"""")"
+	D COM S (NOD(Q),DR)="%T"_Q,FLAG("NKD")=-1
+	Q
+EVALS3	S D=NOD(Q,J),T=NOD(Q,J,K,FN),ARG="" 
+	S VAR=NOD(Q)
+	D PIECE^%DASDC($S(J=0:"",1:J),.VAR,$S(K=0:"",K>0:T))
+	S ARG=VAR
+	I FN["<" S CM="S",ARG=$P(PDR($E(FN,2,99)),";",2)_"="_ARG D COM Q
+EVKEY	D FLAGS S DF="",%DDNM=FN(FN) I FLAG("CV") D CVDTTM
+	I FLAG("TR"),%DN(%DDNM,"OT")]"" D OUTTRN1
+	S CM="S",ARG=$S(FLAG("NKD")=0:SCNAK_SPC_",",FLAG("NKD")=1:SCNAK,1:SCARY_SPC_",")_""""_%DDNM_""")="_ARG D COM
+	S FLAG("NKD")=1,ARG=DF,DF=ARG]"" I 'DF,'FLAG("DS"),'FLAG("DM") Q
+	S CM="S",ARG=SCNAK_""""_%DDNM_"i"")="_ARG
+	I FLAG("DM") S ARG=ARG_$S(DF:"_",1:"")_"$C(1)_"_SM(FN_".F")
+	I FLAG("DS") S ARG=ARG_$S(FLAG("DM"):"_$C(1)_",1:$S(DF:"_",1:"")_"$C(1,1)_")_SM(FN_".A")
+	D COM
+	Q
+EVINI	;
+	S (Y,FN)="",X=":"_A_":" S:KEYKT="*" X=X_KEYFLD_":"
+	F I=1:1 S FN=$O(SC(FN)) Q:FN=""  I FL(FN),X'[(":"_FN_":") S Y=Y_FN_":"
+	Q:Y=""  W " Q:",SPC,"'>",SL S COM="*" D ENDL
+	S CM="S",ARG=$S(FLAG("NKD")=0:SCNAK_SPC_",",FLAG("NKD")=1:SCNAK,1:SCARY_SPC_",")
+	F I=1:1:$L(Y,":")-1 S FN=$P(Y,":",I) D INSERT1
+	Q
+FILES	;
+	D INISEF,ENDL,LABEL I KEYKT="*" D FIKEY
+	I KEYKT="#" W " S ",KEYDDN,"=0"
+	W " F %=0:0 S %=$O(",SCARY,"%)) Q:%=""""  D ",LR,FLAG("LB"),! S COM=""
+	I KEYKT="#" W " S %FND=",KEYDDN," F ",KEYDDN,"=",KEYDDN,"+1:1 Q:'$D(",KEYDR,")  K ^(",KEYDDN,")",!
+	W " G ",LR,FLAG("LB")+1,!
+	W LR,FLAG("LB") S CM="S",COM="",FLAG("NKD")=0
+	I KEYKT="*" S FN=KEYFLD D FIGET S KEYCND=KEYDDN_"]"""""_$S(KEYCND="":"",1:"!("_KEYCND_")")
+	F I=1:1 S FN=$P(A,":",I) Q:FN=""  D FIGET 
+	S WTLEN=225 I KEYCND]"" W " Q:'(",KEYCND,")" S COM="*"
+	S CM="S" D ENDL
+	I KEYKT="#" D  
+	.S AA="" 
+	.F I=1:1:$L(A,":") S $P(AA,"_",I)=FN($P(A,":",I))
+	.W " I '",SCARY,"%),",AA,"="""" Q  ",! 
+	.K AA
+	.S ARG=KEYDDN_"="_KEYDDN_"+1" D COM
+	I KEYKT="*" S ARG="%FND=%FND+1" D COM
+	S CM="S",ARG="%V=""""" D COM
+	D ^%DASDC10
+	W " Q",! D EFKILL,LABEL W LR,FLAG("LB")," ;" S COM="*",WTLEN=150 D ENDL
+	Q
+FIKEY	;
+	S D=$P(%DN(KEYDDN,"R"),"*",1),I=$L(D),X=$E(D,I)
+	S D=$E(D,1,I-1) S:X="," D=D_")"
+	W " S %FND=0,%D=$D(",D,")#2 S:%D %T=",D," K ",D," S:%D ",D,"=%T",!
+	Q
+FIGET	;
+	S %DDNM=FN(FN),CM="S"
+	S ARG=%DDNM_"="_$S($E(SCARY)'="^":SCARY_"%,",FLAG("NKD")=0:SCNAK_"%,",1:SCNAK)_""""_%DDNM_""")"
+	D COM S FLAG("NKD")=1
+	Q
+FIWRT	;
+	S CM="S",ARG="=",U="",P=0
+	;**TM**;F Q=Q:0 S %KJ=$ZC(KJON) S U=$O(NOD(Q,U)) Q:U=""  D FIPC S %KJ=$ZC(KJOFF) I +$O(NOD(Q,U)),$X+$L(ARG)>WTLEN D FIRNG  ;;%%Z1-A
+	F Q=Q:0 S U=$O(NOD(Q,U)) Q:U=""  D FIPC I +$O(NOD(Q,U)),$X+$L(ARG)>WTLEN D FIRNG  ;;%%Z1-A
+	S ARG=%DDREF_ARG D COM 
+	Q
+FIPC	;
+	S D="_"_NOD(Q,U)_"_" I U,U>(P+1) D FID
+	S (LN,V)="",K=0 F Q=Q:0 S V=$O(NOD(Q,U,V)) Q:V=""  D FIEX
+	S ARG=ARG_LN
+	Q
+FID	;
+	S ARG=ARG_$S(ARG="=":"""",1:"_""") F P=P+1:1:U-1 S ARG=ARG_$E(D,3)
+	S ARG=ARG_"""_"
+	Q
+FIRNG	;
+	S ARG="%V"_ARG D COM S ARG="=%V"
+	Q
+FIEX	;
+	S:LN]"" LN=LN_"_" S T=$O(NOD(Q,U,V,"")),FN=FN(T),T=NOD(Q,U,V,T)
+	I K+1<V S LN=LN_"$J("""","_(V-K-1)_")_"
+	S K=$S(T["-":+$P(T,"-",2),1:+T)
+	S LN=$S('K:FN,1:LN_FN_"_$J("""","_$S(T'["-":K,1:(K-T+1))_"-$ZWidth("_FN_"))")  ;;%%Z1-G
+	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	;**TM**;I K,($X+$L(ARG)+$L(LN)>WTLEN),$O(NOD(Q,U,V))]"" S %KJ=$ZC(KJON) S ARG="%V"_ARG_$S($E(LN)="="!(ARG="="):"",ARG?.E1"_":"",1:"_")_LN D COM S ARG="",LN="=%V"  ;;%%Z1-A
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	I K,($X+$L(ARG)+$L(LN)>WTLEN),$O(NOD(Q,U,V))]"" S ARG="%V"_ARG_$S($E(LN)="="!(ARG="="):"",ARG?.E1"_":"",1:"_")_LN D COM S ARG="",LN="=%V"  ;;%%Z1-A
+	Q
+INISEF	;
+	K NOD,PLIST,PDR,TMP S KEYCND=C,KEYFLD=$P(A,"$",2),A=$P(A,"$",1)
+	S KEYKT=$S(KEYFLD["%":"#",1:"*")
+	S KEYDDN=$S(KEYFLD["%":$E(KEYFLD,2,99),1:FN(KEYFLD))
+	I KEYKT="*",'$D(SC(KEYFLD)) S %MSG=$S(AC="ES":"EVALS",1:"FILES")_"キーフィールドがスクロールでありません。" ZT %MSG  ;;%%Z1-T
+	S X=$P(%DN(KEYDDN,"R"),";",1),KEYDR=$P(X,KEYKT,1)_KEYDDN_$P(X,KEYKT,2)
+	S FLAG=0 F I=1:1 S FN=$P(A,":",I) Q:FN=""  D:FN'["#" EFSCK
+	Q
+EFSCK	;
+	I $E(FN)="(" S FLAG=1 Q 
+	I FN["<" S FLAG=0,FN=$P(FN,"<",$L(FN,"<")) G EFSCK2:$P(%DN(FN,"R"),";",1)'=KEYDR Q 
+	Q:FLAG  S %DDREF=$P(%DN(FN(FN),"R"),";",1) Q:%DDREF=KEYDR
+	S X=$E(KEYDR,1,$L(KEYDR)-1) G EFSCK2:%DDREF'[X 
+	S X=$E(%DDREF,$L(X)+2,$L(%DDREF)-1) 
+	F J=1:1:$L(X,",") I $P(X,",",J)'?1"""".E1"""" G EFSCK2
+	Q
+EFSCK2	S %MSG="全ての"_$S(AC="ES":"EVALS",1:"FILES")_" DDN は同じリファレンスを使用して下さい。" ZT %MSG  ;;%%Z1-T
+	Q
+EFKILL	;
+	K KEYCND,KEYDDN,KEYFLD,KEYDR,KEYKT,NOD,PDR,PLIST,TMP
+	Q
+GETNAK	;
+	; +%%Z2-patch seq 013
+	S X=$S(X'["(":X,1:"^("_$P($P(X,"(",2),",",$L($P(X,"(",2),",")))
+	; -%%Z2-patch seq 013
+	Q
+NODDN	;
+	Q:'FL(FN)  D SCVN S ARG=SCNAK D NKDLEV:FLAG("NKD")=0
+	S CM="S",ARG=ARG_""""_VN_""")=""""" D COM
+	Q
+CONVT	;
+	S ARG=SCNAK D NKDLEV:FLAG("NKD")=0 S ARG=ARG_""""_FN(FN)_""")"
+	D CVDTTM S ARG=SCNAK_""""_FN(FN)_"i"")="_DF
+	Q
+CVDTTM	;
+	S ARG="(%"_CV(FN)_"I,%"_CV(FN)_"X)="_ARG,CM="S" D COM
+	S CM="D",ARG=CV(FN)_"IX^%DAUDTTM:%"_CV(FN)_"I?"_$S(CV(FN)="TM":"1.5N",1:".1""-""1N.N") D COM
+	S ARG="%"_CV(FN)_"I",DF="%"_CV(FN)_"X"
+	Q
+OUTTRN	;
+	S ARG=SCNAK D NKDLEV:FLAG("NKD")=0 S ARG=ARG_""""_FN(FN)_""")"
+	D OUTTRN1 S ARG=SCARY_SPC_","""_FN(FN)_"i"")=%EXT",FLAG("NKD")=1
+	Q
+OUTTRN1	;
+	S CM="S",ARG="%INT="_ARG D COM
+	S %DDNM=FN(FN),LN=".TR-"_%DDNM D LG S CM="D",ARG=LB_"o" D COM
+	S ARG="%INT",DF="%EXT",FLAG("NKD")=-1
+	Q
+NKDLEV	;
+	S ARG=ARG_SPC_",",FLAG("NKD")=1
+	Q
+FLAGS	;
+	S FLAG("CV")=$D(CV(FN)),FLAG("TR")=$D(TR(FN))
+	S FLAG("DS")=$D(DS(FN)),FLAG("DM")=$D(DM(FN))
+	Q
+SCVN	;
+	S VN=$S(FN(FN)]"":FN(FN),1:SM(FN_".V"))
+	Q
+LABEL	;
+	S FLAG("LB")=FLAG("LB")+1 Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+LG	;
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S %MSG="未定義フィールド - "_FN ZT %MSG  ;;%%Z1-T
+COM	;**TM**;S %KJ=$ZC(KJOFF)  ;;%%Z1-A
+	I $X+$L(ARG)>WTLEN W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM  ;;%%Z1-A
+	;**TM**;S %KJ=$ZC(KJON)  ;;%%Z1-A
+	Q  ;;%%Z1-A
+ENDL	I COM]"" W ! S COM=""
+	Q

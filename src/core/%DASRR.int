@@ -1,0 +1,59 @@
+ROUTINE %DASRR [Type=INT,LanguageMode=6]
+%DASRR	;[DASL]INSTALL ;V3.0; DASL Library Routine Restore;KZY;tt;22-Jul-1992
+	;
+	;	Routines to be restored must be saved by DASRBLD
+	;
+	S $ZT="%ERR^"_$T(+0)
+	U 0:CTRAP=$C(3,26) W !!,"Security Routine Restore",!!
+	W "*NOTE*",!!
+	W "  This routine restore SECURITY routines.",!
+	W "  If your save files don't have SECURITY routines,then",!
+	W "  you must not excute this routine.",!
+%ASK	R !,"Are you continue? <N> ",%A S:%A="" %A="N" I %A="N"!(%A="n") D %EXIT Q
+	I '(%A="Y"!(%A="y")) W !,*7,"Input Y or N" G %ASK
+	W !
+	S %QTY=1 K %DEF D ^%IOS I '$D(%IOD) G %EXIT
+	G %ST
+	;
+%COM	; Command procedure (DSM$DASL_INST.COM) mode entry point
+	S $ZT="%ERR^"_$T(+0)
+	R %IOD O %IOD:READ U %IOD S %ZIOD=$ZIO
+%ST	;
+	S %CT=0,$ZE=""
+%GET	U %IOD R %DATIM,%HEAD
+	U 0 W !!,"Restoring routines from ",%ZIOD,!
+	I %DATIM="",%HEAD="" W !?5,*7,"File is not in expected Routine Save format" G %EXIT
+	W !,$S(%DATIM'["DASRBLD":"Routines were saved on ",1:""),%DATIM,!,"Header: ",%HEAD,!
+%UTL	D %DASL^%DASRNM
+	D %DSM ;@$S($ZC(KJCDSTS):"%VMS",1:"%DSM")
+	;
+%EOF	; End of file processing
+	;
+%DONE	; Exit here to close current device, and branch back for another.
+	U 0 W !! I %CT W !?4,%CT," Library routine",$S(%CT'=1:"s",1:"")," restored",!
+	C %IOD
+	;
+%EXIT	; Exit here on all errors, and when user is finished.
+	U 0:CTRAP="" I $$%NPDEV^%IOS C %IOD
+	K %CT,%DATIM,%DTY,%HEAD,%ZIOD,%IOD,%NAM,%X
+	K %BL,%ZA,%BLK,%RL,%UTILITY,%SS,%NP,%ZSN,%zSECrtn,%daslrtn,%NP,STAT
+	Q
+	;
+	;
+%ERR	I $ZE["CTRAP" U 0 W !?5,*7,"Unexpected interrupt",! G %EXIT
+	I $ZE["ZTRAP" U 0 W !?5,*7,"Unexpected Secure error (code:"_STAT_")" G %EXIT
+	G %DONE:$ZE["ENDOFILE",%ERR2
+	;
+%ERR2	S %ZA="" I $D(%IOD) U %IOD S %ZA=$ZA
+	U 0 W !?3,*7,$ZE,! I %ZA]"" W ?3,"$ZA = ",%ZA,!
+	G %EXIT
+	;
+%DSM	W ! F  U %IOD R %NAM Q:%NAM=""  U 0 W:'(%CT#7) ! W ?%CT#7*11+2,%NAM X ("U %IOD ZL  U 0 ZS "_%NAM) D  U 0 W "." S %CT=%CT+1
+	.; Security routine restore
+	.I $D(%daslrtn(%NAM)),%daslrtn(%NAM) S %ZSN=1004,%zSECrtn=%NAM,%NP="",STAT=$$%REBUILD^%ZSECUR I STAT'=1 ZT "Zsecur Error code : "_STAT
+	Q
+	;
+%VMS	W ! F  U %IOD R %NAM Q:%NAM=""  U 0 W:'(%CT#7) ! W ?%CT#7*11+2,%NAM X ("U %IOD ZL  U 0 ZS "_%NAM) D  U 0 W "." S %CT=%CT+1
+	.; Security routine restore
+	.I $D(%daslrtn(%NAM)),%daslrtn(%NAM) S %ZSN=1004,%zSECrtn=%NAM,%NP="",STAT=$$%REBUILD^%ZSECUR I STAT'=1 ZT "Zsecur Error code : "_STAT
+	Q

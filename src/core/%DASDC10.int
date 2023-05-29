@@ -1,0 +1,157 @@
+ROUTINE %DASDC10 [Type=INT,LanguageMode=6]
+%DASDC10	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;;;%%Z3-DASLV61_BUGS-2 +++
+	N SUB,DELM,NOD,NUM
+	S WTLEN=200
+	I C'="",AC="FI" D           ; Post conditional on file
+	. D LABEL                   ; Get net tag
+	. S CM="G",ARG=LR_FLAG("LB")_":'("_C_")" D COM
+	D NOD                       ; Do file logic
+	; Write out the tag that is the target of the goto
+	D ENDL                      ; End file logic
+	I C'="",AC="FI" W LR_FLAG("LB")_" " ; If post conditional write out tag
+	Q  
+	;;;%%Z3-DASLV61_BUGS-2 ---
+	;
+NOD	;
+	K NOD F J=1:1:$L(A,":") S FN=$P(A,":",J) D NOD1
+	D FILE
+	Q
+NOD1	;
+	S DR=%DN(FN(FN),"R"),%DDREF=$P(DR,";")
+	S %DDPIECE=%DN(FN(FN),"PI")
+	I %DDPIECE="" S %DDPIECE=0
+	I %DDPIECE?.N S %DDPIECE=%DDPIECE_FLAG("DELIM")
+	S %DDXTRCT=$P(DR,";",3) F Q=1:1 Q:'$D(NOD(Q))  Q:NOD(Q)=%DDREF
+	I '$D(NOD(Q)) S VN=0
+	S NOD(Q)=%DDREF
+	N C,I,II,TEMP,DEF,DEL
+	S DELM=%DDPIECE
+	S SUB="NOD(Q)"
+	S NUM=""
+	F I=1:1 S C=$E(DELM,I) Q:C=""  D
+	. I C?1N S NUM=NUM_C Q
+	. I $E(DELM,I,I+2)="$C(" D   Q
+	. . S II=I
+	. . S I=I+2
+	. . F I=I:1 Q:$E(DELM,I)=")"
+	. . S DEL=$E(DELM,II,I)
+	. . S @("DEL="_DEL) 
+	. . I '$D(@SUB@(DEL)) S @SUB@(DEL)="%V"_$S(VN=0:"",1:VN) S VN=VN+1
+	. . S SUB=$E(SUB,1,$L(SUB)-1)_","""_DEL_""","_NUM_")"
+	. . S NUM=""
+	. I C?1PC D  
+	. . S DEL=C
+	. . I '$D(@SUB@(DEL)) S @SUB@(DEL)="%V"_$S(VN=0:"",1:VN) S VN=VN+1
+	. . S SUB=$E(SUB,1,$L(SUB)-1)_","""_DEL_""","_NUM_")"
+	. . S NUM=""
+	S @SUB@(+%DDXTRCT,FN)=%DDXTRCT
+	Q
+FILE	S WTLEN=150
+	N DATA,DDN,EX,FPN,LPN,WDELM,LEV
+	S $ZT="PIECERR^%DASDC10"
+	F NOD=1:1 Q:'$D(NOD(NOD))  D  
+	. S LEV=0
+	. D PIECE("NOD(NOD)")
+	. I NOD(NOD)'="" D  
+	. . S CM="S"_$S(AC="FI":":%V'=%T!'%F",AC="FS":"")
+	. . S ARG=NOD(NOD)_"=%V" D COM
+	. D ENDL
+	Q
+PIECERR	;
+	S %MSG="Error processing pieces of pieces in field "_F_", check data definitions."
+	;**TM**; ZQの動作の変更; ZQ
+	ZQ 1 G @$ZT
+PIECE(SUB)	
+	I LEV=0 D  
+	. I AC="FI" S DR=NOD(NOD),CM="D",ARG=NEV(DR) D COM
+	. I AC="FS" S DR=NOD(NOD),CM="D",ARG="="
+	S CM="S"
+	N PN,DELM,VAR,D2,WDELM
+	S DELM=$O(@SUB@("")) 
+	S VAR=@SUB@(DELM) 
+	S PN="",DATA="",FPN="",LPN="999"
+	F  S PN=$O(@SUB@(DELM,PN)) Q:PN=""  D  
+	. I PN=0 D  Q 
+	. . S FN=$O(@SUB@(DELM,PN,0,""))
+	. . I $E(FN)="%" S DDN=$E(FN,2,99)
+	. . E  S DDN=FN(FN)
+	. . I AC="FI",FI(FN) S CM="D",ARG=LB(FN_".F") D COM S CM="S"  ;;%%Z3-DASLV61_BUGS-22
+	. . S CM="S:"_DDN_"'=%T!'%F"
+	. . S ARG=NOD(NOD)_"="_DDN
+	. . D COM S ARG="S"
+	. . S NOD(NOD)="" 
+	. I $O(@SUB@(DELM,PN,""))?.PC D  Q 
+	. . D WRITE
+	. . S D2=$O(@SUB@(DELM,PN,""))
+	. . S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:""""_DELM_"""")
+	. . S ARG=@SUB@(DELM,PN,D2)_"=$P("_VAR_","_WDELM_","_PN_")"
+	. . D COM
+	. . S LEV=LEV+1
+	. . D PIECE($P(SUB,")",1)_","""_DELM_""","_PN_")")
+	. . S LEV=LEV-1
+	. . S ARG="$P("_VAR_","_WDELM_","_PN_")="_@SUB@(DELM,PN,D2)
+	. . D COM
+	. I LPN+1'=PN D WRITE
+	. I FPN="" S FPN=PN 
+	. S LPN=PN 
+	. S EX=""
+	. F  S EX=$O(@SUB@(DELM,PN,EX)) Q:EX=""  D  
+	. . I EX?.PC D  Q 
+	. . . D WRITE
+	. . . S D2=EX
+	. . . S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:""""_DELM_"""")
+	. . . S ARG=@SUB@(DELM,PN,D2)_"=$P("_VAR_","_WDELM_","_PN_")"
+	. . . D COM
+	. . . S LEV=LEV+1
+	. . . ;	;%%Z3-PATCH remove break command;B
+	. . . B:DB=1
+	. . . D PIECE($P(SUB,")",1)_","""_DELM_""","_PN_")")
+	. . . S LEV=LEV-1
+	. . . S ARG="$P("_VAR_","_WDELM_","_PN_")="_@SUB@(DELM,PN,D2)
+	. . . D COM
+	. . S FN=$O(@SUB@(DELM,PN,EX,""))
+	. . I $E(FN)="%" S DDN=$E(FN,2,99)
+	. . E  S DDN=FN(FN)
+	. . 
+	. . I AC="FI",FI(FN) S CM="D",ARG=LB(FN_".F") D COM S CM="S"
+	. . I EX=0 D  
+	. . . S FLAG("FILE")=0
+	. . . S DATA=DATA_$S(DATA="":"",1:"_"""_DELM_"""_")_DDN
+	. . . S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:""""_DELM_"""")
+	. . I EX'=0 D  
+	. . . D WRITE
+	. . . I FLAG("FILE")=0 S ARG=@SUB@(DELM,PN)_"=$P("_@SUB@(DELM)_","""_DELM_""","_PN_")" D COM
+	. . . S FLAG("FILE")=1
+	. . . S ARG="$E("_@SUB@(DELM,PN)
+	. . . I $P(@SUB@(DELM,PN,EX,FN),"-")'=$P(@SUB@(DELM,PN,EX,FN),"-",2) S ARG=ARG_","_$P(@SUB@(DELM,PN,EX,FN),"-")
+	. . . I $P(@SUB@(DELM,PN,EX,FN),"-",2)'="" S ARG=ARG_","_$P(@SUB@(DELM,PN,EX,FN),"-",2)
+	. . . S ARG=ARG_")="_DDN
+	. . . D COM
+	. . I $X+$L(DATA)>WTLEN D WRITE D ENDL
+	. S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:""""_DELM_"""")
+	. I FLAG("FILE")=1 S ARG="$P("_@SUB@(DELM)_","_WDELM_","_PN_")="_@SUB@(DELM,PN) D COM
+	D WRITE
+	Q
+WRITE	I DATA="" Q
+	S ARG="$P("_VAR_","_WDELM
+	I FPN'=LPN S ARG=ARG_","_FPN_","_LPN
+	E  I FPN'=1 S ARG=ARG_","_FPN
+	S ARG=ARG_")="_DATA
+	D COM
+	S (DATA,LPN)=""
+	S FPN=""
+	Q
+LABEL	;
+	S FLAG("LB")=FLAG("LB")+1
+	Q
+SG	;
+	I $D(SM(VN)) S SM=SM(VN) Q
+	S %MSG="Undefined Field - "_FN ZT %MSG
+COM	I $X+$L(ARG)>WTLEN W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	Q
+ENDL	W:$X ! S COM=""
+	Q

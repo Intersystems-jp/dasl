@@ -1,0 +1,61 @@
+ROUTINE %DASL [Type=INT,LanguageMode=6]
+%DASL	;DBS/DAH,,UTILITY,DASL;4-Mar-92;V6.1 Call DASL main menu
+	;DASL;Y
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;       This software is furnished under a license and copies
+	;       thereof may not be provided or otherwise made available
+	;       to any other person.  No title to and ownership of the
+	;       software is hereby transfered.  The information in this
+	;       software is subject to change without notice.
+	;
+	;
+	;********************************************************************
+	;*                     !WARNING to Developers!                      *
+	;*   The master copy of this routine is stored under the %DM####    *
+	;*   name.  If any edits are made to this routine the edits MUST    *
+	;*   be made to the %DM routine as well.  Failure to do this will   *
+	;*   lead to errors in Portable Run-time DASL!                      *
+	;*                                                                  *
+	;********************************************************************
+	;
+	; Check data base rev level run ^%DACVRT to update
+	I '$D(^DASY("CONVERT")) W !,"ＤＡＳＬのデータがいくつか失われています。初期化が必要です。" Q  ;	;%%Z3-T
+	I $GET(^DASY("CONVERT"))'="61AJ" W !,"データベースが正しいリビジョンではありません。 DO ^%DACVRT を実行して下さい。" Q  ;	;%%Z2-B,%%Z2-T
+	;
+INIT	S $ZT="RESET^%DASL",$ZE="" D PROG S %IOD=%PDV
+	I '$D(%WRITE) S %WRITE=1 ; Data Base has Write Access
+	S %OPN="DSM Application Software Library",%OP(0)="メイン メニュー" ;	;%%Z1-T
+	U 0:PACK S %NAME="%ODASL" D SCREEN^%DALOGIN,EXIT^%DALOGIN
+	K %DEV,%PPV,%PDV,%USR,%PGMR,%SPV,%IOD,GNEQ,GNSEQ,GNRET,GNCEQ,GNEDQ
+	Q
+PROG	; Initialize programmer mode variables
+	S %ESC="",(%PPV,%OPV)=$S($D(%PPV):%PPV,1:"@") S:'$D(%OP) %OP=0
+	S %OP(0)=$S($D(%OPN):%OPN,1:"DASL"),%OPN="Main Menu"
+	; Get a default %USR via DSM$DASL_USRID
+	; **TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM",'$D(%USR) S %USR="",%Z=$$TRNLOG^%DAZCALL("DSM$DASL_USRID") I %Z]"",$O(^DASYU("U","X","I",%Z,""))]"" S %USR=$O(^(""))
+	;I $ZV["DSM for ULTRIX",'$D(%USR) S %USR=""
+	I '$D(%USR) S %USR=""
+	; Get principal device.
+	; **TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. S %PDV=$ZC(%GETDVI,$I,"TT_PHYDEVNAM") S:%PDV="" %PDV=$I
+	;. S:$E(%PDV)="_" %PDV=$E(%PDV,2,99)
+	;I $ZV["DSM for ULTRIX" S %PDV=$I
+	S %PDV=$I
+	; Programmer Mode flag
+	I '$D(%PGMR) S %PGMR=1
+	Q
+RESET	; Handle run time errors. Reset device/terminal parameters.
+	;**TM**; U 0:(WIDTH=80:NOESCAPE:NOCONVERT:NOPACK:ECHO:CTRAP="",TERM="":NOEXINPUT) ;	;%%Z1-E
+	U 0:(WIDTH=80:NOCONVERT:NOPACK:ECHO:TERM="") ;	;%%Z1-E
+	S %E=$C(27)
+	W %E,"[?25h",%E,"[r",%E,"[0m",%E,"(B",%E,">",%E,"[?3l",%E,"[H",%E,"[2J"
+	W:$ZE]"" !!,%E,"[1m","Error - ",$ZE,%E,"[0m"
+	D EXIT^%DALOGIN
+	Q
+MODE()	;Nihongo DASL mode
+	Q "1 DEVELOPMENT"

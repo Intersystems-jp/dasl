@@ -1,0 +1,65 @@
+ROUTINE %DASPAT [Type=INT,LanguageMode=6]
+%DASPAT	; [DASL] INSTALL ;V3.0 ;DASL Patched Routine Restore Routine
+	;
+	;	Created by K.Yamamoto	at 6-Feb-1989	for DASL
+	;
+	;	Patched Routines to be restored must be saved by DASRBLD
+	;
+	S $ZT="%ERR^"_$T(+0)
+	U 0:CTRAP=$C(3,26) W !!,"DASL Patched Routine Restore",!!
+	W "*NOTE*",!!
+	W "  This routine restore DASL patched routines.",!
+	W "  If your save files don't have DASL patched routines,then",!
+	W "  you must not excute this routine.",!
+%ASK	R !,"Are you continue? <N> ",%A S:%A="" %A="N" I %A="N"!(%A="n") D %EXIT Q
+	I '(%A="Y"!(%A="y")) W !,*7,"Input Y or N" G %ASK
+	W !
+	S %QTY=1 K %DEF D ^%IOS I '$D(%IOD) G %EXIT
+	G %ST
+	;
+%COM	; Command procedure(DSM$DASL_PATCH.COM) Installation and patch mode entry
+	;
+	; '%' includes a sequential file name which includes patched routines
+	;
+	S $ZT="%ERR^"_$T(+0)
+	S %IOD=% O %IOD:READ U %IOD S %ZIOD=$ZIO
+%ST	;
+	S %CT=0,$ZE=""
+%GET	U %IOD R %DATIM,%HEAD
+	U 0 W !!,"Restoring patched routines from ",%ZIOD,!
+	I %DATIM="",%HEAD="" W !?5,*7,"File is not in expected Routine Save format" G %EXIT
+	W !,$S(%DATIM'["DASBLD":"Routines were saved on ",1:""),%DATIM,!,"Header: ",%HEAD,!
+	;
+%UTL	U %IOD R %NAM I %NAM'="%DASRNM" U 0 W !!?5,*7,%ZIOD," contains NO patched routines." G %EXIT
+	X "U %IOD ZL  U 0 ZS @%NAM"
+	D %ALL^%DASRNM
+	W ! F  U %IOD R %NAM Q:%NAM=""  U 0 W:'(%CT#7) ! W ?%CT#7*11+2,%NAM X ("U %IOD ZL  U 0 ZS "_%NAM) D  U 0 W "." S %CT=%CT+1
+%SEC	.; Security routine restore
+	.I $D(%daslrtn(%NAM)),%daslrtn(%NAM) S %ZSN=1004,%zSECrtn=%NAM,%NP="",STAT=$$%REBUILD^%ZSECUR I STAT'=1 ZT "Zsecur Error code : "_STAT
+	;
+%EOF	; End of file processing
+	;
+%DONE	; Exit here to close current device, and branch back for another.
+	U 0 W !! I %CT W !?4,%CT," Patched routine",$S(%CT'=1:"s",1:"")," restored",!
+	C %IOD
+	;
+%EXIT	; Exit here on all errors, and when user is finished.
+	U 0 I $$%NPDEV^%IOS C %IOD
+	K %CT,%DATIM,%DTY,%HEAD,%ZIOD,%IOD,%NAM,%X
+	K %BL,%ZA,%BLK,%RL,%UTILITY,%SS,%NP,%ZSN,%zSECrtn,%daslrtn
+	Q
+	;
+	;
+	;**TM**; エラーコードの変更
+	;%ERR	I $ZE["CTRAP" U 0 W !?5,*7,"Unexpected interrupt",! G %EXIT
+	;I $ZE["ZTRAP" U 0 W !?5,*7,"Unexpected Secure error (code:"_STAT_")" G %EXIT
+	;G %DONE:$ZE["ENDOFILE",%ERR2
+%ERR	I $ZE["INTERRUPT" U 0 W !?5,*7,"Unexpected interrupt",! G %EXIT
+	I $ZE["<Z" U 0 W !?5,*7,"Unexpected Secure error (code:"_STAT_")" G %EXIT
+	G %DONE:$ZE["ENDOFFILE",%ERR2
+	;**TM**; おわり
+	;
+%ERR2	S %ZA="" I $D(%IOD) U %IOD S %ZA=$ZA
+	U 0 W !?3,*7,$ZE,! I %ZA]"" W ?3,"$ZA = ",%ZA,!
+	G %EXIT
+	;

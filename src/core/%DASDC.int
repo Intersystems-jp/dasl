@@ -1,0 +1,140 @@
+ROUTINE %DASDC [Type=INT]
+%DASDC	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	S DB=0 
+DBUG	;
+	K %DN,BX,CV,DM,DS,EX,FC,FH,FI,FN,FS,FT,FV,F0,LB,NF,P0,SC,SM,TR
+	K FLAG,NEV,SUB
+	N AT 
+	N EQ 
+	I '$D(^%DASY("MUMPS")) S %MSG="インプリメント特有のMUMPSデータが設定されていません。^%DAINITを実行して下さい。" ZT %MSG  ;;%%Z3-T
+	;**TM**;S ($ZE,%MSG)="",%FLANG=^%DAMSG S:'$D(%MUMPS) %MUMPS=^%DASY("MUMPS") 
+	S %MSG="",%FLANG=^%DAMSG S:'$D(%MUMPS) %MUMPS=^%DASY("MUMPS") 
+	I '$D(%PRTD) D
+	. I DB=1 S FILE=0
+	. E  D GETFILE I %MSG]"" G EXIT
+	S $ZT="ERRTOP^%DASDC"
+	;**TM**;I 'DB U 0:(CTRAP=$C(3,26))
+	I 'DB U 0
+	I ^DASY("PARM","DELIM")="" S %MSG="アプリケーション パラメータ スクリーンで デフォルト デリミタを入力して下さい。" ZT %MSG  ;;%%Z1-T
+	I $P(^DASY("PARM","RTN"),";",1)="" S %MSG="アプリケーション パラメータ スクリーンでルーチン接頭文字を入力して下さい。" ZT %MSG  ;;%%Z1-T
+	S FLAG("DASL")=$$MODE^%DAZCALL
+	D NOW^%DAUDTTM
+	S SEMI="_"";""_",EQ="%E,""",QEQ=""",%E,""",WTLEN=150,%MSG="",%SDNM=SDNM
+	I '$D(^DASD(%SDNM)) S %MSG="スクリーン"_%SDNM_"は未定義です。" ZT %MSG
+	S %NAME=%SDNM D SCREEN^%DANAME S I=%COUNT,%COMPNM=$E(%PROGRAM,2,99)
+	S SCNV=$S(FLAG("DASL"):"%",1:"")
+	S SCNV=SCNV_$S(I<27:$C(I+96),I<702:$C(I\26+96,I#26+97),1:$C(I-26\676+96,I-26\26#26+97,I#26+97)) 
+	S V1=0,V2=0,(L1,L3)=0,L2=1,TMO=""
+	S FLAG("DELIM")=$$DELIM^%DASDUTL(^DASY("PARM","DELIM"))
+	I FLAG("DELIM")="" S %MSG="アプリケーション デリミタが不適当です。" ZT %MSG  ;;%%Z1-T
+	D KD 
+	S X=^DASD(%SDNM,"A"),%SDDES=$P(X,";",2),%SDMR=$P(X,";",3)
+	S X=^DASD(%SDNM,"SCR"),%SDTYPE=$P(X,";")
+	S %SDFL=$P(X,";",2),%SDLL=$P(X,";",3)
+	I $D(%PRTD) U FILE W %COMPNM,!
+	U FILE W %COMPNM," ;V6.1;",%DTX," ",%TMX,";",%SDNM," ",%SDDES,!
+	W " ;DASL;",%SDMR,!
+	I $D(^DASY("ACT","E")),^("E")="Y" F I=0:0 S I=$O(^DASY("ACT","S",I)) Q:I=""  W " ;;     ",^(I),!
+	D @("^%DASDC"_$S(%SDTYPE="DATA":1,%SDTYPE="OPTION":"O",%SDTYPE="POPUP":"P",1:"T")) ;	;%%Z2-X7
+	G:$D(%PRTD) EXIT
+	G EXIT:%MSG]"" Q:FILE=0  S $ZT="ERRSAV^%DASDC"
+	;**TM**; U FILE:DISCON X ("ZR  ZL  ZS "_%COMPNM)
+	C FILE O FILE U FILE X ("ZR  ZL  ZS "_%COMPNM)
+	S $ZT="ERRTOP",^%JOURNAL=1,$P(^DASD(%SDNM,"H"),";",5)=+$H,^%JOURNAL=0
+EXIT	;
+	;**TM**; U 0:(CTRAP="") I %MSG["CTRAP" S %MSG="コンパイルは中止されました。"  ;;%%Z1-T
+	U 0 I %MSG["INTERRUPT" S %MSG="コンパイルは中止されました。"  ;;%%Z1-T
+	;**TM**;I '$D(%PRTD) I $D(FILE) Q:FILE=0  C FILE:DEL
+	I '$D(%PRTD) I $D(FILE) Q:FILE=0  C FILE:"D"
+	K A,AA,AC,ACTION,ACTLIN,ARG,AT,BATCH,BATV,BX,C,CM,CNV,COM,CV,D,DB,DF,DM
+	K DR,DS,E,EQ,EVL,EVO,EX,F,F0,FC,FH,FI,FIL,FIO,FL,FLAG,FN,FS,FT,FP
+	K FV,H,HELP,I,J,K,KD,L,L1,L2,L3,LB,LE,LF,LN,LP,LR,LS,NEV,NF,NN,NOE,NSAME
+	K OAT,P,P0,PAD,PD,PLIST,Q,QEQ,REQ,ROU,S,S1,SAT,SATT,SB,SC,SCARY,SCATR
+	K SCNAK,SCNV,SEMI,SK,SL,SM,SMS,SN,SO,SP,SPB,SPC,SPE,SPF,SPWB
+	K SPWT,ST,SUB,SWB,SWT,T,TAL,TIM,TL,TMO,TMOSCN,TR,U,V,V1,V2,VALID
+	K VN,WID,WTLEN,X,Y
+	K %,%DTI,%DTX,%NAME,O,%PROGRAM,%TMI,%TMX
+	K %DN,%SDFL,%SDLL,%SDTYPE,%SDDES,%COMPHL,%DDLEN,%DDNM,%DDPIECE,%DDTRIG
+	K %DDTYPE,%DDXREF,%DDXTRCT,%COMPNM,%SDNM,%COUNT,%DDREF,%SDMR,%SDLL
+	K %DDTRX,%DDXKEY,%DDXTYP
+	K:'$D(%PRTD) FILE
+	Q
+TEST	R !,"Screen: ",SDNM Q:SDNM="" 
+	I '$D(^DASD(SDNM)) W *7,"  [Not defined]" G TEST
+TESTD	R !,"Debug flag: ",DB
+	I DB'?1N!(DB<0)!(DB>3) W *7,"  [0, 1, 2 or 3]" G TESTD
+	W ! S %MSG="" D DBUG I %MSG]"" W *7,!!,%MSG,!
+	Q
+GETFILE	;
+	S FILE="DSM_DASL_SC"_($H#7)_$P($H,",",2)_".TMP"
+	;I $ZV["VAX DSM" G:$ZSE(FILE)]"" GETFILE
+	S $ZT="ERROPN^%DASDC" C FILE O FILE:"NWS":10
+	E  S %MSG="コンパイラ処理用ファイルがオープンできません。"  ;;Z1-T
+	Q
+KD	S KD=^DASY("PARM","KD")
+	S KD("H")=$P(KD,";",1),KD("GH")=$P(KD,";",2) 
+	S KD("M")=$P(KD,";",3),KD("GM")=$P(KD,";",4) 
+	S KD("EX")=$P(KD,";",5),KD("GEX")=$P(KD,";",6) 
+	S KD("PF")=$P(KD,";",7),KD("GPF")=$P(KD,";",8) 
+	S KD("CL")=$P(KD,";",9),KD("GCL")=$P(KD,";",10) 
+	S KD("C")=$P(KD,";",11),KD("GC")=$P(KD,";",12) 
+	S KD("PS")=$P(KD,";",13),KD("GPS")=$P(KD,";",14) 
+	S KD("NX")=$P(KD,";",15),KD("GNX")=$P(KD,";",16) 
+	S KD("IN")=$P(KD,";",17),KD("GIN")=$P(KD,";",18) 
+	S KD("DEL")=$P(KD,";",19),KD("GDEL")=$P(KD,";",20) 
+	S KD("SS")=$P(KD,";",21),KD("GSS")=$P(KD,";",22) 
+	S KD("H2")=$P(KD,";",23) 
+	S KD("SE")=$P(KD,";",24),KD("GSE")=$P(KD,";",25) 
+	S KD("LE")=$P(KD,";",26),KD("GLE")=$P(KD,";",27) 
+	S KD="",KD("ALLGOLD")=","
+	F KD="GH","GM","GEX","GPF","GCL","GC","GPS","GNX","GIN","GDEL","GSS" S:KD(KD)'="" KD("ALLGOLD")=KD("ALLGOLD")_KD(KD)_","
+	Q
+PIECE(PIECES,VAR,EXT)	
+	N I,II,PIECE,NUM
+	I %MSG'="" Q
+	I PIECES=0 S PIECES=""
+	I PIECES="",EXT'="" S VAR="$E("_VAR_","_+EXT_$S(EXT["-":","_$P(EXT,"-",2),1:"")_")" Q
+	I PIECES="" Q
+	F I=1:1 Q:$E(PIECES,I)'?1N  
+	S NUM=$E(PIECES,1,I-1)
+BRK	I $P(PIECES,NUM,2)="" S PIECES=PIECES_^DASY("PARM","DELIM")
+	I $E(PIECES,I,I+2)="$C(" D  G PIECED 
+	. S II=I
+	. S I=I+2
+	. F I=I:1 Q:$E(PIECES,I)=")"
+	. S PIECE=$E(PIECES,II,I),I=I+1
+	I $E(PIECES,I)?1PC D  G PIECED
+	. S II=I
+	. F I=I:1 Q:$E(PIECES,I)'?1PC
+	. S PIECE=""""_$E(PIECES,II,I-1)_""""
+PIECED	I PIECE="" S %MSG="PIECE ERROR" Q
+	S VAR="$P("_VAR_","_PIECE_$S(NUM'=1:","_NUM,1:"")_")"
+	S PIECES=$E(PIECES,I,999)
+	D PIECE(PIECES,.VAR,EXT)
+	Q
+DELM(DELM)	
+	N C,I,II,TEMP
+	I DELM?.N S DELM=DELM_^DASY("PARM","DELIM")
+	S TEMP=DELM,DELM=""
+	F I=1:1 S C=$E(TEMP,I) Q:C=""  D  
+	. I C?1N Q
+	. I $E(TEMP,I,I+2)="$C(" D   Q
+	. . S II=I
+	. . S I=I+2
+	. . F I=I:1 Q:$E(TEMP,I)=")"
+	. . S DELM=DELM_"."_$E(TEMP,II+3,I-1),I=I+1
+	. I C?1PC S DELM=DELM_"."_$A(C) Q
+	I $E(DELM,1)="." S DELM=$E(DELM,2,999)
+	Q DELM
+ERROPN	S %MSG="エラー - "_$ZE  ;;%%Z1-T
+	Q
+KEYDEF	;;%%Z1-L for function key definition help
+	N %NAME,%PROGRAM,%COUNT S %NAME="%HELPKEY" D SCREEN^%DANAME S HKEYDEF=$S(%MSG="":$P(%PROGRAM,"^",2),1:"") S %MES=""  ;;%%Z1-L
+	Q
+ERRTOP	I '$D(%MSG) S %MSG="" 
+	I %MSG="" S %MSG="エラー - "_$S($ZE]"":$ZE,1:"スクリーンコンパイル異常終了")  ;;%%Z1-T
+	G EXIT
+ERRSAV	S %MSG="コンパイルされたスクリーンをセーブできません。- "_$ZE  ;;%%Z1-T
+	G EXIT
