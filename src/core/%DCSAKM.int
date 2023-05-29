@@ -1,0 +1,284 @@
+ROUTINE %DCSAKM [Type=INT,LanguageMode=6]
+%DCSAKM	;V6.1;19-May-93  4:54 PM;RPCOMTS Report comments
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	S %jmB="" F %Z=0,5:1:23 S $P(%jmB,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="%RPCOMTS" F %Z=6,7,9,10:1:23 S %L(%Z)="%DCSAKM"
+	S %L(24)="",%U=2,%TM=%TMO W %E,"[5;1H",%E,"[J"
+U0	D U,Q
+W	S %MSG="",%jmA=1,%jmA(0)="AH"
+	D AA S %FND=%D G W1:'%D S RPHIV=$P(%T,";"),RPHIC=$P(%T,";",2),RPHIE=$P(%T,";",3),(RPHILE,%DTI,%jmM)=$P(%T,";",4)
+	I %DTI?.1"-"1N.N D DTIX^%DAUDTTM S %jmM=%DTX
+	S (RPHILC,%DTI,%jmL)=$P(%T,";",5)
+	I %DTI?.1"-"1N.N D DTIX^%DAUDTTM S %jmL=%DTX
+	S (RPHILET,%TMI,%jmN)=$P(%T,";",6)
+	I %TMI?1.5N D TMIX^%DAUDTTM S %jmN=%TMX
+	U 0:PACK D AO,AS,BA,AC,AW,BQ U 0:NOPACK
+W1	;
+	D SN S RPCLC="" F %jmF=1:1 S RPCLC=$O(^DARD(RPNM,"CM",RPCLC)) Q:RPCLC=""  D W2
+	S %FND=%jmF-1 S:%jmF>%jmE %jmE=$S(%FND:%FND,1:1),$P(RPCOMTS(%jmE),";",1)=0 S (%SPS,%jmD,%jmI,%jmF)=1 D XP,SF1 G W3
+W2	S %T=^(RPCLC),RPCOMTS(%jmF)=(%jmF+1)_";"_(%jmF-1),RPCOMTS(%jmF,"RPCCOM")=%T Q
+W3	;
+	G BJ:RPHIC]"",AP
+U	K RPCOMTS S (%jmL,RPHILC)="",RPHIC="",(%jmM,RPHILE)="",RPHIE="",(%jmN,RPHILET)="",%jmO=0,GNSEQ="",RPHIV="" Q
+SN	S RPCCOM="" Q
+SP	I %jmC>%jmE W %E,"[",11+%jmC-%jmD,";1H",%E,"[K" Q
+	I %SPS D SG,SU:%jmG
+	W %E,"["_(11+%jmC-%jmD)_";1H",$E(RPCCOM,1,$Zposition(RPCCOM,75)),$S(75-$Zwidth(RPCCOM)'<1:$E(%U(1),1,75-$Zwidth(RPCCOM)),1:"") Q
+SF	S %SPS=1,%jmF=+$O(RPCOMTS("")) I '%jmF D SN1 S %SPS=0 G SF1
+	S (%jmG,%jmI)=%jmF,%jmH=0 F %jmC=2:1 S %jmG=$O(RPCOMTS(%jmG)) D S1 Q:%jmG=""
+	S %jmF=%jmI D XP S %jmE=$S(%jmC-1:%jmC-1,1:1),%jmD=1
+SF1	U 0:PACK F %jmC=1:1:11 D SP
+	U 0:NOPACK S %jmJ=$S('%jmH:1,%jmE<11:%jmF,1:%jmH),%jmK=%jmF
+SS	S %jmC=%jmD,%jmF=%jmI D SG,XP
+SV	S %SL=%jmE,%SP=%jmF,%SCX=%jmC=%jmE,%SN=%jmC Q
+SN1	S (%jmC,%jmD,%jmE,%jmF,%jmI,%jmJ,%jmK)=1,(%jmG,%jmH)=0,RPCOMTS(1)="0;0" G SM2
+SG	S RPCCOM=RPCOMTS(%jmF,"RPCCOM") Q
+SU	S %jmH=%jmF,%jmF=%jmG,%jmG=+RPCOMTS(%jmF) Q
+S1	S RPCOMTS(%jmF)=+%jmG_";"_%jmH,%jmH=%jmF,%jmF=%jmG Q
+SM	S %Q=((%jmF+%jmH)/2)*1 I %Q=%jmH S %Q=-1 Q
+	S $P(RPCOMTS(%jmF),";",2)=%Q
+SM1	S:%jmH $P(RPCOMTS(%jmH),";",1)=%Q S RPCOMTS(%Q)=%jmF_";"_%jmH,%jmG=%jmF,%jmF=%Q
+SM2	D SN S RPCOMTS(%jmF,"RPCCOM")="" Q
+AA	S %T="",%D=$D(^DARD(RPNM,"H"))#2 S:%D %T=^("H") S %V=%T Q
+6	W %E,"[6;1HCreated by: ",$E(RPHIC,1,$Zposition(RPHIC,3)),$S(3-$Zwidth(RPHIC)'<1:$E(%U(2),1,3-$Zwidth(RPHIC)),1:""),%E,"[6;21HEdited on ",$E(%jmM,1,$Zposition(%jmM,9)),$S(9-$Zwidth(%jmM)'<1:$E(%U(1),1,9-$Zwidth(%jmM)),1:"") D BA
+	W %E,"[6;57HCompiled on ",$E(%jmL,1,$Zposition(%jmL,9)),$S(9-$Zwidth(%jmL)'<1:$E(%U(1),1,9-$Zwidth(%jmL)),1:"") Q
+7	W %E,"[7;21HEdited by: ",$E(RPHIE,1,$Zposition(RPHIE,3)),$S(3-$Zwidth(RPHIE)'<1:$E(%U(2),1,3-$Zwidth(RPHIE)),1:""),%E,"[7;42HVersion: ",$E(RPHIV,1,$Zposition(RPHIV,5)),$S(5-$Zwidth(RPHIV)'<1:$E(%U(2),1,5-$Zwidth(RPHIV)),1:"") Q
+9	W %E,"[9;16H",%E,"#6コメント" Q
+10	W %E,"[10;1H",%E,"(0qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",%E,"(B" Q
+11	S %jmC=%jmD G SP
+12	S %jmC=%jmD+1 G SP
+13	S %jmC=%jmD+2 G SP
+14	S %jmC=%jmD+3 G SP
+15	S %jmC=%jmD+4 G SP
+16	S %jmC=%jmD+5 G SP
+17	S %jmC=%jmD+6 G SP
+18	S %jmC=%jmD+7 G SP
+19	S %jmC=%jmD+8 G SP
+20	S %jmC=%jmD+9 G SP
+21	S %jmC=%jmD+10 G SP
+22	W %E,"[22;1H",%E,"(0qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",%E,"(B" Q
+23	D BI Q
+	;CDATE
+AC	W %E,"[6;69H",$E(%jmL,1,$Zposition(%jmL,9)),$S(9-$Zwidth(%jmL)'<1:$E(%U(1),1,9-$Zwidth(%jmL)),1:"") Q
+	;CLEAN
+AH	;
+	K RPCLC,RPCCOM,RPHIV,RPHILE,RPHILET,RPHILC S GNSEQ="" G E
+	;COM
+AK	W %E,"["_(11+%jmC-%jmD)_";1H",$E(RPCCOM,1,$Zposition(RPCCOM,75)),$S(75-$Zwidth(RPCCOM)'<1:$E(%U(1),1,75-$Zwidth(RPCCOM)),1:"") Q
+AL	S %W="75;"_(11+%jmC-%jmD)_";1;1;AL;S;COM;;59;0;",%OLD=RPCCOM U 0:NOCON D I S %jmA(0)="BJ" G XM:%F=17!(%F=18),X26:%F="26",X25:%F="25",XI:%F="22"
+	G XD:%F="23",F:%F,AM:%T
+	G AM:%REST?.E S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G AL
+AM	D B
+	S %LE="" S RPCCOM=%RES,RPCOMTS(%jmF,"RPCCOM")=RPCCOM
+	;
+	G BJ:%RES=""&%SCX S %F=0 D XM F %jmA=1:1:%jmA Q:",AL,"[(","_%jmA(%jmA)_",")
+	G AL
+	;CREATED
+AO	W %E,"[6;13H",$E(RPHIC,1,$Zposition(RPHIC,3)),$S(3-$Zwidth(RPHIC)'<1:$E(%U(2),1,3-$Zwidth(RPHIC)),1:"") Q
+AP	D SS:%jmC'=%jmD S %W="3;6;13;2;AP;R;CREATED;;59;1;",%OLD=RPHIC D I G F:%F,AQ:%T
+	G AQ:%REST?2.3U S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G AP
+AQ	D B
+	S %LE="" S RPHIC=%RES ;
+	I RPHIE="" S RPHIE=%RES D AW
+	G AX
+	;EDATE
+AS	W %E,"[6;31H",$E(%jmM,1,$Zposition(%jmM,9)),$S(9-$Zwidth(%jmM)'<1:$E(%U(1),1,9-$Zwidth(%jmM)),1:"") Q
+	;EDBY
+AW	W %E,"[7;32H",$E(RPHIE,1,$Zposition(RPHIE,3)),$S(3-$Zwidth(RPHIE)'<1:$E(%U(2),1,3-$Zwidth(RPHIE)),1:"") Q
+AX	D SS:%jmC'=%jmD S %W="3;7;32;2;AX;R;EDBY;;59;1;",%OLD=RPHIE D I G F:%F,AY:%T
+	G AY:%REST?2.3U S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G AX
+AY	D B
+	S %LE="" S RPHIE=%RES ;
+	G BR
+	;ETIME
+BA	W %E,"[6;41H",$E(%jmN,1,$Zposition(%jmN,10)),$S(10-$Zwidth(%jmN)'<1:$E(%U(1),1,10-$Zwidth(%jmN)),1:"") Q
+	;FILE
+BF	;
+	S ^%JOURNAL="1;RPCOMTS,FILE;"_%OPN
+	S RPCLC=0 F %=0:0 S %=$O(RPCOMTS(%)) Q:%=""  D BF1
+	S %FND=RPCLC F RPCLC=RPCLC+1:1 Q:'$D(^DARD(RPNM,"CM",RPCLC))  K ^(RPCLC)
+	G BF2
+BF1	S RPCCOM=RPCOMTS(%,"RPCCOM") Q:'(RPCCOM]"")
+	I 'RPCOMTS(%),RPCCOM="" Q  
+	S RPCLC=RPCLC+1,%V="" S:RPCCOM'=%T!'%F ^DARD(RPNM,"CM",RPCLC)=RPCCOM
+	Q
+BF2	;
+	D AA S $P(%V,";",1,3)=RPHIV_";"_RPHIC_";"_RPHIE S:%V'=%T!'%F ^DARD(RPNM,"H")=%V
+	S ^%JOURNAL="0;RPCOMTS,FILE;"_%OPN,%MODREP=1 G AH
+	;SEQ
+BI	W:%jmO %E,"[23;28HS.保存  E.修正  Q.終了: ",$E(GNSEQ,1,$Zposition(GNSEQ,1)),$S(1-$Zwidth(GNSEQ)'<1:$E(%U(2),1,1-$Zwidth(GNSEQ)),1:"") Q
+BJ	I '%EX S %jmO=1_(%jmO#10) D BI:%jmO=10
+	D SS:%jmC'=%jmD S %W="1;23;52;2;BJ;R;SEQ;;59;1;",%OLD=GNSEQ D I S %jmA(0)="AH" G F:%EX,BK:%T!%F
+	S %=",S,E,Q," D T G BK:%MSG=""
+	D J1 S:%MSG'="" %LE=%RES G BJ
+BK	I '%F D B
+	S %LE="" S %jmO=%jmO#10 W:'%jmO %E,"[23;28H",$J("",25)
+	G F:%F S GNSEQ=%RES ;
+	G AH:%RES="Q",BF:%RES="S" S GNSEQ="" U 0:PACK D BI U 0:NOPACK S %jmA(0)="BJ" G AX
+	;TITLE
+	;VERSION
+BQ	W %E,"[7;51H",$E(RPHIV,1,$Zposition(RPHIV,5)),$S(5-$Zwidth(RPHIV)'<1:$E(%U(2),1,5-$Zwidth(RPHIV)),1:"") Q
+BR	D SS:%jmC'=%jmD S %W="5;7;51;2;BR;R;VERSION;;59;1;",%OLD=RPHIV D I G F:%F,BS:%T
+	G BS:%REST?1.2N1"."1.2N S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G BR
+BS	D B
+	S %LE="" S RPHIV=%RES ;
+	G AL
+E	I %O W %E,"[5;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,5:1:23 S %O(%Z)=0,%L(%Z)=$P(%jmB,",",%Z+1)
+	K %jmB,%jmE,%jmD,%jmC,%jmH,%jmF,%jmK,%jmG,%jmA,%jmJ,%jmI,%jmL,%jmM,%jmN,%jmO,RPCOMTS Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l11;21" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="11;21"!($E(%SCN)'="l") W %E,"[11;21r"
+	S %SCN="l11;21",%LL=80 Q
+R	I %L(%Z)'="%DCSAKM" G @("R^"_%L(%Z))
+	S %SPS=1 I '+$O(RPCOMTS("")) S %SPS=0 D SN1
+	D SV S %=%jmC,%S=%jmF,%jmF=%jmI I %SPS D XP I %Z>11,%Z<22 F %T=11:1:%Z-1 Q:'%jmG  D SU
+	F %X=6,7,9,10:1:23 I '%O(%X),%L(%X)="%DCSAKM" S %O(%X)=1 D @%X
+	S %jmC=%,%jmF=%S D:%SPS SG,XP Q
+I	I $D(%jmA(%jmA-1)),%jmA(%jmA-1)=$P(%W,";",5) S %jmA=%jmA-1
+	E  S %jmA(%jmA)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAKM" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%jmA(0)=%jmA(%jmA) %jmA(1)=%jmA(0),%jmA=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	S:%RES'="" %LE=%RES
+	S %=^%DASDH("RPCOMTS",%jmA(%jmA)),%HF=$P(%,$C(0)),%MSG=$P(%,$C(0),2)
+	I %MSG="" G I7:%HF]"" S %MSG="ヘルプ情報はありません。"
+	D M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %jmA=%jmA+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%jmA(%jmA)=%jmA(0),@%jmA(0)
+	I %F="44"&%F S:%jmA>1 %jmA=%jmA-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%jmA(%jmA)'="" @%jmA(%jmA) G E
+T	I %RES'[",",%[(","_%RES_",") S %MSG="" Q
+	S %MSG="項目を一つ入力して下さい : "_$E(%,2,$L(%)-1)_" : "_%RES Q
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q
+XMB	Q:%jmC=1  S %jmC=%jmC-1,%SPS=0
+	S %jmG=%jmF,%jmF=%jmH,%jmH=$P(RPCOMTS(%jmF),";",2)
+	D SG G XM2
+XM	I %F G @%jmA(%jmA):%F=17&(%jmC=1)!(%F=18&(%jmC=%jmE))
+	S %jmC=%jmC+$S(%F=17:-1,1:1),%SPS=0
+	I %jmC>%jmE S %jmE=%jmE+1,(%jmK,%jmJ,%Q)=%jmF+1\1,%jmH=%jmF,%jmF=0 D SM1,SP:%jmD+10'<%jmC G XM2
+	I %F=17 S %jmG=%jmF,%jmF=%jmH,%jmH=$P(RPCOMTS(%jmF),";",2)
+	E  S %jmH=%jmF,%jmF=%jmG,%jmG=+RPCOMTS(%jmF)
+	D SG
+XM2	I %jmD>%jmC S %jmD=%jmD-1,%=11,%jmI=%jmF D XW,XT
+	I %jmD+10<%jmC S %jmD=%jmD+1,%=11,%jmJ=%jmF,%jmI=+RPCOMTS(%jmI) D XB
+XQ	S %SPS=1 D SV G:%F&(%F'="41") @%jmA(%jmA) Q
+XI	D SM I %Q=-1 S %F=0,%MSG="挿入の限界です。" D M G @%jmA(%jmA)
+	S %jmE=%jmE+1,%I=-1 S:%jmC=%jmD %jmI=%jmF S %S=%jmF,%SPS=0 D XS S %jmF=%S D XW G XQ
+XS	S %=%jmC-%jmD+11 W %E,"[",%,";21r" D XB:%I>0,XT:%I<0 W %E,"[11;21r" Q
+XD	I %jmC=%jmE S %S=%jmE,%jmE=%jmC-1 D SM2,SP S %jmE=%S G XQ
+	S:%jmC=%jmD %jmI=+RPCOMTS(%jmI) S %Q=(%jmD+10<%jmE) I %Q S %jmJ=+RPCOMTS(%jmJ)
+	S %jmE=%jmE-1,%I=1,%SPS=0 S:%jmH $P(RPCOMTS(%jmH),";",1)=%jmG S $P(RPCOMTS(%jmG),";",2)=%jmH
+	K RPCOMTS(%jmF) S %jmF=%jmG,%jmG=+RPCOMTS(%jmF) I '%Q D XS,SG G XQ
+	S %S=%jmF,%jmF=%jmJ D SG,XS S %jmF=%S D SG G XQ
+XT	W %E,"[",%,";1H",%E,$S(%=21:"[K",1:"M") D @% Q
+XB	W %E,"[21;1H",%E,$S(%=21:"[K",1:"D") Q:%jmD+10>%jmE  S %=%jmC D 21 S %jmC=% Q
+XP	S %Q=RPCOMTS(%jmF),%jmG=+%Q,%jmH=$P(%Q,";",2) Q
+XW	S:%jmD+10<%jmE %jmJ=$P(RPCOMTS(%jmJ),";",2) Q
+X26	D XF:%jmD+10<%jmE G @%jmA(%jmA)
+XF	S (%S,%jmF)=+RPCOMTS(%jmJ),%X=%jmE-%jmD-10 D XP
+	F %jmD=%jmD+1:1:%jmD+10+1 S %=11 D XB Q:%jmD+10=%jmE
+	I %jmD+10<%jmE S %jmJ=%jmH,%jmI=%S G SS
+	F %=1:1:%X S %jmI=+RPCOMTS(%jmI)
+	S %jmJ=%jmF G SS
+X25	D XU:%jmD>1 G @%jmA(%jmA)
+XU	S %jmG=0,(%S,%jmF)=$P(RPCOMTS(%jmI),";",2),%X=%jmD-1
+	F %jmD=%jmD-1:-1:%jmD-11 S %=11 D XT Q:%jmD=1  S %jmF=$P(RPCOMTS(%jmF),";",2)
+	I %jmD>1 S %jmI=+RPCOMTS(%jmF),%jmJ=%S G SS
+	S %jmJ=%jmF F %=1:1:10 S %jmJ=$O(RPCOMTS(%jmJ))
+	S %jmI=%jmF G SS
