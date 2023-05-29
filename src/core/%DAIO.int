@@ -1,0 +1,210 @@
+ROUTINE %DAIO [Type=INT,LanguageMode=6]
+%DAIO	;DAH,STANDARD,MUMPS,DASL;4-Mar-92;V6.1 Generate implementition specific statements
+	;DASL;N;SYSTEM
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	; Supply a device and VAX Use argument an this will return a 
+	; USE statement in either DSM-11 or VAX formats
+USE(DEV,ARG)
+	; If DEV is null then only return a use argument
+	; other wise return a complete USE command including leading space
+	I $G(%MUMPS)="VAX DSM" G USEVAX
+	I $G(%MUMPS)="DSM for ULTRIX" G USEVAX
+	I $G(%MUMPS)="DSM-11" G USE11
+	I $G(%MUMPS)="IRIS" G USEIRIS
+	I $G(%MUMPS)="Cache" G USEIRIS
+	I ^%DASY("MUMPS")="VAX DSM" G USEVAX
+	I ^%DASY("MUMPS")="ULTRIX" G USEVAX
+	I ^%DASY("MUMPS")="DSM-11" G USE11
+	I ^%DASY("MUMPS")="IRIS" G USEIRIS
+	I ^%DASY("MUMPS")="Cache" G USEIRIS
+	Q " *** No match in ^%DAIO *** "
+USEVAX	; VAX OPEN Argument
+	N COM S COM=""
+	I ARG[":" S ARG="("_ARG_")"
+	I DEV="",ARG'="" Q ARG
+	I ARG'="" S COM=" U "_DEV_":"_ARG
+	Q COM
+USE11	; DSM-11 OPEN Argument
+	N COM,ONE,FIVE,SIX,NINE,TEN,I,A
+	S (COM,ONE,FIVE,SIX,NINE,TEN)=""
+	F I=1:1 S A=$P(ARG,":",I) Q:A=""  D  
+	.I A["WIDTH=" S ONE=$P(A,"WIDTH=",2)
+	.I A="ECHO" S SIX=SIX+1
+	.I A="NOECHO" S FIVE=FIVE+1
+	.I A="ESC" S FIVE=FIVE+64
+	.I A="NOESC" S SIX=SIX+64
+	.I A="CON" S FIVE=FIVE+16384
+	.I A="NOCON" S SIX=SIX+16384
+	.I A="TYPE" S SIX=SIX+33554432
+	.I A="NOTYPE" S FIVE=FIVE+33554432
+	.I A["TERM=" S NINE="$TR("_$P(A,"TERM=",2)_",$C(127),$C(17))"
+	.I A["CTRAP=" S TEN=$P(A,"CTRAP=",2)
+	S ARG=""
+	I ONE'=""  S $P(ARG,":",1)=ONE 
+	I FIVE'="" S $P(ARG,":",5)=FIVE 
+	I SIX'=""  S $P(ARG,":",6)=SIX
+	I NINE'=""  S $P(ARG,":",9)=NINE 
+	I TEN'=""  S $P(ARG,":",10)=TEN 
+	I ARG="" Q ""
+	I ARG[":" S ARG="("_ARG_")"
+	I DEV="" Q ARG
+	S COM=" U "_DEV_":"_ARG
+	Q COM
+USEIRIS	; IRIS OPEN Argument
+	N MARGIN,PARAM,TERM,ECHO,ESC,CON,I,A,BRK
+	S MARGIN="",PARAM="",TERM="",BRK=""
+	F I=1:1 S A=$P(ARG,":",I) Q:A=""  D  
+	.;I A["WIDTH=" S MARGIN=$P(A,"WIDTH=",2)
+	.I A="ECHO" S ECHO="-S"
+	.I A="NOECHO" S ECHO="+S"
+	.;I A="ESC" S ESC="I"
+	.;I A="NOESC" S ESC="ST"
+	.I A="CON" S CON="+U"
+	.I A="NOCON" S CON="-U"
+	.I A["TERM=" S TERM=$P(A,"TERM=",2)
+	.I A["CTRAP=" S BRK=$S($P(A,"CTRAP=",2)="""""":"-B",1:"+B")
+	S PARAM=""""_$get(ESC)_$get(ECHO)_$get(CON)_$get(BRK)_""""
+	Q $select(DEV'="":" U "_DEV_$select(PARAM'="":":",1:""),1:"")_$select(PARAM'="":"(:"_PARAM_$select(TERM'="":":"_TERM,1:"")_")",1:"")
+ 
+	; subroutine to be placed in compiliers as needed
+	; Simple string replacement function
+	; ( Only used for single replacements when thing to be replaced is
+	;   unique within the string, but thats all we need to do.)
+REPLACE(STRING,OLD,NEW)	
+	I STRING'[OLD Q STRING
+	Q $P(STRING,OLD,1)_NEW_$P(STRING,OLD,2)
+	;
+	; Standard MUMPS replacements for $ZCalls on the VAX
+SQROOT(NUM)	
+	; Square root
+	N TEMP,ROOT
+	Q:NUM'>0 0
+	S ROOT=1+NUM/2
+SQROOTL	S TEMP=ROOT,ROOT=NUM/ROOT+ROOT/2 G SQROOTL:ROOT<TEMP
+	Q +$FN(ROOT,"",12)
+BASEDIT(STR,MASK)	
+	;   
+	;   Similar in function to the VAX DSM $ZC(%BASEDIT,arg1,arg2)
+	;        
+	;   STR = input string
+	;   MASK = integer or a sum of integers
+	;        
+	;   Mask values:
+	;   
+	;   0    Bit 0 set (mask 1) = discard parity bits (not implemented)
+	;   1    Bit 1 set (mask 2) = discard all spaces and tabs
+	;   2    Bit 2 set (mask 4) = discard carriage returns,
+	;                   line feeds, form feeds, deletes and nulls
+	;   3    Bit 3 set (mask 8) = discard leading spaces and tabs
+	;   4    Bit 4 set (mask 16) = convert multiple spaces and tabs
+	;                   to single space
+	;   5    Bit 5 set (mask 32) = convert lowercase letters to uppercase
+	;   6    Bit 6 set (mask 64) = convert brackets to parentheses
+	;   7    Bit 7 set (mask 128) = discard trailing spaces and tabs
+	;   8    Bit 8 set (mask 256) = suppress editing within quotation marks
+	;
+	; 0=NUL    9=TAB    10=LF    12=FF    13=CR    32=SPACE    127=DEL
+	;
+	;   New all variables that are not passed
+	N BIT,C,DEL,I,OLD,QUOTE,FLAG
+	;   Set up an array of Bit flags
+	S BIT=1 F I=0:1:8 S BIT(I)=MASK\BIT#2 S BIT=BIT*2
+	;        Get leading stuff out of the way
+	I BIT(3) D  
+	. S FLAG=0
+	. F I=1:1:$L(STR) I $C(9,32)'[$E(STR,I) S STR=$E(STR,I,255),FLAG=1 Q
+	. I I=$L(STR),'FLAG S STR=""
+	;        Get trailing stuff out of the way
+	I BIT(7) D  
+	. S FLAG=0
+	. F I=$L(STR):-1:1 I $C(9,32)'[$E(STR,I) S STR=$E(STR,1,I),FLAG=1 Q
+	. I I=1,'FLAG S STR=""
+	;              Set up string containing characters to be deleted
+	S DEL="" S:BIT(1) DEL=$C(9,32) S:BIT(2) DEL=DEL_$C(0,10,12,13,127)
+	S QUOTE=0
+	F I=$L(STR):-1:1 D CCSUB
+	Q STR
+CCSUB	S (OLD,C)=$E(STR,I)
+	I BIT(8),C="""" S QUOTE=QUOTE+1 Q
+	I BIT(8),QUOTE#2 Q  ; Don't perform edits within quotes
+	I DEL[C S C=""  ; Delete characters from bits 1&2
+	; Convert tabs and multiple tabs and spaces to a single space
+	I BIT(4),$C(9,32)[C S C=$S($E(STR,I-1)="":" ",$C(9,32)[$E(STR,I-1):"",1:" ")
+	I BIT(5),C?1L S C=$C($A(C)-32) ;  Convert to upper case
+	;. I BIT(6) D      ; convert [] to ()
+	;. . I C="[" S C="("
+	;. . I C="]" S C=")"
+	I OLD'=C S STR=$E(STR,1,I-1)_C_$E(STR,I+1,999)
+	Q
+	; Upper case conversion function
+UPCASE(STR)	
+	N I
+	F I=1:1:$L(STR) I $E(STR,I)?1L S STR=$E(STR,1,I-1)_$C($A(STR,I)-32)_$E(STR,I+1,255)
+	Q STR
+TEST	; Test for basedit
+	;
+	;   1    Bit 1 set (mask 2) = discard all spaces and tabs
+	;W !,"."_$ZC(%BASEDIT,"   Leading spaces tab	trailing spaces    ",2)_"."
+	W !,"."_$$BASEDIT^%DAIO("   Leading spaces tab	trailing spaces    ",2)_"."
+	;   2    Bit 2 set (mask 4) = discard carriage returns,
+	;                   line feeds, form feeds, deletes and nulls
+	;   3    Bit 3 set (mask 8) = discard leading spaces and tabs
+	;W !,"."_$ZC(%BASEDIT,"   Leading spaces tab	trailing spaces    ",8)_"."
+	W !,"."_$$BASEDIT^%DAIO("   Leading spaces tab	trailing spaces    ",8)_"."
+	;   4    Bit 4 set (mask 16) = convert multiple spaces and tabs
+	;                   to single space
+	;W !,"."_$ZC(%BASEDIT,"   Leading spaces tab	trailing spaces    ",16)_"."
+	W !,"."_$$BASEDIT^%DAIO("   Leading spaces tab	trailing spaces    ",16)_"."
+	;   5    Bit 5 set (mask 32) = convert lowercase letters to uppercase
+	;W !,"."_$ZC(%BASEDIT,"   Leading spaces tab	trailing spaces    ",32)_"."
+	W !,"."_$$BASEDIT^%DAIO("   Leading spaces tab	trailing spaces    ",32)_"."
+	;   6    Bit 6 set (mask 64) = convert brackets to parentheses
+	;   7    Bit 7 set (mask 128) = discard trailing spaces and tabs
+	;W !,"."_$ZC(%BASEDIT,"   Leading spaces tab	trailing spaces    ",128)_"."
+	W !,"."_$$BASEDIT^%DAIO("   Leading spaces tab	trailing spaces    ",128)_"."
+	;W !,"."_$ZC(%BASEDIT,"   Leading spaces tab	trailing spaces    ",136)_"."
+	W !,"."_$$BASEDIT^%DAIO("   Leading spaces tab	trailing spaces    ",136)_"."
+	;W !,"."_$ZC(%BASEDIT,"9",136)_"."
+	W !,"."_$$BASEDIT^%DAIO("9",136)_"."
+	;   8    Bit 8 set (mask 256) = suppress editing within quotation marks
+	;   Space case
+	;   1    Bit 1 set (mask 2) = discard all spaces and tabs
+	;W !,"."_$ZC(%BASEDIT,"     ",2)_"."
+	W !,"."_$$BASEDIT^%DAIO("     ",2)_"."
+	;   2    Bit 2 set (mask 4) = discard carriage returns,
+	;                   line feeds, form feeds, deletes and nulls
+	;   3    Bit 3 set (mask 8) = discard leading spaces and tabs
+	;W !,"."_$ZC(%BASEDIT,"    ",8)_"."
+	W !,"."_$$BASEDIT^%DAIO("     ",8)_"."
+	;   4    Bit 4 set (mask 16) = convert multiple spaces and tabs
+	;                   to single space
+	;W !,"."_$ZC(%BASEDIT,"     ",16)_"."
+	W !,"."_$$BASEDIT^%DAIO("     ",16)_"."
+	;   5    Bit 5 set (mask 32) = convert lowercase letters to uppercase
+	;W !,"."_$ZC(%BASEDIT,"     ",32)_"."
+	W !,"."_$$BASEDIT^%DAIO("     ",32)_"."
+	;   6    Bit 6 set (mask 64) = convert brackets to parentheses
+	;   7    Bit 7 set (mask 128) = discard trailing spaces and tabs
+	;W !,"."_$ZC(%BASEDIT,"     ",128)_"."
+	W !,"."_$$BASEDIT^%DAIO("     ",128)_"."
+	;   8    Bit 8 set (mask 256) = suppress editing within quotation marks
+ 
+ 
+	; IRISのデバイスタイプの取得; BY TM
+GETDT(%RES)
+	N (%,%RES,%MSG)
+	S %=""
+	I %RES="" S %MSG="デバイスが不適当です。" Q ""
+	S D=$G(^%IS(%RES,1))
+	I D="" D  Q:%MSG'="" ""
+	. ;|*|のデバイスならばデバイスタイプを抽出
+	. I %RES?1"|".A1"|".E S %=$P(%RES,"|",2) Q
+	. ;ディレクトリを取得
+	. S D=##class(%File).GetDirectory(%RES)
+	. I $ZSE(D_"*")="" S %MSG="デバイスが不適当です。" Q
+	. S %="RMS"
+	E  S %=$P(D,"^",2) ; ^%ISからデバイスタイプを取得
+	Q %

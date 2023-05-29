@@ -1,0 +1,60 @@
+ROUTINE %DARPC [Type=INT,LanguageMode=6]
+%DARPC	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	;
+	S:'$D(%MUMPS) %MUMPS=^%DASY("MUMPS") 
+	;**TM**;S ($ZE,%MSG)="" S:'$D(COMPILE) COMPILE=1 S:'$D(DB) DB=0
+	S %MSG="" S:'$D(COMPILE) COMPILE=1 S:'$D(DB) DB=0
+	I '$D(%PRTD) D
+	. I DB=1 S FILE=0
+	. E  S $ZT="ERROR^%DARPC" D GETFILE G CLEAN:%MSG]""
+	;**TM**;I 'DB U 0:(CTRAP=$C(3,26))
+	I 'DB U 0
+	I $P(^DASY("PARM","RTN"),";",2)="" S %MSG="アプリケーション パラメータ スクリーンで レポートのルーチン接頭詞を入力して下さい。" ZT %MSG ;	;%%Z3-T 
+	I ^DASY("PARM","DELIM")="" S %MSG="アプリケーション サイト パラメータ スクリーンで デフォルト デリミタを入力して下さい。" G CLEAN ;	;%%Z1-T
+	K ^DATG($J,"R"),%DN,%VL,Z,DN,FR,PK,RC,RF,SK,TO,VAR,XK,XNN,XRF
+	S (COM,CM,DN)="",RF="^DATG($J,""R"",",VC=0,RS=$C(0),%RPT=0
+	N SORTV,RPLEN ;	;%%Z3-Y(patch)
+	S %NAME=RPNM D REPORT^%DANAME S RPC=%PROGRAM
+	I $D(^DARD(RPNM,"V")) D LOADVL^%DARPUTL
+COMPILE	;
+	D ^%DARPC1 I %MSG="" D ^%DARPC2A
+CLEAN	;
+	;**TM**; U 0:(CTRAP="") S %MSG=$S(%MSG["CTRAP":"コンパイルは中止されました。",1:%MSG) ;	;%%Z1-T
+	U 0 S %MSG=$S(%MSG["CTRAP":"コンパイルは中止されました。",1:%MSG) ;	;%%Z1-T
+	I '$D(%PRTD) I $D(FILE) Q:FILE=0  C FILE:DEL
+	S RPLEN=""
+	K ^DATG($J,"R"),RPCOL,RPFMT,DDXKEY,DDXREF,DDXTYP,RPITEM
+	K %COUNT,%DDNM,%DN,%RPT,%VL,%PARM
+	K ALI,ALIAS,ARG,BLK,CM,CN,CNT,COL,COM,COMMENT,COMPILE,COND,CT,CTR
+	K DARD,DB,DD,DM,DN,DNX,DU,DNX,DELM,FLAG,FLAG1,FLN,FMT,FN,FNC,FR,FTMP
+	K GRP,I,II,ITM,J,JUS,K,KTYP,LI,LIST,LL,LN,LNCNT,LOOP,LPCT,MACRO
+	K N,NODE,NS,NP,NUL,NULL,NUM,NUMERIC,OCNT,ODN,ODX,ONODE
+	K PC,PCN,PCNT,PK,PNT,POINTER,POS,PP,PTR,QU,QUAL,RC,REF,REF1,RF,RPC,RS
+	K S,SAVE,SCT,SK,SLV,SORTV,SP,STR,SUB,SUBS,SX,TEMP,TMP,TO,TYPE
+	K UVR,V,VAR,VC,VCNT,VNT,VS,VV,X,XNN,Y,Z,XRF,XKEY
+	K:'$D(%PRTD) FILE
+	Q
+GETFILE	;
+	;**TM**; Cache,IRISのみサポート
+	;I $ZV["VAX DSM" S FILE="DSM$DASL_RC"_($H#7)_$P($H,",",2)_".TMP"
+	;I $ZV["DSM for ULTRIX" S FILE="dsm_dasl_rc"_($H#7)_$P($H,",",2)_".tmp"
+	S FILE="dsm_dasl_rc"_($H#7)_$P($H,",",2)_".tmp"
+	I $ZSE(FILE)]"" G GETFILE
+	S $ZT="OPNERR^%DARPC" C FILE O FILE:NEW:10
+	E  S %MSG="コンパイラ処理用ファイルがオープンできません。" ;	;%%Z1-T
+	Q
+OPNERR	;
+	S %MSG="エラー - "_$ZE I $D(FILE) C FILE:DEL ;	;%%Z1-T
+	Q
+ERROR	;
+	S:'$D(%MSG) %MSG=""
+	I %MSG="" S %MSG="エラー - "_$S($ZE]"":$ZE,1:"レポートコンパイル異常終了") ;	;%%Z1-T
+	G CLEAN
+TEST	;
+	R !,"Report: ",RPNM Q:RPNM=""  I '$D(^DARD(RPNM)) W *7," Not defined." G TEST
+	W ?20,$P(^DARD(RPNM,"A"),";",2),!
+	S COMPILE=1,DB=1 D INIT
+	I %MSG]"" W $C(27),"[1m",%MSG,$C(27),"[0m",!!
+	S RPNM="" G TEST

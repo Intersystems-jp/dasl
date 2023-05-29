@@ -1,0 +1,58 @@
+ROUTINE %DAQC5 [Type=INT,LanguageMode=6]
+%DAQC5	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+QF	S COM=""
+	S %QF="" F  S %QF=$O(%QF(%QF)) Q:%QF=""  D
+	. 
+	. I '$D(FLAG("DFNC",%QF)) S ODX=$P(%QF(%QF),";",3),TYPE=$P(%QF(%QF),";",6) D @$E($P(%QF(%QF),";"),1,2)
+	Q
+	;FUNC	F J=1:1 Q:V'["@"  S V=$P(V,"@",1)_""""_ODX_""""_$P(V,"@",2,99)
+	;MIN	B  S V="%MI("""_%SP_""","_%QE_",@)" G FUNC
+MI	S CM="I",ARG=ODX_"'=""""" D COM
+	S CM="S:"_ODX_$S("STRING,NAME"[TYPE:"']",1:"<")_%QF
+	S ARG=%QF_"="_ODX D COM S COM="*" D ENDL
+	Q
+	;MAX	B  S V="%MA("""_%SP_""","_%QE_",@)" G FUNC
+MA	S CM="I",ARG=ODX_"'=""""" D COM
+	S CM="S:"_ODX_$S("STRING,NAME"[TYPE:"]",1:">")_%QF
+	S ARG=%QF_"="_ODX D COM S COM="*" D ENDL
+	Q
+	;AVG	B  S V="%SU("""_%SP_""","_%QE_",@)/(%CO("""_%SP_""","_%QE_","""_ODX_""")+(%CO("""_%SP_""","_%QE_","""_ODX_""")=0))" G FUNC
+AV	Q 
+	;COUNT	B  S V="%CO("""_%SP_""","_%QE_",@)" G FUNC
+CO	S CM="I",ARG=ODX_"'=""""" D:ODX'="*" COM
+	S CM="S",ARG=%QF_"="_%QF_"+1" D COM S COM="*" D ENDL
+	Q
+	;COUNTA	B  S V="%CO("""_%SP_""","_%QE_")" G FUNC
+	;COA	B  
+	;SUM	B  S V="%SU("""_%SP_""","_%QE_",@)" G FUNC
+SU	S CM="I",ARG=ODX_"'=""""" D COM
+	S CM="S",ARG=%QF_"="_%QF_"+"_ODX
+	D COM S COM="*" D ENDL
+	Q
+DFNC	I $D(FLAG("DFNC")) S %SP="" F  S %SP=$O(FLAG("DFNC",%SP)) Q:%SP=""  S %I="" D
+	. S %I=$O(FLAG("DFNC",%SP,%I)) I %SP="S" S %FNT=$P(%QE(%I,"FLAG"),";",3) D DFUNC
+	. I %SP="H" F %JJ=1:1 Q:'$D(%QH(%I,%JJ,"FLAG"))  I $D(%QH(%I,%JJ,"FLAG")),$P(%QH(%I,%JJ,"FLAG"),";")="F" S %FNT=$P(%QH(%I,%JJ,"FLAG"),";",3) D DFUNC
+	Q
+DFUNC	;
+	F %JJ=1:1:$L(%FNT,",") S %FN=$P(%FNT,",",%JJ),%FNAME=$P(%QF(%FN),";"),%FITM=$P(%QF(%FN),";",3) D
+	. S COM="",CM="S",ARG=%FITM_"=""""" D COM S ARG=%FITM W " F  S "_ARG_"=$O("_"^TMP"_%SP_%I_"("_ARG_")) Q:"_ARG_"=""""  D"  W:$X ! D
+	. . S (%DNX,ODX1)=""
+	. . F  S %DNX=$O(FNC(%SP,%I,%DNX)) Q:%DNX=""  S %X=$P($P(%DNX,")",1),"(",2),ODX=%X,ODX1=$P(%DNX,")",2) W " ." S COM="" D @$E(%DNX,1,2)
+	Q
+FNC	;
+	S V=""
+	I %SP="H",$D(%QR(0)) S %VE=$P(V1,%DM,1)_%VE_$P(V1,%DM,2)
+	I %SP="S" S CM="W",ARG=%QE(%QE,"FUNC") D COM,ENDL 
+	K %FNT,%J,%FN,%FNAME,%PCE,%SP,ODX,FC
+	Q
+COM	;
+	S %KJ=$ZC(KJOFF) ;	;%%Z3-A
+	I $X+$L(ARG)>200 W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	S %KJ=$ZC(KJON) ;	;%%Z3-A
+	Q
+ENDL	;
+	I COM]"" W:$X ! S COM=""
+	Q

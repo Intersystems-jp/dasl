@@ -1,0 +1,50 @@
+ROUTINE %DAR [Type=INT,LanguageMode=6]
+%DAR	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+REPORT	R !!,"Report: ",%RPNM Q:%RPNM=""
+	I '$D(^DARD(%RPNM)) W *7,"  Not defined." G REPORT
+DEV	R !,"Output device: <0> ",%IOD I %IOD="" S %IOD=$I W " = ",%IOD
+	I %IOD["?" W !?3,"Enter a valid VMS device, default = ",%PDV G DEV
+	O %IOD:(NEW):10 E  W " device unavailable" G DEV
+	;**TM**; Cache,IRISではデフォルUNICODEでJISのKON,KOFは設定しない
+PITCH	;%%Z1-F
+	R !,"Pitch: <2> ",%RPKPIT I %RPKPIT="" S %RPKPIT=2
+	I ",1,1.25,1.5,2,"'[(","_%RPKPIT_",")!(%RPKPIT["?") W !?3,"Enter a KANJI pitch (1,1.25,1.5,2)" G PITCH
+	;**TM** Cache,IRISでは2倍にしない
+	;S %RPKPIT=%RPKPIT*2
+	S %RPKPIT=%RPKPIT
+KTYPE	R !,"Kanji Type: <UTF8> ",%RPKTYP I %RPKTYP="" S %RPKTYP="UTF8"
+	I ",UTF8,DEC,JIS,SJIS,"'[(","_%RPKTYP_",")!(%RPKTYP["?") W !?3,"Enter a KANJI type (UTF8,DEC,JIS,SJIS)" G KTYPE
+	;**TM**; Cache,IRISではデフォルUNICODE
+	;PITCH	;%%Z1-F
+	;R !,"Pitch: <2> ",%RPKPIT I %RPKPIT="" S %RPKPIT=2
+	;I ",1,1.25,1.5,2,"'[(","_%RPKPIT_",")!(%RPKPIT["?") W !?3,"Enter a KANJI pitch (1,1.25,1.5,2)" G PITCH
+	;S %RPKPIT=%RPKPIT*2
+	;KTYPE	R !,"Kanji Type: <DEC> ",%RPKTYP I %RPKTYP="" S %RPKTYP="DEC"
+	;I ",DEC,JIS,SJIS,"'[(","_%RPKTYP_",")!(%RPKTYP["?") W !?3,"Enter a KANJI type (DEC,JIS,SJIS)" G KTYPE
+	;KONOF	S (%RPKON,%RPKOF)="" D:%RPKTYP="JIS"
+	;KON	.R !,"Kanji ON  code: <@$> ",%RPKON S:%RPKON="" %RPKON="@$"
+	;.I (%RPKON'?1.3ANP)!(%RPKON["?") W !?3,"Enter a Kanji ON sequence (exclude <ESC>)" G KON
+	;.S %RPKON=$C(27)_%RPKON
+	;KOF	.R !,"Kanji OFF code: <(J> ",%RPKOF S:%RPKOF="" %RPKOF="(J"
+	;.I (%RPKOF'?1.3ANP)!(%RPKOF["?") W !?3,"Enter a Kanji OFF sequence (exclude <ESC>)" G KOF
+	;.S %RPKOF=$C(27)_%RPKOF
+	;%%Z1-F
+	;**TM**
+	;W ! S $ZT="ERROR^%DASL" ;	;%%Z2-Y "ERROR" LABEL MISSING
+	W ! S $ZT="RESET^%DASL" ;	;%%Z2-Y "ERROR" LABEL MISSING
+	S %FLANG=^%DAMSG
+	D PROG^%DASL,INIT^%DALOGIN S %PDV=$I D RUN
+	I %IOD'=%PDV C %IOD
+	K %PDV,%IOD,%RPNM
+	D EXIT^%DALOGIN
+	Q
+RUN	I %PDV'=%IOD W:$X>75 ! W $J("",20-$Zwidth(%RPNM)),%RPNM ;	;%%Z1-G
+	S %OP=0,%OP(0)="Report Driver",%OPN="Print Report"
+	;**TM**; S %NAME=%RPNM U %IOD:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %IOD:(KON=%RPKON:KOFF=%RPKOF) D REPORT^%DARUN ;	;%%Z1-F
+	S %NAME=%RPNM U %IOD D SetPitch^%NLS(%RPKPIT),SetIO^%NLS(%RPKTYP) D REPORT^%DARUN ;	;%%Z1-F
+	I %PDV=%IOD W:$E(%SCN)'="l" %E,"[2J",%E,"[?3l" W:%SCN[";" %E,"[r"
+	;**TM**;U:$E(%SCN)'="l" 0:EXINPUT=(PARAM="WIDTH=80") ;	;%%Z1-E
+	U:$E(%SCN)'="l" 0 ;	;%%Z1-E
+	Q

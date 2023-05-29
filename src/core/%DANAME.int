@@ -1,0 +1,104 @@
+ROUTINE %DANAME [Type=INT,LanguageMode=6]
+%DANAME	;RSC/DBS/DAH,,SYSTEM,DASL;4-Mar-92;V6.1 Routine name generator
+	;DASL;Y;SYSTEM
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+INTER	;  Interactive entry point
+	W !!,"Return name(s) of generated routines."
+INT2	S %MSG=""
+	R !!,"Screens, Reports or Queries: ",%SUB I %SUB="" G EXIT
+	I "S,R,Q"'[%SUB W *7,"  [Enter ""S"", ""R"" or ""Q""]" G INT2
+	W !! D @("I"_%SUB)
+	G INT2
+	;
+IS	;  Return generated screen names
+	R !,"Screen: ",%NAME I %NAME="" Q
+	I '$D(^DASD(%NAME)) W *7,"  [Not defined.]" G IS
+	D SCREEN W ?25,%PROGRAM
+	G IS
+	;
+IR	;  Return generated report names
+	R !,"Report: ",%NAME I %NAME="" Q
+	I '$D(^DARD(%NAME)) W *7,"  [Not defined.]" G IR
+	D REPORT W ?25,%PROGRAM
+	G IR
+	;
+IQ	;  Return generated query names
+	R !,"Query: ",%NAME I %NAME="" Q
+	I '$D(^DAQD(%NAME)) W *7,"  [Not defined.]" G IQ
+	D QUERY W ?25,%PROGRAM
+	G IQ
+	;	
+	;********************************************************************
+	;                     Run-time Entry points.
+	;
+	;  Enter with %NAME = the name of a screen/report/query.
+	;  For an new screen/report/query a unique name will be generated.
+	;  The routine name will be returned in %PROGRAM, the unique integer 
+	;  used to generate the name in %COUNT, or an error message in %MSG.
+	;
+	;  Applications may incorporate DASL screens by using a %screen_name
+	;  as the menu action.  At compile time, a call will be generated to
+	;  the appropriate %DCS routine.
+	;
+	;********************************************************************
+	;
+SCREEN	;  Generate and return a compiled screen name
+	S %SUB="S" G NAME
+REPORT	;  Generate and return a compiled report name
+	S %SUB="R" G NAME
+QUERY	;  Generate and return a compiled screen name
+	S %SUB="Q" G NAME
+	;
+BATCH	;  Generate and return a complied batch routine name
+	S %SUB="B",%MODE=1 S %MODE=$$MODE^%DAZCALL
+	S %GREF="^"_$S(%MODE:"%",1:"")_"DANX("""_%SUB_""")"
+	G CODE
+	;====================================================================
+NAME	;        Generate name for entity pointed to by %NAME.
+	;====================================================================
+	;
+	K %PROGRAM,%COUNT S %MSG=""
+	; Returns 1 if DASL development mode
+	S %MODE=$$MODE^%DAZCALL
+	;
+	;  If %NAME="%..." its a DASL screen name.
+	;  Make sure its defined in ^DASD/^DARD/^%DASD/^%DARD
+	;
+	I $E(%NAME)="%" S %XNAME=$E(%NAME,2,99),%GREF="^%DA"_%SUB_"D"
+	E  S %GREF="^DA"_%SUB_"D",%XNAME=%NAME
+	I '$D(@%GREF@(%XNAME)) S %MSG=$S(%SUB="S":"スクリーン",%SUB="R":"レポート",1:"検索要素")_"'"_%NAME_"'は未定義です。" G EXIT ;	;%%Z1-T;%%Z2-Y
+	;  Now set %GREF equal to the appropriate ^DANX/^%DANX subtree.
+	S %GREF=$P(%GREF,%SUB,1)_"NX("""_%SUB_""")"
+	;
+	;  Entity already defined, skip name generation code.
+	I $D(@%GREF@("D",%XNAME)) S %COUNT=^(%XNAME),%SUFFIX=$P(%COUNT,";",2),%COUNT=+%COUNT G FORMAT
+	;
+	;  You MUST be in library space to compile DASL screens/reports/queries.
+	I '%MODE,$E(%GREF)="%" S %MSG="DASL"_$S(%SUB="S":"スクリーン",%SUB="R":"レポート",1:"検索要素")_"はコンパイルできません。" G EXIT ;	;%%Z1-T
+	;
+CODE	;  Generate unique routine name
+	;
+	ZA @%GREF@("CNT")
+	I '$D(@%GREF@("CNT")) S @%GREF@("CNT")=0
+	S (%COUNT,^("CNT"))=^("CNT")+1
+	S %SUFFIX=$C(%COUNT\676+65,%COUNT\26#26+65,%COUNT#26+65)
+	I %SUB'="B" S @%GREF@("D",%XNAME)=%COUNT_";"_%SUFFIX
+	ZD @%GREF@("CNT")
+	;
+FORMAT	;  Format the full routine reference, return in %PROGRAM
+	; why is  this a special case?
+	I $E(%GREF,2)="%"!%MODE D  G EXIT
+	. I %SUB="B" S %PROGRAM=$S(%MODE:"%",1:"")_%SUB_%SUFFIX Q
+	. S %PROGRAM="^%DC"_%SUB_%SUFFIX
+	;  Get routine prefix from application parameter.
+	S %=$S(%SUB="S":$P(^DASY("PARM","RTN"),";",1),%SUB="R":$P(^DASY("PARM","RTN"),";",2),%SUB="Q":$P(^DASY("PARM","RTN"),";",5),%SUB="B":$P(^DASY("PARM","RTN"),";",6),1:"")
+	I %="" S %MSG="生成ルーチンの接頭文字をアプリケーションパラメータオプションで指定して下さい" G EXIT ;	;%%Z1-T
+	I %SUB="B" S %PROGRAM=%_%SUB_%SUFFIX G EXIT
+	S %PROGRAM="^"_%_%SUB_%SUFFIX
+EXIT	K %MODE,%GREF,%SUFFIX,%SUB,%XNAME
+	I %MSG]"" ZT %MSG
+	Q
+	;

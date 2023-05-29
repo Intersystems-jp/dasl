@@ -1,0 +1,183 @@
+ROUTINE %DAQDUTL [Type=INT,LanguageMode=6]
+%DAQDUTL	;
+	;;     Copyright ?Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+NAME	S %MSG="",%RES=$$UPCASEQ^%DAZCALL(%RES)
+	I %RES'?1U.17UNP S %MSG="'"_%NM_"'名が不適切です。" Q
+	F J=1:1 S X=$E(%RES,J) Q:X=""  D  Q:%MSG]""  ;	;%%Z3-I
+	. I $$DSMCODE^%DASJUTL()="DSM" D  Q
+	.. I ("!#@%&^$=`:;<>?[]\{}/+-.()* """[X) S %MSG="'"_%NM_"'名が不適切です。" Q
+	. ;I "!#@%&^$=`~:;<>?[]\|{}/+-.()* """[X S %MSG="'"_%NM_"'名が不適切です。" Q
+	. I ("!#@%&^$=`:;<>?[]\{}/+-.()* """_$C(126,124))[X S %MSG="'"_%NM_"'名が不適切です。" Q
+	D VALNM
+	K J,X
+	Q
+TCOPY	;
+	K ^DATD(%TBNEW) I $D(^DATDH(%TBNEW)) K ^DATDH(%TBNEW)
+	I $D(^DATD(TBNM,"H")) S ^DATD(%TBNEW,"H")=$P(^DATD(TBNM,"H"),";")_";"_$S(%USR]"":$P(^DASYU("U","D",%USR,"E"),";"),1:"")_";;"_+$H_";;"_$P($H,",",2)
+	S J="" F  S J=$O(^DATD(TBNM,"CM",J)) Q:J=""  S ^DATD(%TBNEW,"CM",J)=^DATD(TBNM,"CM",J)
+	S ^DATD(%TBNEW,"REF")=^DATD(TBNM,"REF")
+	S %TBCLN=""
+CCOPY1	F  S %TBCLN=$O(^DATD(TBNM,"C",%TBCLN)) Q:%TBCLN=""  D
+	. S %Z=^DATD(TBNM,"C",%TBCLN),%TBCLNM=$P(%Z,";")
+	. S ^DATD(%TBNEW,"C",%TBCLN)=^DATD(TBNM,"C",%TBCLN)
+	. S ^DATDX("TC",%TBNEW,%TBCLNM,%TBCLN)=^DATDX("TC",TBNM,%TBCLNM,%TBCLN)
+	. S ^DATDX("CT",%TBCLNM,%TBNEW)=%TBCLN
+KILL	K %Z,%TBCLNM,%TBCLN
+	Q
+CCOPY2	;
+	;      TBCLN - column numeber to copy from 	
+	K ^DATD(TBNM,"C",%TBCNEW),^DATDX("TC",TBNM,%COLNEW,%TBCNEW),^DATDX("CT",%COLNEW,TBNM)
+	S %Z=^DATD(TBNM,"C",TBCLN),%Z=%COLNEW_";"_$P(%Z,";",2,99)
+	S ^DATD(TBNM,"C",%TBCNEW)=%Z
+	S ^DATDX("TC",TBNM,%COLNEW,%TBCNEW)="",^DATDX("CT",%COLNEW,TBNM)=%TBCNEW
+	I $D(^DATDH(TBNM,TBCLN)) S ^DATDH(TBNM,%TBCNEW)=^DATDH(TBNM,TBCLN)
+	K %Z
+	Q
+TDEL	;
+	S NUM="" F  S NUM=$O(^DATD(TBNM,"C",NUM)) Q:NUM=""  D
+	. S %Z=^DATD(TBNM,"C",NUM),TBCLNM=$P(%Z,";")
+	. K ^DATDX("TC",TBNM,TBCLNM,NUM),^DATDX("CT",TBCLNM,TBNM)
+	I $D(^DATDH(TBNM)) K ^DATDH(TBNM)
+	K ^DATD(TBNM),NUM,%Z 
+	Q
+CDEL	;
+	S %Z=^DATD(TBNM,"C",TBCLN),TBCLNM=$P(%Z,";")
+	K ^DATD(TBNM,"C",TBCLN),^DATDX("TC",TBNM,TBCLNM,TBCLN),^DATDX("CT",TBCLNM,TBNM)
+	I $D(^DATDH(TBNM,TBCLN)) K ^DATDH(TBNM,TBCLN)
+	Q
+PRIV	;
+	I %RES="*" S %MSG="有効な特権コードを入力して下さい。または priv1,priv2,...privn。" Q  ;	;%%Z1-T
+	F I=$L(%RES):-1:1 Q:$E(%RES,I)'=","
+	S %RES=$E(%RES,1,I)
+	F I=1:1:$L(%RES,",") S X=$P(%RES,",",I) D  Q:%MSG]""
+	. I X'?1UNP S %MSG="特権コード'"_X_"'は有効ではありません。" Q  ;  	;%%Z1-T
+	. I '$D(^DASY("P","D",X)) S %MSG="特権コード'"_X_"'が未定義です。" Q  ;	;%%Z1-T
+	K I,X
+	Q
+REORD	;
+	K ^DATG($J,"U")
+	 S %X="" F %I=1:1 S %X=$O(^DATD(TBNM,"C",%X)) Q:%X=""  D
+IN	. S ^DATG($J,"U",%I)=^DATD(TBNM,"C",%X)
+	K ^DATD(TBNM,"C"),^DATDX("TC",TBNM) F %I=1:1 Q:'$D(^DATG($J,"U",%I))  D
+OUT	. S %NOD=^DATG($J,"U",%I),%COLN=$P(%NOD,";")
+	. S ^DATD(TBNM,"C",%I)=%NOD,^DATDX("TC",TBNM,%COLN,%I)=""
+	. K ^DATDX("CT",%COLN,TBNM) S ^DATDX("CT",%COLN,TBNM)=%I
+	K %I,%X,^DATG($J,"U"),%NOD,%COLN
+	Q
+VDDNP	;
+	I %RES["<" D
+	. S %DDNM=$P(%RES,"<",2),%PT=$P(%RES,"<",1)
+	. I %DDNM=""!(%PT="") S %MSG="ポインタ シンタックスが不適切です。" Q  ;	;%%Z3-T
+	E  S %DDNM=%RES,%PT=""
+	D VDDN Q:%MSG]""
+	I ","_TBKEY_","'[(","_%KEYS_",") D  Q
+	. S %MSG="このデータネームのキーはこのテーブルとは両立できません。" Q
+	. ;S %MSG="This data name's keys are not compatible with this table" Q
+	Q:%PT=""  S %DDNM=%PT,%PT="" D VDDN Q:%MSG]""
+	S:%POINT'[%KEYS %MSG="ポインタの使用方法に誤りがあります。" ;	;%%Z3-T
+	Q
+VDDN	;
+	S %DDREF=$G(^DADD(%DDNM,"REF"))
+	I %DDREF="" S %MSG="データネームがありません。" Q  ;	;%%Z3-T
+	S:%PT'="" %POINT=$P(%DDREF,";",7)
+	S %DDREF=$P(%DDREF,";")
+	I %DDREF="" S %MSG="データネームがありません。" Q  ;	;%%Z3-T
+	S (%KEYS,%KEY)=""
+	I $E(%DDREF,$L(%DDREF))'=")" Q 
+	S REF=$S(%DDREF["*":$P(%DDREF,"*")_%DDNM_")",%DDREF["#":$P(%DDREF,"#")_%DDNM_")",1:%DDREF)
+	S Q=0,S=$L(REF)-1
+	F  S K="" D  S:K'="" %KEYS=K_$S(%KEYS'="":",",1:"")_%KEYS,S=I Q:(C="("&'Q)!(I=1)
+	. F I=S:-1:1 S C=$E(REF,I) S:C="""" Q=Q+1#2 Q:C="("&'Q  S:C?1AN&'Q K=C_K I C=","&'Q Q:K?1U.UN  S:K=+K K=""
+	S %KEY=$P(%KEYS,",",$L(%KEYS,","))
+	Q
+VALRESV	I $P($T(RESWRD),";",3)[(","_WORD_",") Q
+	E  S %MSG="予約語が定義されていません。" ;	;%%Z3-T
+	;E  S %MSG="Undefined reserved word." ;	;%%Z3-T
+	Q
+VALNM	;
+	I $P($T(RESWRD),";",3)[(","_%RES_",") S %MSG="予約語はテーブル名またはカラム名として定義できません。" ;	;%%Z1-T
+	Q
+RESWRD	;;,ALL,AND,ANY,AS,ASC,AVG,BETWEEN,BY,COUNT,DELETE,DESC,DISTINCT,EXEC,EXISTS,FOR,FROM,GOTO,GRANT,HAVING,IN,IS,LIKE,MAX,MIN,NOT,NULL,OF,OR,ORDER,PRIVILEGES,SELECT,SET,SOME,SUM,TABLE,TO,UNION,UNIQUE,UPDATE,USER,VALUES,VIEW,WHENEVER,WHERE,WITH,
+ALL	S $ZT="ERRALL^%DAQDUTL",%MSG=""
+	ZA ^DATD:9
+	E  S MSG="テーブルデータベースは他のユーザーが使用中です。しばらく後に再実行して下さい。" Q  ;	;%%Z1-T
+	S CNT=0 
+	K ^DATDX("TC"),^DATDX("CT")
+	S TBNM=""
+L1	S TBNM=$O(^DATD(TBNM)) I TBNM="" G L0
+	S TBCLN=""
+L2	S TBCLN=$O(^DATD(TBNM,"C",TBCLN)) I TBCLN="" G L1
+	S TBCLNM=$P(^DATD(TBNM,"C",TBCLN),";",1)
+	S CNT=CNT+1
+	S ^DATDX("CT",TBCLNM,TBNM)=TBCLN
+	S ^DATDX("TC",TBNM,TBCLNM,TBCLN)=""
+	G L2
+ERRALL	S MSG=$ZE
+L0	ZD ^DATD
+	K CNT,TBNM,TBCLN,TBCLNM
+	Q
+COPYSEC	;
+	N I,%FPV,TABLES,TBNM,%X,J,K
+	S %FPV=""
+	F I=1:1 Q:'$D(^DASYU("U","D",COPYUSR,"S",I))  F J=1:1 Q:'$D(^DASYU("C","D",^DASYU("U","D",COPYUSR,"S",I),"S",J))  S %FPV=%FPV_^DASYU("C","D",^DASYU("U","D",COPYUSR,"S",I),"S",J)
+	S TABLES=^DAQD(QUNM,"S","2F",1)_" "_^DAQD(QUNM,"S","2F",2)
+	F I=1:1:$L(TABLES,",") S TBNM=$P(TABLES,",",I) D
+	. F %X=1:1 Q:$E(TBNM,%X)'=" "
+	. S TBNM=$E(TBNM,%X,$L(TBNM)) 
+	. S TBNM=$P(TBNM," ") 
+	. S %X=$P(^DATD(TBNM,"REF"),";",4)
+	. I %FPV_%X["@" Q
+	. F K=1:1:$L(%FPV) I %X[$E(%FPV,K) Q
+	.; S %MSG="Receiving user does not have sufficient privileges to run this query."
+	. S %MSG="この検索要素を実行するための特権がありません。" ;	;%%Z1-T
+	Q
+XS1	;
+	I '%PGMR S %XS="S:%USR_"",AAA""'[$P(^DAQD(QUNM,""1A""),"";"",2) %MSG=1"
+	S %MSG=1
+	Q
+XS2	;
+	S %XS="N I,TBPRV S TBPRV=$P(^DATD(TBNM,""REF""),"";"",4) Q:TBPRV_%FPV[""@""  S %MSG=1 F I=1:1:$L(%FPV) I TBPRV[$E(%FPV,I) S %MSG=""""  Q"
+	S %MSG=1
+	Q
+DQR	;
+	N SYSQRPF,R,UCI,VOL
+	S (SYSQRPF,R)=$P(^DASY("PARM","RTN"),";",5)_"Q"
+	;S VOL=$ZC(%UCI),UCI=$P(VOL,",",6),VOL=$P(VOL,",",7)
+	;;**TM**; F  S R=$O(^[UCI,VOL] (R)) Q:$E(R,1,$L(SYSQRPF))'=SYSQRPF!(R="")  X "ZR  ZS @R"
+	; 現状のUCI,VOLを見ているが何のために使用しているか解らないため削除
+	F  S R=$O(^$Routine(R)) Q:$E(R,1,$L(SYSQRPF))'=SYSQRPF!(R="")  X "ZR  ZS @R"
+	Q
+EVALS	;
+	N %,DDNM,TBCLDES,TBCLLEN,TBCLN,TBCLNM,TBCLTYP,TMNM
+	F TBCLN=1:1 Q:'$D(^DATD(TBNM,"C",TBCLN))  D  
+	.S %=^DATD(TBNM,"C",TBCLN)
+	.S TBCLNM=$P(%,";",1)
+	.S TBCLDES=$P(%,";",2)
+	.S TBCLLEN=$P(%,";",4)
+	.S TBCLTYP=$P(%,";",6)
+	.
+	.S DDNM=$P($P(%,";",3),"<",1)
+	.S TMNM=$P(^DADD(DDNM,"B"),";",3)
+	.S:TBCLLEN="" TBCLLEN=$P(^DADD(DDNM,"DF","E"),";",1)
+	.S:TBCLTYP="" TBCLTYP=$P(^DADD(DDNM,"B"),";",2)
+	.S:TBCLLEN="" TBCLLEN=$P(^DADDT(TMNM,"DF","E"),";",1)
+	.S:TBCLTYP="" TBCLTYP=$P(^DADDT(TMNM,"B"),";",2)
+	.
+	.S HQUERY1(TBCLN,"TBCLNM")=TBCLNM
+	.S HQUERY1(TBCLN,"TBCLDES")=TBCLDES
+	.S HQUERY1(TBCLN,"TBCLLEN")=TBCLLEN
+	.S HQUERY1(TBCLN,"TBCLTYP")=TBCLTYP
+	Q
+LENVAL	;
+	I %RES?.N,%RES<133 Q 
+	I %RES'?.2N1".".2N,%RES'?.2N1",".2N S %MSG="フォーマットが不適切です。" Q  ;	;%%Z3-T
+	S P2=$S(%RES[".":".",%RES[",":",") 
+	S P1=$P(%RES,P2,1),P3=$P(%RES,P2,2)
+	I P1>19 S %MSG="数値の最大長は 19 です。" Q  ;	;%%Z3-T
+	I P3>P1 S %MSG=P2_" の残りの値が全長です。" Q  ;	;%%Z3-T
+	;I P3>P1 S %MSG="Value to the left of "_P2_" is the total length" Q
+	S TYPE=$S(TBCLTYP'="":TBCLTYP,1:DDTYPE)
+	I TYPE'="NUMERIC" S %MSG="異なったデータタイプの数値長フォーマットです。" Q  ;	;%%Z3-T
+	;I TYPE'="NUMERIC" S %MSG="Numeric length format with different data type" Q
+	Q

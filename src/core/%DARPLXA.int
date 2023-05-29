@@ -1,0 +1,110 @@
+ROUTINE %DARPLXA [Type=INT,LanguageMode=6]
+%DARPLXA	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+ALL	;
+	K ALIAS
+ALLEX	;
+	S (%MSG,GRP)=""
+	F  S GRP=$O(^DATG($J,"R",GRP)) Q:GRP=""!(%MSG]"")  D
+	. S (SP,VS)=$S(GRP="F":0,GRP="D":NS+1,1:$E(GRP,2))
+	. F LI=1:1 Q:'$D(^DATG($J,"R",GRP,LI))!(%MSG]"")  S V=^(LI) D ALL1
+	I SLV>0,%MSG="" S %MSG="$SECTION または $REPEAT 項目のバランスがとれていません。" ;	;%%Z1-T
+	K VDN
+	Q
+ALL1	S %RES=$P(V,$C(0)),(COL,FMT,JUS)="" D SETUP
+	I "@!"[$E(ITM) D:$E(ITM)="@" MCODE Q
+	I %RES["/NODATA" S (TDN,X)=$P(%RES,"/",1) D QNODAT Q
+	I %RES["/EVAL",$L(%RES,",")>1 D QEVAL Q
+	D VITM^%DARPLXB
+	I %MSG]"" S %MSG="グループ'"_GRP_"' ライン'"_LI_"' の"_%MSG Q  ;	;%%Z1-T
+	I ITM?1"\LINE"!(ITM="\PAGE")!(ITM="\NOLINE")
+	E  I ITM?1"\SECTION".E!(ITM?1"\REPEAT".E) D
+	. 
+	. S SLV(SLV)=VS,SLV=SLV+1,(COL,VS,SCT)=SCT+1
+	E  I ITM?1"\ENDSEC"!(ITM?1"\ENDREP") D  Q:%MSG]""
+	. 
+	. S COL=VS,SLV=SLV-1
+	. ;S:'$D(SLV(SLV)) %MSG="$"_$P(ITM,"\",2)_" underflow in group "_GRP
+	. S:'$D(SLV(SLV)) %MSG="グループ'"_GRP_"'で $"_$P(ITM,"\",2)_" アンダーフローを起こしています。" ;	;%%Z2-T
+	. Q:%MSG]""  S VS=SLV(SLV)
+	E  I ITM?1"\QUITREP" I SLV=0 S %MSG="QUITREP の位置が誤っています。" ;	;%%Z3-T
+	E  I ITM?1"@".E!(ITM?1"!".E!(ITM?1"\REQUIRE".E))
+	E  S COL=$S(ITM?1"\ENDSEC"!(ITM?1"\ENDREP"):COL,1:$P(V,$C(0),2)),%RES=$P(V,$C(0),3) D VFMT^%DARPLXD I %MSG]"" S %MSG=%MSG_" in group "_GRP Q
+	S ^DATG($J,"R",GRP,LI)=ITM_$C(0)_FMT_$C(0)_JUS_$C(0)_COL
+	Q
+QNODAT	D LOAD^%DARPLXC Q:%MSG]""
+	G QEVAL1
+QEVAL	;
+	F CNT=1:1:$L(ITM,",") S:$P(ITM,",",CNT)="" %MSG="/EVAL 修飾子のシンタックスが不適当です。"  Q:%MSG]""  ;	;%%Z1-T
+	S J=I F I=I+1:1 I $E(ITM,I)'?1UN S X=$E(ITM,J,I-1) D LOAD^%DARPLXC,DN^%DARPLXC Q:%MSG]""!($E(ITM,I)="/")  S J=I+1
+QEVAL1	I COMPILE S ITM=$P(V,$C(0),1),COL=$P(V,$C(0),2),%RES=$P(V,$C(0),3) D VFMT^%DARPLXD I %MSG]"" S %MSG="グループ'"_GRP_"' の"_%MSG Q  ;	;%%Z1-T
+	I ITM[":" S PCOND=$P(ITM,":",2) D  Q:%MSG]""
+	. S X=PCOND F J=1:1:$L(PCOND) Q:$E(PCOND,J)'?1U
+	. S X=$E(X,1,J-1) D LOAD^%DARPLXC:X]""
+	S DNX=$P(ITM,"/"),I=$L(DNX),K=I+2
+	F I=I+1:1 S:$E(ITM,I)="/" I=I+1 Q:$E(ITM,I)'?1U
+	S %DDNM=DNX,QUAL=$E(ITM,K,I-1) D DARPLXQ Q:%MSG]""
+	S ITM=$E(ITM,0,K-1)_$C(2)_QUAL_$E(ITM,I,255),I=I+1
+	I $E(ITM,I)=":" S:ITM[$C(1) %MSG="項目のシンタックスが不適当です。" Q:%MSG]""  S ITM=$E(ITM,0,I-1)_$C(123)_$C(1)_$E(ITM,I+1,255) ;	;%%Z3-TATSUMI;%%Z1-T
+	I COMPILE S ^DATG($J,"R",GRP,LI)=ITM_$C(0)_FMT_$C(0)_JUS_$C(0)_COL
+	K DNX,J
+	Q
+SETUP	;
+	S ITM=$$BASEDIT^%DAZCALL(%RES,296)
+	I $E(ITM)'="!",%RES'?.UNP S %RES=$$UPCASEQ^%DAZCALL(%RES)
+	S (I,Z,PC)=0
+	Q
+MCODE	;
+	S (PCN,QU,%FLG)=0
+	F %J=2:1:$L(ITM) S %Z=$E(ITM,%J) D  Q:%FLG
+	. I %Z="""" S QU=QU+1
+	. I %Z="""",QU#2=0 Q
+	. I QU#2=0 S:%Z="(" PCN=PCN+1 S:%Z=")" PCN=PCN-1
+	. I %Z=";",QU#2=0 S %FLG=1
+	I QU#2 S %MSG="クォーテーションマークのバランスがとれていません。" Q  ;	;%%Z3-T
+	I PCN S %MSG="括弧のバランスがとれていません。" ;	;%%Z3-T
+	Q
+DARPLXQ	;
+	F %Q=1:1:$L(QUAL,"/") S QUALF=$P(QUAL,"/",%Q) D  Q:%MSG]""
+	. I ",NODATA,STRIP,PROMPT,EVAL,"'[(","_QUALF_",") S %MSG="修飾子 /"_QUALF_" がわかりません。" Q  ;	;%%Z3-T
+	. I QUALF'="EVAL"&(%DDNM?1U.6UN1",".UNP!(%DDNM?1U.6UN1"("1N.N1")"1",".UNP)!(%DDNM?1U.6UN1"("1""""1NAP.NAP1""""1")"1",".UNP)) S %MSG="/"_QUAL_" では複合データネームは許されません。" Q  ;	;%%Z3-T
+	. D @QUALF
+	K %Q,PROMPT,%DDNM,TEMP,OREF,REF,DDN,QUALF
+	Q
+PROMPT	;
+	S PROMPT=$S($D(%DN(%DDNM,"P")):%DN(%DDNM,"P"),1:$P(^DADD(%DDNM,"DF","E"),";",2))
+	I PROMPT="" S TEMP=$P(^DADD(%DDNM,"B"),";",3) D
+TEMPLAT	. 
+	. I TEMP="" S %MSG=%DDNM_" にはプロンプトがないか、もしくはテンプレートが未定義です。" Q  ;	;%%Z3-T
+	. I TEMP]"",$P(^DADDT(TEMP,"DF","E"),";",3)="" S %MSG=%DDNM_" にはプロンプトがないか、もしくはテンプレートが未定義です。"  ;	;%%Z3-T
+	Q
+NODATA	;
+	I QUAL'["PROMPT" S %MSG="/PROMPT 修飾子が必要です。" Q  ;	;%%Z3-T
+	D PROMPT
+	Q
+STRIP	;
+	I QUAL'["PROMPT" S %MSG="/PROMPT 修飾子が必要です。" Q  ;	;%%Z3-T
+	D PROMPT
+	Q
+EVAL	;
+	I $L(QUAL,"/")>1 S %MSG="/EVAL と共に他の修飾子は指定できません。" Q  ;	%%Z3-T
+	S OREF="" F %Q=1:1 S DDN=$P(%DDNM,",",%Q) Q:DDN=""  D  Q:%MSG]""
+	.S REF=$S($D(%DN(DDN)):$P(%DN(DDN,"R"),";"),1:$P(^DADD(DDN,"REF"),";"))
+	.;I REF["*"!(REF["#") S %MSG="Can't use /EVAL on primary key dataname "_%DDNM_"." Q
+	.I REF["*"!(REF["#") S %MSG="主キーデータネーム'"_%DDNM_"'に /EVAL を使用できません。" Q  ;	;%%Z3-T
+	.;I OREF]"",OREF'=REF S %MSG="All datanames in /EVAL must have a same global reference." Q
+	.I OREF]"",OREF'=REF S %MSG="/EVAL でのデータネームは同じグローバルリファレンスでなければなりません。" Q  ;	;%%Z3-T
+	.S OREF=REF
+	Q
+TESTI	F %=1:1 R !,"Item: ",%RES Q:%RES=""  S %MSG="" D VITM^%DARPLXB D TESTX:%MSG]""
+	Q
+TESTC	F %=1:1 R !,"Cond: ",%RES Q:%RES=""  S %MSG="" D VCOND^%DARPLXB D TESTX:%MSG]""
+	Q
+TESTS	S NS=0
+	F %=1:1 R !,"Sort: ",%RES Q:%RES=""  S %MSG="" D VSORT^%DARPLXB D TESTX:%MSG]"" 
+	Q
+TESTK	F %=1:1 R !,"Key: ",%RES Q:%RES=""  S %MSG="" D VKEY^%DARPLXB D TESTX:%MSG]""
+	Q
+TESTX	W " ",%MSG W:%MSG="" !,?6,ITM
+	Q

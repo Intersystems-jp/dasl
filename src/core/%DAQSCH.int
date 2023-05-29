@@ -1,0 +1,136 @@
+ROUTINE %DAQSCH [Type=INT,LanguageMode=6]
+%DAQSCH	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+SCREEN	N SCREEN S SCREEN=1 G START
+REPORT	N SCREEN S SCREEN=0 D START K ^DATG($J,"S","A2") Q
+START	N j,k,l,m,n,q,t,u,v,w,x
+	N %TBNM,BB,BF,ENDX,II,JJ,LEN,NEXT,SX,SY,X,Y,COL,I,LINE,NULL
+	N POS,STR
+	I SCREEN S j="j",k="k",k="k",l="l",m="m",n="n",q="q",t="t",u="u",v="v",w="w",x="x"
+	I 'SCREEN S j="+",k="+",k="+",l="+",m="+",n="+",q="-",t="+",u="+",v="+",w="+",x="!" ;	;%%Z1-I
+	N %TBNM,BB,BF,ENDX,II,JJ,LEN,NEXT,SX,SY,X,Y,COL,I,LINE,NULL
+	N POS,STR
+	S $P(NULL," ",132)="" 
+	S (BF,BB)=1 
+	S %E=$C(27)
+	S %TBNM="",SY=1,(SX,ENDX)=1
+	F  S %TBNM=$O(^DATD(%TBNM)) Q:%TBNM=""  D TABLE,RESET
+MERGE	;
+	I SCREEN F I=1:1 Q:'$D(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"))  D  
+	.
+	.F II=$L(^DATG($J,"S","%QSCHEMA",I,"GNDUM1")):-1:1 D  
+	..I $E(^DATG($J,"S","A2",I),II)=" " Q
+	..I $E(^DATG($J,"S","A2",I),II)="0" S ^DATG($J,"S","%QSCHEMA",I,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),1,II)_%E_"(B"_$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),II+1,255)
+	..I $E(^DATG($J,"S","A2",I),II)="1" S ^DATG($J,"S","%QSCHEMA",I,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),1,II-1)_%E_"(0"_$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),II,255)
+	..I $E(^DATG($J,"S","A2",I),II)="2" S ^DATG($J,"S","%QSCHEMA",I,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),1,II-1)_%E_"(0"_$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),II)_%E_"(B"_$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),II+1,255)
+	..I $E(^DATG($J,"S","A2",I),II)="3" S ^DATG($J,"S","%QSCHEMA",I,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),1,II-1)_%E_"[1m"_$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),II,255)
+	..I $E(^DATG($J,"S","A2",I),II)="4" S ^DATG($J,"S","%QSCHEMA",I,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),1,II)_%E_"[0m"_$E(^DATG($J,"S","%QSCHEMA",I,"GNDUM1"),II+1,255)
+	QUIT
+TABLE	;
+	N %TBCLN,I,KEY,NUM,POS,%X,X,Y,STR
+	I '$D(%PPV) S %FPV="@"
+	S %X=$P(^DATD(%TBNM,"REF"),";",4) 
+	D Z2 E  Q
+	S %TBCLN="",LEN=1,POS(1)=1,SX=ENDX
+	S COL=0,NEXT=1,LINE=0
+	F  S COL=COL+1,LINE=LINE+1 S:NEXT %TBCLN=$O(^DATD(%TBNM,"C",%TBCLN)) Q:%TBCLN=""  D COL
+	S ENDX=SX+LEN
+	S BB=1
+	D DISPLAY
+	Q
+COL	S %TBNM(COL)=$P(^DATD(%TBNM,"C",%TBCLN),";",1)
+	S NEXT=1
+	I SX+LEN+($L(%TBNM(COL)))>132 S BB=0 D DISPLAY S BB=1,BF=0,NEXT=0 D FIX Q
+	S (LEN,POS(COL+1))=LEN+($L(%TBNM(COL)))+3
+	S KEY(COL)=","_$P(^DATD(%TBNM,"REF"),";",2)_","[(","_$P(^DATD(%TBNM,"C",%TBCLN),";",3)_",")
+	Q
+FIX	F JJ=1:1:COL K KEY(JJ),POS(JJ),%TBNM(JJ)
+	S COL=0
+RESET	S LEN=1
+	S STR=""
+	S POS(1)=1
+	S SX=1
+	S ENDX=1
+	S (^DATG($J,"S","%QSCHEMA",SY+5,"GNDUM1"),^DATG($J,"S","A2",SY+5))=""
+	S SY=SY+6
+	Q
+DISPLAY	;
+	S X=SX 
+	F Y=SY:1:SY+4 S (^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),^DATG($J,"S","A2",Y))=$E(NULL,1,LEN) 
+	S NUM=COL-1
+	S X=LEN-$L(%TBNM)\2+SX,Y=SY+1
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_%TBNM_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+$L(%TBNM),999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_3_$E(^DATG($J,"S","A2",Y),X+1,999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_4_$E(^DATG($J,"S","A2",Y),X+$L(%TBNM),999)
+	S Y=SY+3 
+	F II=1:1:NUM S X=POS(II)+SX+1 D  
+	. 
+	. S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_%TBNM(II)_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+$L(%TBNM(II)),999)
+	. 
+	. I KEY(II) D  
+	. . S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_3_$E(^DATG($J,"S","A2",Y),X+1,999)
+	. . S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X+$L(%TBNM(II))-1)_4_$E(^DATG($J,"S","A2",Y),X+$L(%TBNM(II))+1,999)
+	S $P(STR,q,LEN)=""
+	S STR=$S(BF:l,1:" ")_$E(STR,2,999)
+	S STR=STR_$E(NULL,0,LEN-$L(STR))
+	S STR=$E(STR,1,LEN-1)_$S(BB:k,1:" ")
+	S X=SX,Y=SY 
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_STR_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+$L(STR),999)
+	I LEN<(132-80) S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")_$E(NULL,1,131-LEN-80\2)_$G(^DATD(%TBNM,"SC1"))
+	S ^DATG($J,"S","A2",Y)=1_$E(^DATG($J,"S","A2",Y),2,999)
+	S ^DATG($J,"S","A2",Y)=^DATG($J,"S","A2",Y)_$E(NULL,0,LEN-$L(^DATG($J,"S","A2",Y))),^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,$L(^DATG($J,"S","A2",Y))-1)_0
+	S X=SX,Y=SY+1
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_$S(BF:x,1:" ")_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+1,999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_2_$E(^DATG($J,"S","A2",Y),X+1,999)
+	S X=SX+LEN-1,Y=SY+1 
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_$S(BB:x,1:" ")_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+1,999)
+	I LEN<(132-80) S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")_$E(NULL,1,132-LEN-80\2)_$G(^DATD(%TBNM,"SC2"))
+	S ^DATG($J,"S","A2",Y)=^DATG($J,"S","A2",Y)_$E(NULL,0,X-$L(^DATG($J,"S","A2",Y)))
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_2_$E(^DATG($J,"S","A2",Y),X+1,999)
+	S STR=$S(BF:t,1:" ")_$E(STR,2,999)
+	S STR=$E(STR,1,LEN-1)_$S(BB:u,1:" ")_$E(STR,LEN+1,999) 
+	F II=1:1:NUM-1 S STR=$E(STR,1,POS(II+1)-1)_w_$E(STR,POS(II+1)+1,999)
+	S X=SX,Y=SY+2 
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_STR_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+$L(STR),999)
+	I LEN<(132-80) S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")_$E(NULL,1,131-LEN-80\2)_$G(^DATD(%TBNM,"SC3"))
+	S ^DATG($J,"S","A2",Y)=1_$E(^DATG($J,"S","A2",Y),2,999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X+$L(STR)-1)_0_$E(^DATG($J,"S","A2",Y),X+$L(STR)+1,999)
+	S X=SX,Y=SY+3 
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_$S(BF:x,1:" ")_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+1,999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_2_$E(^DATG($J,"S","A2",Y),X+1,999)
+	F II=2:1:NUM S X=(POS(II)+SX-1)  D  
+	. 
+	. S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_x_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+1,999)
+	. 
+	. S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_2_$E(^DATG($J,"S","A2",Y),X+1,999)
+	S X=SX+LEN-1 
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_$S(BB:x,1:" ")_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+1,999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_2_$E(^DATG($J,"S","A2",Y),X+1,999)
+	I LEN<(132-80) S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")_$E(NULL,1,132-LEN-80\2)_$G(^DATD(%TBNM,"SC4"))
+	S STR=$TR(STR,t_w_u,m_v_j)
+	S X=SX,Y=SY+4 
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")_$E(NULL,0,X+$L(STR)-$L(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")))
+	S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),1,X-1)_STR_$E(^DATG($J,"S","%QSCHEMA",Y,"GNDUM1"),X+$L(STR),999)
+	I LEN<(132-80) S ^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")=^DATG($J,"S","%QSCHEMA",Y,"GNDUM1")_$E(NULL,1,131-LEN-80\2)_$G(^DATD(%TBNM,"SC5"))
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X-1)_1_$E(^DATG($J,"S","A2",Y),X+1,999)
+	S ^DATG($J,"S","A2",Y)=$E(^DATG($J,"S","A2",Y),1,X+$L(STR)-1)_0_$E(^DATG($J,"S","A2",Y),X+$L(STR)+1,999)
+	S BF=1
+	I LEN'<(132-80),BB D  
+	. I $G(^DATD(%TBNM,"SC1"))="" Q 
+	. S (^DATG($J,"S","%QSCHEMA",SY+5,"GNDUM1"),^DATG($J,"S","A2",SY+5))=""
+	. S SY=SY+6
+	. S ^DATG($J,"S","%QSCHEMA",SY+0,"GNDUM1")=" "_$G(^DATD(%TBNM,"SC1"))
+	. S ^DATG($J,"S","A2",SY+0)=""
+	. S ^DATG($J,"S","%QSCHEMA",SY+1,"GNDUM1")=" "_$G(^DATD(%TBNM,"SC2"))
+	. S ^DATG($J,"S","A2",SY+1)=""
+	. S ^DATG($J,"S","%QSCHEMA",SY+2,"GNDUM1")=" "_$G(^DATD(%TBNM,"SC3"))
+	. S ^DATG($J,"S","A2",SY+2)=""
+	. S ^DATG($J,"S","%QSCHEMA",SY+3,"GNDUM1")=" "_$G(^DATD(%TBNM,"SC4"))
+	. S ^DATG($J,"S","A2",SY+3)=""
+	. S ^DATG($J,"S","%QSCHEMA",SY+4,"GNDUM1")=" "_$G(^DATD(%TBNM,"SC5"))
+	. S ^DATG($J,"S","A2",SY+4)=""
+	Q
+Z2	I %FPV_%X["@" Q
+	F %I=1:1:$L(%FPV) I %X[$E(%FPV,%I) Q
+	Q

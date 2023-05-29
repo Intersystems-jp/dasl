@@ -1,0 +1,266 @@
+ROUTINE %DAQC4 [Type=INT,LanguageMode=6]
+%DAQC4	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I DB S COMMENT="Collection loops - ^%DAQC4" D COMMENT
+	N %NL,%NG,NUMERIC
+	F PP=1:1 Q:'$D(%PK(PP))  D BLDLP
+	I $D(%QG),$D(%QH),'$D(FLAG("HFUNC")) D  
+	. D HIF^%DAQC6 
+	. W " I '"_ARG_" G K",XP-1,!
+	Q
+BLDLP	;
+BREAK	S (ASN,BEG,END,XREF,XKEY)="",NODE=%PK(PP)
+	S PK=$P(NODE,";",1),REF=$P(NODE,";",2),TYPE=$P(NODE,";",3)
+	S TAG=$P(NODE,";",4),ASN=$P(NODE,";",5),BEG=$P(NODE,";",6)
+	S END=$P(NODE,";",7),XKEY=$P(NODE,";",8),XREF=$P(NODE,";",9)
+	S XREF=$S(XREF="":"",$E(XREF,$L(XREF))=")":$E(XREF,1,$L(XREF)-1)_",",1:XREF_"(")
+	S XTYP=$P(NODE,";",10),COND=$P(NODE,";",20)
+	S IN=$P(NODE,";",11)
+	S %NG=BEG["&" S:%NG BEG=$P(BEG,"&",2) S %NL=END["&" S:%NL END=$P(END,"&",2)
+	S ASN=$S(ASN]"":ASN,1:"""""")
+	S BEG=$S(BEG]"":BEG,1:""""""),END=$S(END]"":END,1:"""""")
+	I ASN'="""""" D
+	. I ASN["!" D MULTK S (BEG,END)="""""" Q
+	. S (BEG,END)=ASN
+	S %=$S(XTYP'="":XTYP,1:TYPE) 
+	S NUMERIC=$S(%="":0,1:"DATE,TIME,NUME"[$E(%,1,4))
+	K NODE
+	I IN'="" G IN
+	G XKEY:XKEY]""
+	G ASN:ASN'=""""""
+	G BEG1:%NG!(%NL)
+	G BEG:BEG'=END!(BEG'="""""")
+BLD0	;
+	W " S ",PK,"=",""""""
+	W !,"K",XP
+	W " S ",PK,"=$O(",REF,") " W "I ",PK,"="""""
+	I PP>1 S %NXT=$S($P(%PK(PP-1),";",5)]"":1,1:"") W " G K",XP-1
+	I PP'>1 W " G K",XP-1
+	S COM="*" D ENDL D TAG
+	I COND]"" W " G K",XP,":",COND S COM="*" D ENDL
+	S XP=XP+1
+	Q
+IN	;
+	N CNT
+	S CNT=$$VARGEN^%DAQPAR1("IN.COUNT",PK) 
+	W " S ",CNT,"=0" 
+	S COM="@" D ENDL
+	W "K"_XP_" S "_CNT_"="_CNT_"+1" 
+	S COM="@" D ENDL
+	S INARG=PK
+	I XREF'="" S INARG=$$VARGEN^%DAQPAR1("IN.REFKEY",PK)
+	I XREF'="",XTYP="NAME" S INARG="%N"
+	W " S "_INARG_"=$S(" 
+	S I=0,%QI=IN,O=""
+	S %Q=$S($P(%QI(%QI),";")="S":"""",1:"") 
+	F  S O=$O(%QI(%QI,O)) Q:O=""  D  
+	. S I=I+1
+	. W CNT_"="_I_":"_%Q_O_%Q_","
+	W "1:"""")" 
+	S COM="@" D ENDL 
+	W " G K",XP-1_":"_INARG_"=""""" 
+	I XREF="" W " G K"_XP_":'$D("_REF_")" 
+	S COM="@" D ENDL 
+	I XREF'="",XTYP="NAME" D
+	. S SUB("NAM")="" 
+	. S (KILL("%SL"),KILL("%SF"),KILL("%N"),KILL("%F"),KILL("%L"))=""
+	. W " D NAM S %SL=%L,%SF=%F",!
+	. W " I %SL=""""!(%SF="""") G K"_XP,!
+	. W " I '$D("_XREF_"%SL)) G K"_XP,!
+	. W " I '$D("_XREF_"%SL,%SF)) G K"_XP,!
+	. W " S "_PK_"=""""",!
+	. S XP=XP+1
+	. W "K"_XP_" S "_PK_"=$O("_XREF_"%SL,%SF,"_PK_"))",!
+	. W " I "_PK_"="""" G K"_(XP-1),!
+	I XREF'="",XTYP'="NAME" D
+	. W " I '$D("_XREF_INARG_")) G K"_XP,!
+	. W " S "_PK_"=""""",!
+	. S XP=XP+1
+	. W "K"_XP_" S "_PK_"=$O("_XREF_INARG_","_PK_"))",!
+	. W " I "_PK_"="""" G K"_(XP-1),!
+	D TAG 
+	I COND]"" W " G K",XP,":",COND S COM="*" D ENDL
+	S XP=XP+1
+	Q
+ASN	;
+	W " S ",PK,"=",BEG,!
+	I BEG'="""""" W " I "_BEG_"="""" G K",XP-1,!
+	I BEG'="""""" W " I '$D(",REF,") G K",XP-1,!
+	S COM="@" 
+	I $D(MULTK) D  K MULTK D ENDL
+	. W " I ",PK,"'=",MULTK(XP,1)
+	. F J=2:1 Q:'$D(MULTK(XP,J))  W "&(",PK,"'=",MULTK(XP,J),")"
+	. W " G K",XP
+	S COM="@" 
+	I BEG="""""",'$D(MULTK) D ENDL
+	S COM="@" 
+	D TAG
+	I COND]"" W " G K",XP-1,":",COND,!
+	Q
+XKEY	;
+	I "NAMETRAN2"[XTYP  D NAME
+	I "NAMETRAN2"'[XTYP D OTHER
+	S COM="" D ENDL D TAG
+	I COND]"" W " G K",XP,":",COND,!
+	S XP=XP+1
+	Q
+NAME	;
+	S COM="*"
+	S SUB("NAM")="" 
+	S (KILL("%SL"),KILL("%SF"),KILL("%N"),KILL("%F"),KILL("%L"))=""
+	I ASN'="""""",ASN'["!" D  Q
+	. I XTYP="NAME" W " S %N="_ASN_" D NAM S %SL=%L,%SF=%F",!
+	. I XTYP="TRAN2" D  
+	. . W " S %EXT="_ASN_" "
+	. . W %QD(%QV(XKEY,"%QD"),"XT") 
+	. . W " S %SL=%INT1,%SF=%INT2",!
+	. W " I %SL=""""!(%SF="""") G K"_(XP-1),!
+	. W " I '$D("_XREF_"%SL)) G K"_(XP-1),!
+	. W " I '$D("_XREF_"%SL,%SF)) G K"_(XP-1),!
+	. W " S "_PK_"=""""",!
+	. W "K"_XP_" S "_PK_"=$O("_XREF_"%SL,%SF,"_PK_"))",!
+	. W " I "_PK_"="""" G K"_(XP-1),!
+	S (KILL("%EL"),KILL("%EF"))=""
+	I XTYP="NAME" D  
+	. W " S %N="_BEG_" D NAM S %SL=%L,%SF=%F",!
+	. W " S %N="_END_" D NAM S %EL=%L,%EF=%F",!
+	I XTYP="TRAN2" D  
+	. W " S %EXT="_BEG_" "
+	. W %QD(%QV(XKEY,"%QD"),"XT") 
+	. W " S %SL=%INT1,%SF=%INT2",!
+	. W " S %EXT="_END_" "
+	. W %QD(%QV(XKEY,"%QD"),"XT") 
+	. W " S %EL=%INT1,%EF=%INT2",!
+	W " I %SL="""" G K"_XP,!
+	W " I %SF="""" G K"_(XP+1),!
+	W " I $D("_XREF_"%SL)),$D("_XREF_"%SL,%SF)) G K"_(XP+1)_"X",!
+	W " I $D("_XREF_"%SL)) G K"_XP_"X",!
+	W "K"_XP_" S %SL=$O("_XREF_"%SL)) I %SL="""" G K"_(XP-1),!
+	W "K"_XP_"X I %SL]%EL G K"_(XP-1),!
+	W "K"_(XP+1)_" S %SF=$O("_XREF_"%SL,%SF))",!
+	W "K"_(XP+1)_"X I %SF="""" G K"_XP,!
+	W " I %SL=%EL,%SF]%EF G K"_(XP-1),!
+	S XP=XP+2
+	W " S ",PK,"=","""""",!
+	W "K"_XP_" S "_PK_"=$O("_XREF_"%SL,%SF,"_PK_")) I "_PK_"="""" G K"_(XP-1),!
+	Q
+PKEY	S (FR,TO)=""""""
+	W " S ",PK,"=","""""",! W "K",XP
+	W " S "_PK_"=$O("_XREF_PK_"))" W " I ",PK,"=""""" W:TO'="""""" "!(",PK,$S(NUMERIC:">",1:"]"),TO,")"
+	W " G K",XP-1,!
+	Q
+OTHER	;
+	N OKEY S OKEY=$$VARGEN^%DAQPAR1("$O_KEY",XKEY)
+	N BQF,EQF 
+	S (BQF,EQF)=0
+	I $E(BEG)="""" S BEG=$$RQ(BEG),BQF=1
+	I $E(END)="""" S END=$$RQ(END),EQF=1
+	I XTYP="STRING" D  
+	. S %=BEG D K2 S BEG=%
+	. S %=END D K2 S END=%
+	I XTYP="NUMERIC" D  
+	. S %=BEG D K1 S BEG=%
+	. S %=END D K1 S END=%
+	I XTYP="TRAN1" D
+	. S %EXT=BEG
+	. X %QD(%QV(XKEY,"%QD"),"XT") 
+	. S BEG=%INT
+	I BQF S BEG=$$AQ(BEG)
+	I EQF S END=$$AQ(END)
+	I %NG!(ASN'="""""") W " S (",OKEY,",",XKEY,")=",BEG," I $D(",XREF_OKEY_")) G K",XP,"X"
+	I BEG'=END!(BEG="""""") D
+	. W " S ",OKEY,"=",BEG
+	. 
+	. W:$X ! W "K",XP," S (",OKEY,",",XKEY,")=$O(",XREF_OKEY_"))" W " I ",OKEY,"="""""
+	. I '%NL W:END'="""""" "!(",OKEY,$S(NUMERIC:">",1:"]"),END,"!(",OKEY,"=",END,"))"
+	. I %NL W:END'="""""" "!(",OKEY,$S(NUMERIC:">",1:"]"),END,")"
+	. W " G K",XP-1,!
+	I ASN'="""""" W:$X ! W "K",XP," G K",XP-1,!
+	S (BEG,END)=""""""
+	I BEG'=END!(BEG="""""") W "K",XP,"X"," S ",PK,"=","""""",!
+	W "K",XP+1
+	W " S ",PK,"=$O(",XREF_OKEY_","_PK_"))" W " I ",PK,"="""""
+	W:BEG'=END!(BEG="""""") " G K",XP,!
+	S XP=XP+1
+	Q
+	; OTHER	I %NG!(ASN'="""""") W " S ",XKEY,"=",BEG," I $D(",XREF_XKEY_")) G K",XP,"X"
+	I BEG'=END!(BEG="""""") D
+	. W " S ",XKEY,"=",BEG
+	. 
+	. W:$X ! W "K",XP," S ",XKEY,"=$O(",XREF_XKEY_"))" W " I ",XKEY,"="""""
+	. I '%NL W:END'="""""" "!(",XKEY,$S(NUMERIC:">",1:"]"),END,"!(",XKEY,"=",END,"))"
+	. I %NL W:END'="""""" "!(",XKEY,$S(NUMERIC:">",1:"]"),END,")"
+	. W " G K",XP-1,!
+	I ASN'="""""" W:$X ! W "K",XP," G K",XP-1,!
+	S (BEG,END)=""""""
+	I BEG'=END!(BEG="""""") W "K",XP,"X"," S ",PK,"=","""""",!
+	W "K",XP+1
+	W " S ",PK,"=$O(",XREF_XKEY_","_PK_"))" W " I ",PK,"="""""
+	W:BEG'=END!(BEG="""""") " G K",XP,!
+	S XP=XP+1
+	Q
+BEG	;
+	W " S ",PK,"=",BEG I BEG'="""""" W " I $D(",REF,") G K",XP,"X"
+	I BEG'=END!(BEG="""""") D
+	. W:$X ! W "K",XP," S ",PK,"=$O(",REF,") " W "I ",PK,"=""""" W:END'="""""" "!(",PK,$S(NUMERIC:">",1:"]"),END,")"
+	. W " G K",XP-1,!,"K",XP,"X"
+	S COM="" D ENDL D TAG
+	I COND]"" W " G K",XP,":",COND S COM="*" D ENDL
+	S XP=XP+1
+	Q
+BEG1	;
+	W " S ",PK,"=",BEG
+	W:$X ! W "K",XP
+	I BEG'=END!(BEG="""""") W " S ",PK,"=$O(",REF,") " W "I ",PK,"=""""" W:END'="""""" "!(",PK,$S(NUMERIC:"'<",1:"]"),END,")"
+	W " G K",XP-1,!
+	S COM="" D ENDL D TAG
+	I COND]"" W " G K",XP,":",COND S COM="*" D ENDL
+	S XP=XP+1
+	Q
+MULTK	;
+	S MULTK=ASN
+	I XTYP'="",XTYP="NAME" D
+	. S Z=1 F J=1:1 Q:$P(MULTK,"!",J)=""  S MULTK(Z,J)=$P($P(MULTK,"!",J),",",Z)_"""" I J>1 S MULTK(Z,J)=MULTK(Z,J)_")"
+	. S Z=2 F J=1:1 Q:$P(MULTK,"!",J)=""  S MULTK(Z,J)=""""_$P($P(MULTK,"!",J),",",Z) I J>1 S MULTK(Z,J)="("_MULTK(Z,J)
+	I XTYP=""!(XTYP'="NAME") F J=1:1:$L(MULTK,"!") S MULTK(XP,J)=$P(ASN,"!",J)
+	Q
+K1	D K2 S:%?.1"-"1N.N!(%?.1"-".N1"."1N.N) %=+% Q
+K2	S %=$$BASEDIT^%DAZCALL(%,168) Q
+COM	;
+	S %KJ=$ZC(KJOFF) ;	;%%Z3-A
+	I $X+$L(ARG)>200 W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	S %KJ=$ZC(KJON) ;	;%%Z3-A
+	Q
+ENDL	;
+	I COM]"" W:$X ! S COM=""
+	Q
+TAG	;
+	I $D(FLAG("EX",PK)) F %I=1:1 Q:'$D(%QE(%I))  S %FG=$P(%QE(%I,"FLAG"),";") D
+	. 
+	. I %FG="F" S %FNT=$P(%QE(%I,"FLAG"),";",3) F %Z=1:1:$L(%FNT,",") S %FN=$P(%FNT,",",%Z),OUT=$P(%QF(%FN),";",3)
+	. I %FG="C"!(%FG="S") S OUT=%QE(%I,"OUT")
+	. S:$E(OUT,$L(OUT))="x" OUT=$P(OUT,"x",1) I PK=OUT S CV=FLAG("EX",PK),I=$S(CV["DATE":"DT",CV["TIME":"TM",1:"") D  W:$X !
+	. . I CV="OT"!(%QD(%QV(PK,"%QD"),"OT")'="") D  Q
+	. . . D ENDL 
+	. . . W " S %INT="_PK
+	. . . W " "_%QD(%QV(PK,"%QD"),"OT") D ENDL
+	. . . S CM="S",ARG=PK_"x=%EXT" D COM Q
+	. . I I'="" W " S %",I,"I=",PK S CM="D",ARG=$S(CV="DATE":"DTIX",1:"TMIX")_"^%DAUDTTM" D COM S CM="S",ARG=PK_$S(CV="DATE":"x=%DTX",1:"x=%TMX") D COM
+	I TAG]"" S CM="D",ARG=TAG D COM,ENDL
+	Q
+COMMENT	;
+	W:$X !
+	W " ;",XX,!," ;",?72-$ZL(COMMENT)/2,COMMENT,!," ;",XX,! ;	;%%Z3-G
+	Q
+RQ(IN)	;
+	N OUT,I S OUT="",I=1
+	I $E(IN)'="""" Q IN
+	S IN=$E(IN,2,$L(IN)-1) 
+	F I=1:1:$L(IN) S C=$E(IN,I) S OUT=OUT_C S:$E(IN,I,I+1)="""""" I=I+1
+	Q OUT
+AQ(IN)	;
+	N OUT,I S OUT="",I=1
+	F I=1:1:$L(IN) S C=$E(IN,I) S OUT=OUT_$S(C="""":"""""",1:C)
+	Q """"_OUT_""""

@@ -1,0 +1,140 @@
+ROUTINE %DAERRT [Type=INT,LanguageMode=6]
+%DAERRT	;JEB/DBS/CDW/DAH,,SYSTEM,DASL ;4-Mar-92;V6.1 DASL error handler
+	;DASL;N;SYSTEM
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	; Save the variables of the job, log the error, and transfer to logout.
+	; Input %ERM with error message.
+	; Enter at ERR for return.
+	;
+	S %1ZA=$ZA,%1ZB=$ZB,$ZT="ERRTRAP^%DAERRT" ; $ZA,$ZB are reset with U 0
+	I '$D(%FLANG) S %FLANG=^%DAMSG
+	U 0 S %E=$C(27),%MSG=^%DAMSG(%FLANG,"SYSERR")
+	W %E,"[2J",%E,"[24;1H",$J("",80-$Zwidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,80)),$C(7) ;	;%%Z1-G
+	I '$D(%WRITE) D WRITE^%DALOGIN
+	D:%WRITE ERR1 S %FLGN=0 ; System is Write-locked at DSM level
+	G LOGOUT^%DALOGIN
+ERR	; Entry to log error, save symbol table, and return to calling routine.
+	ZD  L  ; Clear Lock Table
+	I '$D(%WRITE) D WRITE^%DALOGIN
+	Q:'%WRITE  ; System is write-locked at DSM level
+	S $ZT="ERRTRAP^%DAERRT"
+TEST	S %1ZA=$ZA,%1ZB=$ZB
+ERR1	S %ERR="5\"_$S($D(%ERM):%ERM,1:$ZE)
+	S %1=-$H ZA ^DAER(%1) ; Collate by negative date
+	S:'$D(^DAER(%1,"CNT")) ^("CNT")="0;0" S %2=^("CNT") ; (Last sub ; count)
+	F %3=1,2 S $P(%2,";",%3)=$P(%2,";",%3)+1
+	S ^DAER(%1,"CNT")=%2,%2=+%2 ZD ^DAER(%1)
+	S ^DAER(%1,"E",%2,"$H")=$H,^("$I")=$I,^("$J")=$J,^("$ZA")=%1ZA,^("$ZB")=%1ZB,^("$ZE")=$ZE,^("$ZH")=$H,^("FL")="No first line of routine"
+	K %1ZA,%1ZB
+EFILE	; Get file name for scratch error file
+	I $ZV["VAX DSM" S %3="DSM$DASL_E"_($H#7)_$P($H,",",2)_".TMP"
+	I $ZV["DSM for ULTRIX" S %3="dsm_dasl_e"_($H#7)_$P($H,",",2)_".tmp"
+	I $ZV["IRIS" S %3="dsm_dasl_e"_($H#7)_$P($H,",",2)_".tmp"
+	I $ZV["Cache" S %3="dsm_dasl_e"_($H#7)_$P($H,",",2)_".tmp"
+	I $ZSE(%3)]"" G EFILE ; See if we generated a unique file name
+	S ^DATG($J,"E")=%1_";"_%2_";"_%3_";"_%ERR ; Save dummy variables for later
+	; Use a large record size to accomidate name and variable
+	U 0 C %3
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" O %3:(NEW,RECORDSIZE=300):1 E  S %9="Unable to log error." D MSG0 G ERRTRAP
+	;I $ZV["DSM for ULTRIX" O %3:NEW:1 E  S %9="Unable to log error." D MSG0 G ERRTRAP
+	I $ZV["IRIS" O %3:NEW:1 E  S %9="Unable to log error." D MSG0 G ERRTRAP
+	I $ZV["Cache" O %3:NEW:1 E  S %9="Unable to log error." D MSG0 G ERRTRAP
+	K %9dat,%9num,%9cnt ; Kill reload vars to avoid infinite loop
+	U %3:KANJI K %1,%2,%3,%ERR ZW  W ! ; Kill %1,%2,%3,%ERR to avoid ZW'ing them ;%%Z1-A
+	S %=^DATG($J,"E") ; Now restore them
+	S %1=$P(%,";"),%2=$P(%,";",2),%3=$P(%,";",3),%ERR=$P(%,";",4)
+	U %3:DISCONNECT
+	; If the record is longer than 255 must be read in 2 halves
+	; I $ZV["VAX DSM" D
+	. ; F %5=1:1 S %6(2)="" R %6(1) Q:%6(1)=""  R:$ZA>255 %6(2) S ^DAER(%1,"E",%2,%5,"V")=$P(%6(1),"="),^("D")=$P(%6(1),"=",2,255)_%6(2)
+	; I $ZV["DSM for ULTRIX" D
+	F %5=1:1 S %6(2)="" R %6(1) Q:%6(1)=""  S L=$ZA R:L=0 %6(2) S ^DAER(%1,"E",%2,%5,"V")=$P(%6(1),"="),^("D")=$P(%6(1),"=",2,255)_%6(2)
+	C %3:DEL D LOG K %ERM,%5,%6,L
+	S %=$P($ZE,",") G EFILEX:%'["^" S %=$P($P(%,"^",2),":"),$ZT="ERRLD^%DAERRT" ;	;%%Z3-Y (V2.0 patch seq j16)
+	;X "ZL "_%_" S %X=$T(+1)" ; First Line of Routine
+	S %X=$T(^@%)
+	S ^DAER(%1,"E",%2,"FL")=%X
+EFILEX	K %,%1,%2,%3,%9,%X ; ADDED KILLS
+	Q
+ERRLD	; Error handler for routine load.
+	Q
+LOG	; Logs error and event.
+	I '$D(%WRITE) D WRITE^%DALOGIN
+	Q:'%WRITE  ; System is write-locked at DSM level
+	S %4=$P($P($H,",",3),".")
+	I '$D(^DASY("ERR","CD",+%ERR)) S %ERR="0\"_$P(%ERR,"\",2)
+	S %5=$P(^DASY("APPL"),";")_$J("",25-$Zwidth(%4))_%4_"  Event "_(+%ERR)_": "_^DASY("ERR","CD",+%ERR) ;	;%%Z1-G
+	; SYSEDV - Event log device.
+	S %6=$S($D(^DASY("ERR","DEV")):^("DEV"),1:"")
+	; DEVPRT - the device port.
+	I %6]"" S %6=$P(^DASYU("D","D",%6,"E"),";") I %6]"" D LOGT
+	D LOGF
+	K %9,%,%DTE,%TME,%DTI,%TMI,%4,%5,%6,%ERR
+	Q
+LOGT	; Send a message to the event log device.
+	S $ZT="ERRT^%DAERRT"
+	S %6=$S('$D(%6):0,%6="":0,1:%6)
+	ZU %6 W *7,! D MSG U 0 K %6
+	Q
+LOGF	; Send a message to the Event Log file.
+	S $ZT="ERRF^%DAERRT"
+	;I $ZV["VAX DSM" S %6=$$TRNLOG^%DAZCALL("DSM$DASL_EVENTLOG") S:%6="" %6="DSM$DASL_EVENTLOG.LOG"
+	;I $ZV["DSM for ULTRIX" S %6="dsm_dasl_eventlog.log"
+	I $ZV["IRIS" S %6="dsm_dasl_eventlog.log"
+	I $ZV["Cache" S %6="dsm_dasl_eventlog.log"
+	L +^DAEVT:30 E  G ERRF
+	;O %6:SHARE:30 E  G ERRF
+	O %6::30 E  G ERRF
+	U %6 R % ;Attempt to read a record ;	;%%Z1-A
+	;**TM**;
+	;U %6:DISCONNECT D MSG
+	C %6 O %6::30 D MSG
+	
+LOGFX	C %6 L -^DAEVT U 0
+	Q
+ERRF
+	I $ZE["ENDOFFILE" D HDR,MSG G LOGFX ; No file, create and exit
+	S %9="Unable to access Event Log" D MSG0
+	G LOGFX
+ERRT	S %9="Unable to access Event Log Device "_%6 D MSG0
+	Q
+HDR	C %6 O %6::30 U %6 W # ; Create Header for event log. $C(0) is for Report Directory.
+	S %9=$P(^DASYU("I","NAME"),";",1) D CNTR:%9]""
+	S %9=$P(^DASYU("I","NAME"),";",2) D CNTR:%9]"" W $C(0),!
+	S %9=$P(^DASY("APPL"),";",1)_" Event Log" D CNTR
+	K %9 D NOW^%DAUDTTM
+	S %9="Log File Created on "_%DTX_"   "_%TMX D CNTR W $C(0),!
+	Q
+CNTR	W ?80-$Zwidth(%9)\2,%9,$C(0),! ;	;%%Z1-G
+	Q
+MSG	;  Write an event message
+	;     %4 - date/time
+	;     %5 - first message line
+	;     %6 - device
+	S %9="" I $D(%PDV) S %9=%9_"Device: "_%PDV
+	; USRNM - The user name.
+	I $D(%USR),%USR]"" S %9=%9_" User: "_$E($P(^DASYU("U","D",%USR,"E"),";",4),1,15)
+	I $D(%OPN) S %9=%9_" Option: "_%OPN
+	I $P(%ERR,"\",2)="" W:%9="" %5,! W:%9]"" %5,!,?8,%9,! Q
+	I %9="" W %5,!,?8,$P(%ERR,"\",2),! Q
+	W %5,!,?8,$P(%ERR,"\",2),!,?8,%9,!
+	Q
+MSG0	; Write an "unexpected error" message (in %9) to terminal
+	U 0 W $C(27),"[24;1H",$J("",80-$Zwidth(%9)),$E(%9,1,$ZPosition(%9,80)),$C(7) H 5 ;	;%%Z1-G
+	K %9
+	Q
+ERRTRAP	;  Trap error during logging process, write message, halt out of MUMPS.
+	S ^mina($I(^mina))="ERRTRAP^%DAERRT:"_$ZE
+	S %9=$ZE D MSG0
+	U 0 W !,"Error in error logging process",!
+	W "$ZE=",$ZE,!,"$ZH=",$H
+	W !,"Error - ",!,$E($ZE,1,$ZPosition($ZE,80)),!,$E($ZE,$ZPosition($ZE,80)+1,$ZPosition($ZE,160)),!,$E($ZE,$ZPosition($ZE,160)+1,$ZPosition($ZE,256))
+	;+%%Z3-Y ;delete tmp file
+	I $D(^DATG($J,"E")) C $P(^DATG($J,"E"),";",3):DEL
+	;-%%Z3-Y
+	;**TM**; 解らなくなるのでコメントアウト
+	;HALT

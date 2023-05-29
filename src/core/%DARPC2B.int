@@ -1,0 +1,181 @@
+ROUTINE %DARPC2B [Type=INT,LanguageMode=6]
+%DARPC2B	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+REPLACE(STRING,OLD,NEW)	
+	S STRING=$P(STRING,OLD,1)_NEW_$P(STRING,OLD,2)
+	Q STRING
+	Q
+LOOP	;
+	W " S %S",SP,"=""""",! S:$E(RF,$L(RF))'="(" RF=RF_","
+	S RF=RF_"%S"_SP
+	W "S",SP," S ",$S(SP'>NS:"%F"_SP_"=2,",1:""),"%S",SP,"=$O(",RF,")) I %S",SP,"="""" S %F",SP-1,"=1 D T",SP-1," G "
+	W:SP>1 "S0:%QT," W "S",(SP-1),!
+	Q
+BUILD	;
+	K STACK S LN=1,LI=0,STACK=0,ITM=GRP
+BLDNXT	S LI=LI+1 G BLDPOP:'$D(^DARD(RPNM,"P",ITM,"G",LI,"I"))
+	S RPITEM=^DARD(RPNM,"P",ITM,"G",LI,"I"),RPFOR=^DARD(RPNM,"P",ITM,"G",LI,"E"),RPCOL=$P(RPFOR,";"),RPFMT=$P(RPFOR,";",2)
+	F  Q:$E(RPITEM)'=" "  S RPITEM=$E(RPITEM,2,$L(RPITEM))
+	I $E(RPITEM)'="[" S ^DATG($J,"R",GRP,LN)=RPITEM_$C(0)_RPCOL_$C(0)_RPFMT,LN=LN+1 G BLDNXT
+	S STACK=STACK+1,STACK(STACK)=RPNM_";"_ITM_";"_LI_";"_"^DARD"
+	S MACRO=$P($P(RPITEM,"]",1),"[",2)
+	I MACRO["," S ITM=$P(MACRO,",",2),MACRO=$P(MACRO,",",1)
+	E  S ITM="D"
+	I '$D(^DARD(MACRO)) S %MSG="未定義マクロ ["_MACRO_"]" S:STACK RPNM=$P(STACK(1),";") ZT %MSG ;	;%%Z1-T
+	I '$D(^DARD(MACRO,"P",ITM)) S %MSG=" マクロ ["_MACRO_"]"_" にはグループ'"_ITM_"'が定義されていません。" S:STACK RPNM=$P(STACK(1),";") ZT %MSG ;	;%%Z1-T
+	I $D(^DARD(MACRO,"V")) S VAR="" F  S VAR=$O(^DARD(MACRO,"V",VAR)) Q:VAR=""  S %VL(VAR)=^(VAR)
+	S LI=0,RPNM=MACRO G BLDNXT
+BLDPOP	;
+	I STACK S RPITEM=STACK(STACK),RPNM=$P(RPITEM,";",1),ITM=$P(RPITEM,";",2),LI=$P(RPITEM,";",3),DARD=$P(RPITEM,";",4),STACK=STACK-1 G BLDNXT
+	K STACK
+	Q
+GRP	;
+	S FNC=0
+	W GRP G @$E(GRP)
+H	;
+	;+%%Z2-patch seq014
+	;I $D(FNC(SP)) W " I %F",SP,">1" S DN="",CM="S" F  S DN=$O(FNC(SP,DN)) Q:DN=""  D INIT
+	I $D(FNC(SP)) S DN="",CM=" I %F"_SP_">1 S" F  S DN=$O(FNC(SP,DN)) Q:DN=""  D INIT
+	;-%%Z2-patch seq014
+	D ENDL G T1
+INIT	;
+	S X=$E($P(DN,"(",1),2,3)
+	;S ARG="%"_X_"("_SP S:DN["(" ARG=ARG_","""_$P($P(DN,"(",2),")",1)_""")" S:DN'["(" ARG=ARG_")" S ARG=ARG_"="_$S(X="MI":"1E25",1:0)
+	S ARG="%"_X_"("_SP S:DN["(" ARG=ARG_","""_$P($P(DN,"(",2),")",1)_""")" S:DN'["(" ARG=ARG_")" S ARG=ARG_"="_$S(X="MI":"1E25",X="MA":"-1E25",1:0)  ;;%%Z3-DASLV61_BUGS-28.1
+	D COM
+	Q
+F	;
+	S FLN=0 G TX:'$D(^DATG($J,"R",GRP,1))
+	D LINEX^%DARPC2C S COM="" W " F %V=$Y:1:%PL" D LINEX^%DARPC2C W ! S COM="" 
+	S FLN=0 G T2
+D	;
+	S X="",FNC=1,FLAG=0
+	F SP=0:1:SP S DN="" F  S DN=$O(FNC(SP,DN)) Q:DN=""  D
+	. S X=$P($P(DN,")",1),"(",2),ODX=X,ODN=DN
+	. S DN="" F  S DN=$O(FLAG(SP,"OT",DN)) Q:DN=""  D:X=DN XFORM2 
+	. S DN=ODN D @$E(DN,2,3)^%DARPC2C
+T	;
+	S FNC=0
+	I $D(^DATG($J,"R",GRP,1)) S CM="S",ARG="%HD=0" D COM
+T1	I $D(^DATG($J,"R",GRP,1)) D PGCHK
+T2	F LI=1:1 Q:'$D(^DATG($J,"R",GRP,LI))  D ITM
+	I LI'=1,ITM'["\NOLINE" S ITM="\LINE",(FMT,JUS,COL,COND)="" D LINE^%DARPC2C
+TX	W " Q",! S COM=""
+	Q
+ITM	;
+	S X=^(LI),ITM=$P(X,$C(0),1),FMT=$P(X,$C(0),2),JUS=$P(X,$C(0),3),COL=$P(X,$C(0),4) S:COL="" COL=0
+	S COND=$P(ITM,$C(123,1),2),ITM=$P(ITM,$C(123,1),1)
+	I $D(ALIAS(GRP,LI)) D ITEM^%DARPC3
+	S QUAL=""
+	I ITM[$C(2) S QUAL=$P(ITM,$C(47,2),2),ITM=$P(ITM,$C(47,2),1)
+	E  I COND[$C(1) S QUAL=$P(COND,$C(123,1),2),COND=$P(COND,$C(123,1),1)
+	I QUAL["EVAL",$D(ALIAS(GRP,LI)) Q
+	I QUAL["EVAL" D EVAL^%DARPCQ:ITM?1U.6UN!(ITM?1U.6UN1"("1N.N1")")!(ITM?1U.6UN1"("1""""1NAP.NAP1""""1")")!(ITM?1U.6UN1",".UNP)!(ITM?1U.6UN1"("1N.N1")"1",".UNP)!(ITM?1U.6UN1"("1""""1NAP.NAP1""""1")"1",".UNP) Q
+	I ITM?1"\".E G @$E($P(ITM,"(",1),2,99)^%DARPC2C
+	I ITM?1"@".E D ENDL W $E(ITM,2,99),! Q
+	I ITM?1"!".E D:$E(ITM,1,2)="!!" ENDL W:$E(ITM,1,2)="!!" " ; ",$E(ITM,3,99),! Q
+	S V=ITM I V?1"%PARM".E D PCNV^%DARPC2C G:V1=""!(V1'?1U.6UN)&(V1'?1U.6UN1"("1N.N1")")&(V1'?1U.6UN1"("1""""1NAP.NAP1""""1")") FMT G PM
+	G FMT
+PM	;
+	S X="" I '$D(%DN(V1)) S %DDNM=V1 D REPORT^%DADDLD
+	S X=%DN(V1,"T"),X=$S(X="DATE":"DT",X="TIME":"TM",1:"")
+	G FMT:X="" 
+PMX	S CM="S",ARG="%"_X_"I="_V D COM S CM="D",ARG=X_"IX^%DAUDTTM" D COM
+	I V?1"%PARM".E S CM="S",ARG="%"_X_"X=$S(%"_X_"X'="""":%"_X_"X,1:"_V_")" D COM
+	S V="%"_X_"X"
+FMT	;
+	S FLAG("OT")=0 I $D(FLAG("OT",GRP,LI)) D XFORM
+	I QUAL]"" D ^%DARPCQ  
+	I '(FMT["N"!(FMT["$")!(FMT["\")!(FMT["D")!(FMT["+")!(FMT["P")) G TRUN ;	;%%Z1-J
+	S CM="S",ARG="%="_V_">0*2-1,%V="_V_"*%",V="%V" D COM
+	I FMT["N" W ",%V=$J(%V,0,",+$E(FMT,$F(FMT,"N"),99),")"
+	I FMT["$" W ",%V=""$""_%V"
+	I FMT["\" W ",%V=""\""_%V" ;	;%%Z1-J
+	I FMT["D" W "_$S(%<0:""CR"",1:""  "")"
+	I FMT["+" S COM="" W " S:%>0 %V=""+""_%V"
+	I FMT["P" S COM="" W " S:%<0 %V=""(""_%V_"")"" S:%'<0 %V=%V_"" """
+TRUN	;
+	G JUS:FMT'["T" S CM="S",ARG="%V=$E("_V_",1,",VSAV=V,V="%V" ;	;%%Z1-G
+	S X=+$E(FMT,$F(FMT,"T"),99) I X S ARG=ARG_"$ZPosition("_VSAV_","_X_",%RPKPIT))" D COM G JUS ;	;%%Z1-G
+	S X=$O(^DATG($J,"R",GRP,LI)),X=$S(X="":LL,1:$P(^DATG($J,"R",GRP,X),$C(0),4))
+	I X="" S %MSG="T format specified without column reference in line "_LI_" group "_GRP ZT %MSG
+	I "L"[JUS S ARG=ARG_"$ZPosition("_VSAV_","_(X-COL-2)_",%RPKPIT))" D COM ;	;%%Z1-G
+	I JUS["R" S ARG=ARG_"$ZPosition("_VSAV_","_(COL-2)_"-$X,%RPKPIT))" D COM ;	;%%Z1-G
+	I JUS["C" S ARG=ARG_"$ZPosition("_VSAV_",$S($X<"_(COL*2-X)_":"_(X-COL-2)_",1:"_COL_"-$X-2*2),%RPKPIT)" D COM ;	;%%Z1-G
+JUS	;
+	K VSAV ;	;%%Z1-G
+	;I JUS["R" S COL=$S(V?1"""".E1"""":-$Zwidth(V,%RPKPIT)*(FMT["W"+1)+COL+2,1:"-$Zwidth("_V_",%RPKPIT)"_$S(FMT["W":"*2",1:"")_"+"_COL) ;	;%%Z1-G
+	I JUS["R" S COL="-$Zwidth("_V_",%RPKPIT)"_$S(FMT["W":"*2",1:"")_"+"_COL ;	;%%Z1-G
+	;I JUS["C" S COL=$S(V?1"""".E1"""":-$Zwidth(V,%RPKPIT)\(FMT'["W"+1)+COL,1:"-$Zwidth("_V_",%RPKPIT)"_$S(FMT["W":"",1:"\2")_"+"_(COL-1)) ;	;%%Z1-G
+	I JUS["C" S COL="-$Zwidth("_V_",%RPKPIT)"_$S(FMT["W":"",1:"\2")_"+"_(COL-1) ;	;%%Z1-G
+	I "L"[JUS S COL=COL-1
+OUT	;
+	S CM="W"_$S(COND="":"",1:":"_COND)
+	I COL'=0,COL'=-1 S ARG="?"_COL D  D COM
+	. I FMT["W",COL'["%" S ARG="?"_COL_"-("_COL_"#2)"
+	I FMT["B" S X=CM,CM="S",ARG="%=$X" D COM S CM=X,COL="%"
+	I FMT["W" S COL=$S(COL="%":"%-1",1:COL) S ARG="$C(27),""[5w"",$C(27),""P2;11}DBULTN1"",$C(27),""\"",$C(27),""[11m"",$C(27),""[100;200 B""" D COM ;	;%%Z2-R2
+	I FNC=0 S ARG=V D COM
+	I FMT["W" S ARG="$C(27),""[0w"",$C(27),""[100;100 B""" D COM
+	I FMT["B" S COL=$S(FMT["W":"%-1",1:"%"),FMT=$S(FMT["W":"W",1:""),ARG="$C(13)" D COM W $$REPLACE^%DAIO(^%DASY("MUMPS",%MUMPS,"S P1=$ZC(%SETX,0)"),"P1","X1") S COM="" G OUT
+	I FMT["W" D ENDL W " S %V="""" F %=1:1:"_$S(V?1"""".E1"""":"$Zwidth("_V_",%RPKPIT)-10",1:"$Zwidth("_V_",%RPKPIT)-8")_" S %V=%V_$C(0)",! S CM="W"_$S(COND="":"",1:":"_COND),ARG="%V" D COM ;	;%%Z1-G
+	I FLAG("OT") S CM="K" F X=1:1:FLAG("OT") S ARG="%XT"_X D COM
+	Q
+XFORM	;
+	; S (X,COM)="",FLAG("OT")=0,(LENN,LENO)=$Zwidth(V) ;	;%%Z1-G
+	S (X,COM)="",FLAG("OT")=0,(LENN,LENO)=$L(V)
+	F POS=1:1:2 S X=$O(FLAG("OT",GRP,LI,X)) Q:X=""
+	S FLAG=+X,POS="" 
+	F  S POS=$O(FLAG("OT",GRP,LI,POS)) Q:POS=""  D XFORM1
+	K POS,POSR,LENN,LENO
+	Q
+XFORM1	;
+	S DN=FLAG("OT",GRP,LI,POS)
+XFORM2	;I FNC S POS=1,(LENN,LENO)=$Zwidth(V) ;	;%%Z1-G
+	I FNC S POS=1,(LENN,LENO)=$L(V)
+	I %DN(DN,"OT")=""&((%DN(DN,"T")="DATE")!(%DN(DN,"T")="TIME")) G XDATE
+	I $E(GRP)'="T" D
+	. I FNC Q
+	. S CM="S",ARG="%INT="_DN_",%EXT=""""" D COM
+	I $E(GRP)="T" D
+	. I ",AV,CO,MA,ME,MI,ST,TO,"[$E(V,2,3) S CM="S",ARG="%INT="_V_",%EXT=""""" D COM Q
+	. I "$ZC"=$E(V,1,3) S CM="S",ARG="%INT="_V_",%EXT=""""" D COM Q
+	. S CM="S",ARG="%INT="_DN_",%EXT=""""" D COM
+	I 'FNC,$E(%DN(DN,"OT"))="%" S CM="D",ARG=%DN(DN,"OT")_":%INT]""""" D COM S FLAG("%",%DN(DN,"OT"))=""
+	I 'FNC,$E(%DN(DN,"OT"))'="%" D ENDL S CM="I",ARG="%INT]""""" D COM W " ",%DN(DN,"OT"),! S COM="*"
+	I 'FLAG S X="%EXT"
+	E  S FLAG("OT")=FLAG("OT")+1,X="%XT"_FLAG("OT"),CM="S",ARG=X_"=%EXT" D COM
+XFORMX	;
+	I $E(GRP)="T",$D(FLAG("OT",GRP,LI)) D  Q
+	. I ",AV,CO,MA,ME,MI,ST,TO,"[$E(V,2,3) S V=X Q
+	. I $E(V,1,3)="$ZC" S V=X Q
+	. E  S POSR=POS-(LENO-LENN),V=$E(V,0,POSR-1)_X_$E(V,POSR+$L(DN),255),LENN=$L(V)
+	E  S POSR=POS-(LENO-LENN),V=$E(V,0,POSR-1)_X_$E(V,POSR+$L(DN),255),LENN=$L(V)
+	;E  S POSR=POS-(LENO-LENN),V=$E(V,0,$ZPosition(V,POSR-1))_$J("",POSR-1-$Zwidth($ZPosition(V,POSR-1)))_X_$E(V,$ZPosition(V,POSR-1)+1+$L(DN),255),LENN=$Zwidth(V) ;	;%%Z1-G
+	Q
+XDATE	;
+	S X=$S(%DN(DN,"T")="DATE":"DT",1:"TM") I GRP="T0",$D(V) S V=$P(V,"/",1)_"\"_$P(V,"/",2)
+	I $D(QUAL),QUAL'["NODATA" S CM="S",ARG="%"_X_"I="_$S(GRP="T0":V,1:DN) D COM S CM="D",ARG=X_"IX^%DAUDTTM" D COM
+	I '$D(QUAL) S CM="S",ARG="%"_X_"I="_$S(GRP="T0":V,1:DN) D COM S CM="D",ARG=X_"IX^%DAUDTTM" D COM
+	S X="%"_X_"X" 
+	I FLAG S FLAG("OT")=FLAG("OT")+1,CM="S",ARG="%XT"_FLAG("OT")_"="_X D COM S X="%XT"_FLAG("OT")
+	G XFORMX
+PGCHK	;
+	I GRP="F"!'RPLEN Q
+	I GRP'["H" S CM="D",ARG="NPG:$Y>%PL" D COM
+	I GRP["H" S CM="I",ARG="$Y>%PL" D COM W " D NPG Q" D ENDL
+	Q
+COM	;**TM**;S %KJ=$ZC(KJOFF) ;	;%%Z1-A
+	I $X+$L(ARG)>200 W ! S COM=""
+	I $E(COM)="." W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON) ;	;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+COMMENT	;
+	W " ;====================================================================",!
+	W " ;",?72-$Zwidth(COMMENT)/2,COMMENT,! ;	;%%Z1-G
+	W " ;====================================================================",!
+	Q

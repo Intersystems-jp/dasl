@@ -1,0 +1,41 @@
+ROUTINE %DARPCQ [Type=INT,LanguageMode=6]
+%DARPCQ	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	F I=1:1:$L(QUAL,"/") I $T(@$P(QUAL,"/",I))]"" D @$P(QUAL,"/",I)
+	Q
+PROMPT	;
+	I %DN(ITM,"P")="" D  I %MSG]"" Q
+TEMPLAT	. 
+	. S TEMP=$P(^DADD(ITM,"B"),";",3)
+	. I TEMP="" S %MSG=ITM_" にはプロンプトが定義されていません。" ;	;%%Z1-T
+	. 
+	. E  I $P(^DADDT(TEMP,"DF","E"),";",3)="" S %MSG=ITM_" にはプロンプトが定義されていません。" ;	;%%Z1-T
+	. I %MSG="" S %DN(ITM,"P")=$P(^("E"),";",3)
+	. K TEMP
+	S PROMPT=%DN(ITM,"P")
+	I QUAL["STRIP" D 
+PUNC	. 
+	. S X=PROMPT F J=$L(X):-1 Q:$E(X,J)?1A  I $E(X,J)?1P S X=$E(X,1,J-1)
+	. F J=$L(V):-1 Q:$E(V,J)'=" "  S X=X_" "
+	. S PROMPT=X
+	I PROMPT["""" S (X,STR)="" D  S PROMPT=STR
+	. F J=1:1:$L(PROMPT) S X=$E(PROMPT,J) S:X="""" STR=STR_$E(PROMPT,J)_"""" S:X'="""" STR=STR_$E(PROMPT,J)
+	S V=$S(QUAL["NODATA":""""_PROMPT_"""",1:""""_PROMPT_""""_"_"_V)
+	K PROMPT,STR
+	Q
+EVAL	;
+	K TMP,FTMP
+	I COND]"" W " I ",COND
+	F I=1:1 S DN=$P(ITM,",",I) Q:DN=""  D EVAL1
+	D COMPL^%DARPC3,EVCOMPL^%DARPC3
+	I $D(FLAG("STACK")) S REF=FLAG("STACK","R"),RC(REF)=FLAG("STACK","V") K FLAG("STACK")
+	Q
+EVAL1	;
+	S REF=$P(%DN(DN,"R"),";")
+	I I=1,$D(RC(REF)) K FLAG("STACK") S FLAG("STACK","R")=REF,FLAG("STACK","V")=RC(REF) K RC(REF)
+	D COMP1^%DARPC3
+	I DN(DN)'?.UN D COMP2^%DARPC3 S TMP(LI,$P($P(DN(DN),$C(125,1),1),";",1),DN)=""
+	Q
+NODATA	Q
+STRIP	Q

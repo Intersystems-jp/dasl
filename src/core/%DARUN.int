@@ -1,0 +1,72 @@
+ROUTINE %DARUN [Type=INT,LanguageMode=6]
+%DARUN	;RSC/JEB/DBS,COMPILER,SYSTEM,DASL;4-Mar-92;V6.1 Run compiled routine or return computed name
+	;DASL;Y;SYSTEM
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;
+	;********************************************************************
+	;*                     !WARNING to Developers!                      *
+	;*   The master copy of this routine is stored under the %DM####    *
+	;*   name.  If any edits are made to this routine the edits MUST    *
+	;*   be made to the %DM routine as well.  Failure to do this will   *
+	;*   lead to errors in Portable Run-time DASL!                      *
+	;*                                                                  *
+	;********************************************************************
+	;
+	Q
+	;
+	;********************************************************************
+	;
+	;                     Run-time Entry points.
+	;
+	;  Enter with %NAME = the name of a screen/report.
+	;             %LABEL = optional label for entry (killed on exit)
+	;  If it has been compiled, %PROGRAM will be formatted to the
+	;  compiled routine name and control will be transferred to it.
+	;  If it is undefined %MSG will be returned with the appropriate 
+	;  error message, and an error will be forced with a ZTRAP.
+	;
+	;********************************************************************
+	;
+SCREEN	;  Run a compiled screen
+	S %SUB="S" D NAME G:%MSG="" @%PROGRAM Q
+REPORT	;  Run a compiled report
+	S %SUB="R" D NAME G:%MSG="" @%PROGRAM Q
+QUERY	;  Run a QUERY
+	S %SUB="Q" D NAME G:%MSG="" @%PROGRAM Q
+	;
+	;====================================================================
+NAME	;         Fetch generated name for entity pointed to by %NAME.
+	;
+	;  %MODE is boolean flag -
+	;    (0 = calling appl. code, 1 = calling system code).
+	;  %GREF points to the global containing the computed name.
+	;  %SUB points to the level of %REF containing the computed names.
+	;  Exit with %PROGRAM = compiled routine, or error message in %MSG.
+	;
+	;====================================================================
+	;
+	K %PROGRAM S %MSG=""
+	S %MODE=$$MODE^%DAZCALL ; Returns 1 if in DASL development mode
+	;  If %NAME="%..." its a DASL screen name.
+	;  Set %GREF equal to the appropriate ^DANX/^%DANX subtree.
+	I $E(%NAME)="%" S %XNAME=$E(%NAME,2,99),%GREF="^%DANX("""_%SUB_""")"
+	E  S %XNAME=%NAME,%GREF="^DANX("""_%SUB_""")"
+	;  Make sure its defined in ^DANX/^%DANX
+	I '$D(@%GREF@("D",%XNAME)) S %MSG=$S(%SUB="S":"スクリーン",%SUB="Q":"検索要素",1:"レポート")_"'"_%NAME_"'は定義されていません。" G EXIT ;	;%%Z1-T
+	S %SUFFIX=$P(^(%XNAME),";",2)
+	I $E(%GREF,2)="%"!%MODE S %PROGRAM="^%DC"_%SUB_%SUFFIX G LABEL
+	;  Get routine prefix from application parameter.
+	S %=$S(%SUB="S":$P(^DASY("PARM","RTN"),";",1),%SUB="Q":$P(^DASY("PARM","RTN"),";",5),1:$P(^DASY("PARM","RTN"),";",2))
+	I %="" S %MSG="生成ルーチンの接頭文字をアプリケーションパラメータオプションで指定して下さい。" G EXIT ;	;%%Z1-T
+	S %PROGRAM="^"_%_%SUB_%SUFFIX
+LABEL	I $D(%LABEL) S %PROGRAM=%LABEL_%PROGRAM
+EXIT	K %MODE,%GREF,%SUFFIX,%SUB,%LABEL,%XNAME
+	; If this was called from screen %USCRUN just quit and retrun %MSG
+	I $G(%L(0))="%USCRUN" Q
+	; If not its called from some where else and it should generate an error
+	I %MSG]"" ZT %MSG
+	Q
+	;

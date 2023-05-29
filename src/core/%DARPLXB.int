@@ -1,0 +1,139 @@
+ROUTINE %DARPLXB [Type=INT,LanguageMode=6]
+%DARPLXB	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+VITM	;
+	S:'$D(COMPILE) COMPILE=0
+	D SETUP^%DARPLXA
+	I "@!"[$E(ITM) D:$E(ITM,I)="@" MCODE^%DARPLXA Q
+	I ITM?1"["1A.ANP1"]" D  Q 
+	. S MACRO=$P($P(ITM,"]"),"[",2)
+	. 
+	. I MACRO["," S GROUP=$P(MACRO,",",2),MACRO=$P(MACRO,",")
+	. E  S GROUP="D"
+	. 
+	. S %MSG=$S('$D(^DARD(MACRO)):"マクロ ["_MACRO_"] が未定義です。",'$D(^DARD(MACRO,"P",GROUP)):"マクロ ["_MACRO_"] 内のグループ'"_GROUP_"' が未定義です。",1:"") ;	;%%Z1-T
+	. K MACRO,GROUP
+	I ITM["/EVAL",$L(ITM,",")>1 D QEVAL^%DARPLXA Q
+	D EXPR
+	I $E(ITM,I)=":" S:ITM[$C(1) %MSG="項目のシンタックスが不適切です。" S ITM=$E(ITM,1,I-1)_$C(123)_$C(1)_$E(ITM,I+1,99),I=I+1 D EXPR ;	;%%Z3-TATSUMI;%%Z3-T
+VEND	;
+	;I %MSG="",$E(ITM,I,99)]"" S %MSG="Unrecognized characters """_$E(ITM,I,99)_""" at end of line"
+	I %MSG="",$E(ITM,I,99)]"" S %MSG="行末のキャラクタ"""_$E(ITM,I,99)_"""がわかりません。" ;	;%%Z3-T
+	K I,J,K,X,Y,Z,PC,OLDX,PCNT,QUAL,%DDXTYP
+	I 'COMPILE K ITM,VCNT
+	Q
+VCOND	;
+	S:'$D(COMPILE) COMPILE=0
+	S DN="" D SETUP^%DARPLXA I $E(ITM)="@" D MCODE^%DARPLXA Q 
+	S OP="" F I=1:0 D CONDE,LOGOP Q:%MSG]""!(OP="")
+	I %MSG="",PC S %MSG="カッコのバランスがとれていません。" ;	;%%Z3-T
+	I ITM["!"!(ITM["&") S ITM="("_ITM_")",I=I+2
+	S ITM="("_ITM_")",I=I+2 K OP
+	G VEND
+CONDE	I $E(ITM,I)="(" S I=I+1,PC=PC+1 G CONDE
+	S:COMPILE V="",ARG=I D CONDI S:COMPILE VAR=X D COMOP,CONDI Q:%MSG]""
+	G COND1:'COMPILE,COND1:V=""
+	G COND1:(X?1U.6UN!(X?1U.6UN1"("1N.N1")")!(X?1U.6UN1"("1""""1NAP.NAP1""""1")"))&(VAR?1U.6UN!(VAR?1U.6UN1"("1N.N1")")!(VAR?1U.6UN1"("1""""1NAP.NAP1""""1")"))
+	S (Y,COND(NP,0))=COND(NP,0)+1,COND(NP,Y)=""
+	I X'?.UN S VC=VC+1,COND(NP,Y)=" S %"_V_"X="_X_" D "_V_"XI^%DAUDTTM S %T"_VC_"=$S(%"_V_"I]"""":%"_V_"I,1:%"_V_"X)",X="%T"_VC
+	I VAR'?.UN S VC=VC+1,COND(NP,Y)=COND(NP,Y)_" S %"_V_"X="_VAR_" D "_V_"XI^%DAUDTTM S %T"_VC_"=$S(%"_V_"I]"""":%"_V_"I,1:%"_V_"X)",VAR="%T"_VC
+	S ITM=$E(ITM,0,ARG-1)_VAR_OP_X_$E(ITM,I,99),I=ARG+$L(X)+$L(OP)+$L(VAR)
+COND1	I $E(ITM,I)=")" S PC=PC-1,I=I+1 G COND1
+	Q
+CONDI	Q:%MSG]""  D ITEM^%DARPLXC
+	I COMPILE,(X?1U.6UN!(X?1U.6UN1"("1N.N1")")!(X?1U.6UN1"("1""""1NAP.NAP1""""1")")) S TYPE=%DN(X,"T"),V=$S(TYPE="TIME":"TM",TYPE="DATE":"DT",1:"")
+	Q
+COMOP	Q:%MSG]""  S OP="" I $E(ITM,I)="'" S OP="'",I=I+1
+	I "<>[]="[$E(ITM,I) S OP=OP_$E(ITM,I),I=I+1
+	I "'"[OP S %MSG="比較演算子に誤りがあります。" ;	;%%Z3-T
+	Q
+LOGOP	Q:%MSG]""  S OP="" I "&!"[$E(ITM,I) S OP=$E(ITM,I),I=I+1
+	I $L(OP) S ITM=$E(ITM,1,I-2)_")"_OP_"("_$E(ITM,I,99),I=I+2
+	Q
+VKEY	;
+	S:'$D(COMPILE) COMPILE=0
+	D SETUP^%DARPLXA S (VCNT,I)=1
+	I $E(ITM)'?1U S %MSG="データネームが不適切です。" Q  ;	;%%Z3-T
+	D NAME^%DARPLXC I %MSG]"" Q
+	I $D(%VL(X)) S %MSG="ユーザ定義変数は FOR 文では使用できません。" Q  ;	;%%Z3-T
+	I $P(%DN(X,"R"),";",1)'["#"&($P(%DN(X,"R"),";",1)'["*")&($P(%DN(X,"R"),";",3)'="#")&($P(%DN(X,"R"),";",4)="") S %MSG="データネームはキーであるか、クロスリファレンスが必要です。" Q  ;	;%%Z3-T
+	S:COMPILE (FR,TO)="",DN=X
+	D SPACES S X=$E(ITM,I)
+	I COMPILE S %KEQ(NS)=0
+	D VKONE:X="=",VKFR:X="F",VKTO:X="T"
+	I COMPILE,'$D(FLAG("TRAN")) D
+	. 
+	. I $P(%DN(DN,"R"),";",5)["TRAN" S FLAG("NOOPT")=""
+	G VEND
+VKONE	;
+	I X="=",$P(ITM,X,2)["!" G VKMULT
+	I COMPILE S %KEQ(NS)=1
+	S I=I+1 D SPACES,ITEM^%DARPLXC
+	I COMPILE D
+	. 
+	. 
+	. I $P(%DN(DN,"R"),";",5)'["TRAN" S (FR,TO)=X
+	. E  S FR=X,TO="",FLAG("TRAN")=""
+	S X=""
+	Q
+VKMULT	;
+	S DN=$P(ITM,"="),LOOP=$P(ITM,"=",2,99),(FR,TO)="",NS=$S($D(NS):NS,1:1)
+	;  LOOP(1,1)="lname"	LOOP(2,1)="fname"
+	;  LOOP(1,2)="lname"	LOOP(2,2)="fname" 
+	;  LOOP(1,n)="lname"	LOOP(2,n)="fname" .
+	I $P(%DN(DN,"R"),";",5)="NAME" D
+	. S Z=1 F J=1:1 Q:$P(LOOP,"!",J)=""  S LOOP(Z,J)=$P($P(LOOP,"!",J),",",Z)_"""" I J>1 S LOOP(Z,J)=LOOP(Z,J)_")"
+	. S Z=2 F J=1:1 Q:$P(LOOP,"!",J)=""  S LOOP(Z,J)=""""_$P($P(LOOP,"!",J),",",Z) I J>1 S LOOP(Z,J)="("_LOOP(Z,J)
+	E  F J=1:1 Q:$P(LOOP,"!",J)=""  S:J=1 LOOP(NS,J)=$P(LOOP,"!",J) S:J>1 LOOP(NS,J)=$P($P(LOOP,"!",J),"=",2) B:DB=1
+	;	;%%Z3-patch remove BREAK command; E  F J=1:1 Q:$P(LOOP,"!",J)=""  S:J=1 LOOP(NS,J)=$P(LOOP,"!",J) S:J>1 LOOP(NS,J)=$P($P(LOOP,"!",J),"=",2) B
+	F I=I+1:1:$L(ITM) D SPACES,ITEM^%DARPLXC
+	Q
+VKFR	;
+	Q:$E(ITM,I,I+3)'="FROM"
+	S I=I+4 D SPACES,ITEM^%DARPLXC,SPACES S:COMPILE FR=X S X=$E(ITM,I)
+	Q
+VKTO	;
+	Q:$E(ITM,I,I+1)'="TO"
+	S I=I+2 D SPACES,ITEM^%DARPLXC,SPACES S:COMPILE TO=X S X=""
+	Q
+SPACES	F I=I:1 Q:$E(ITM,I)'=" "
+	Q
+VSORT	;
+	S:'$D(COMPILE) COMPILE=0 S %SORTV="" 
+	I %RES["/" S %MSG="ソートリストには修飾子は使用できません。" Q  ;	;%%Z3-T
+	D SETUP^%DARPLXA S TOTLEN=0
+	F I=1:1 D SORT1 Q:%MSG]""!($E(ITM,I)'=",")
+	G VEND:%MSG]""
+	F J=1:1:$L(ITM) S NAME=$P(ITM,",",J) Q:NAME=""  D LEN S TOTLEN=TOTLEN+LEN
+	I TOTLEN>109 S %MSG="ソートリストの最大長は 109 文字です。" Q
+	K X,NM,LEN,NAME,TOTLEN,%SORTV
+	G VEND
+SORT1	S X=$E(ITM,I),Y=I
+	I X="-" D SORTR Q:%MSG]""  G SORTDN
+	I X="%" D NAME^%DARPLXC G SORTDN
+	I X?1P S %MSG="ソートシンタックスに誤りがあります。" Q  ;	;%%Z3-T
+	D DNAME^%DARPLXC I %MSG]"" Q
+SORTDN	I COMPILE S NS=NS+1,SK(NS)=$E(ITM,Y,I-($E(ITM,I)'=")")),SX(NS)=""
+	I $E(ITM,I)=":" S (Y,I)=I+1 D NUM^%DARPLXC S:COMPILE SX(NS)=$E(ITM,Y,I-1) S I=I+($E(ITM,I)=")")
+	Q
+SORTR	;
+	S I=I+1,X=$E(ITM,I)
+	I X="%" S %MSG="% 変数の逆順ソートはできません。" Q  ;	;%%Z3-T
+	D DNAME^%DARPLXC Q:%MSG]""  S VALID=%DN(X,"T"),NUMERIC=$F("DATE,TIME,NUME",$E(VALID,1,4))
+	I 'NUMERIC S %MSG="数値タイプ以外の DDN で逆順ソートはできません。" ;	;%%Z3-T
+	K VALID,NUMERIC
+	Q
+LEN	;
+	S LEN=0,X=$E(NAME)
+	I X="%" S LEN=$S(NAME[":":$P(NAME,":",2),1:$L(NAME)) Q
+	I $D(%VL(NAME)) S LEN=$P(NAME,":",2) Q
+	I X="-" S NM=$E(NAME,2,99),LEN=$S(NM[":":$P(NM,":",2),%DN(NM,"T")="DATE"!("TIME"):6,1:%DN(NM,"L")) Q
+	S LEN=$S(NAME[":":$P(NAME,":",2),%DN(NAME,"T")="DATE"!("TIME"):5,1:%DN(NAME,"L"))
+	Q
+EXPR	;
+NEXT	S I=I+1 I $E(ITM,I)?1N,$E(ITM,I-1)="?" D PATTERN^%DARPLXC I %MSG]"" Q
+	I $E(ITM,I)'="" D ITEM^%DARPLXC Q:%MSG]""
+	I ";:,"[$E(ITM,I)!($E(ITM,I)=")"&'PC)!(%MSG]"") S:%MSG=""&PC %MSG="括弧のバランスがとれていません。" Q  ;	;%%Z3-T
+	S:$E(ITM,I)="(" PC=PC+1 S:$E(ITM,I)=")" PC=PC-1
+	G NEXT

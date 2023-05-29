@@ -1,0 +1,177 @@
+ROUTINE %DARPRD [Type=INT,LanguageMode=6]
+%DARPRD	;DBS,COMPILER,REPORT,DASL;29-Jun-9;V6.1 Report driver read subroutine
+	;DASL;Y;REPORT
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;********************************************************************
+	;*                     !WARNING to Developers!                      *
+	;*   The master copy of this routine is stored under the %DM####    *
+	;*   name.  If any edits are made to this routine the edits MUST    *
+	;*   be made to the %DM routine as well.  Failure to do this will   *
+	;*   lead to errors in Portable Run-time DASL!                      *
+	;*                                                                  *
+	;********************************************************************
+	;
+	;  %QT is used as flag for last screen on entry here
+	X ^%DAMSG(%FLANG,"RR") S %QT=%PW-$Zwidth(%MSG)\2+$Zwidth(%MSG) ;	;%%Z1-G
+	W %E,"[23;",%QT-$Zwidth(%MSG),"H",$E(%MSG,1,$ZPosition(%MSG,%PW)) ;	;%%Z1-G
+	S %MSG=""
+READ	S %XX=1,%XX(0)="E",%XX(1)="READ",%W="1;23;"_%QT_";1;READ",(%HF,%OLD)=""
+	D I G F:%F
+E	S %QT=%F I '%EX W %E,"[23;1H",%E,"[2K",%E,"[22;1H",!
+	K %XX
+	Q
+	;
+Q0	;  Display refresh entry point from I
+	S %MSG=^%DAMSG(%FLANG,"REFRESH") D M
+	Q
+	;
+HLP	S %MSG=^%DAMSG(%FLANG,"RCR") W %E,"[24;1H",$J("",%PW-$Zwidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%PW)) ;	;%%Z1-G
+	Q
+	;
+	; Do not change the next line of comments, used for runtime gen.
+	;; Run-time
+Q	Q  ; This is necessary to make line F+3 syntacticly correct
+GEN	;  Execute this code to generate a new copy of %DARPRD after 
+	;  modifications to %DASDC5
+	S %FLANG=^%DAMSG
+	I '$D(DB) S DB=0
+	S %MSG="",BATCH=1,SMS="%XX",HELP=0,TMOSCN="%TMO",ROU=$T(),SAT="l"
+	D OPEN,WRITE
+	Q:FILE=0  D LOAD
+CLEAN	U 0 I $D(FILE),FILE]"" C FILE
+	I %MSG]"" W !,%MSG,!
+	K C,E,F,H,I,L,T,X,Y,%DTI,%DTX,%TMI,%TMX,DB,SUB
+	K BATCH,SMS,HL,HELP,TMOSCN,ROU,FILE,DATTIM,HEAD
+	Q
+	;
+ERROR	;  Error exit point
+	S %MSG=$ZE G CLEAN
+	;
+OPEN	;  Open and use scratch file for the compilation.
+	Q:$D(%PRTD)  I DB S FILE=0 Q
+	S FILE="DSM_DASL"_(+$H_$P($H,",",2))_".LIS" C FILE O FILE:NEW:9
+	E  S %MSG="処理用ファイルがオープンできません。" ZT %MSG ;	;%%Z1-T
+	U FILE
+	Q
+	;
+LOAD	;  Read in code and ZS
+	Q:$D(%PRTD)  U FILE:DISCON
+	X "ZR  F I=1:1 R X ZI:X]"""" X I X="""" ZS @ROU Q"
+	C FILE:DEL S FILE=""
+	Q
+	;
+	;
+WRITE	;  Write code
+	D NOW^%DAUDTTM S HEAD=$T(+1),DATTIM=$P(HEAD,";",3)
+	S DATTIM=$E(%DTX_" "_%TMX_"    ",1,$Zwidth(DATTIM)),$P(HEAD,";",3)=DATTIM ;	;%%Z1-G
+	;  New length of DATTIM must be same as the old length or DSM will give a register dump after the ZS.
+	W HEAD,!
+	F I=2:1 S X=$T(+I) W X,! Q:X="X ;"
+	D UTILS^%DASDC5
+	W !!
+	Q
+	; Do not change the next line of comments, used for runtime gen.
+	;; Run-time
+	;
+X	;
+I	I $D(%XX(%XX-1)),%XX(%XX-1)=$P(%W,";",5) S %XX=%XX-1
+	E  S %XX(%XX)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+	;**TM**;I1	S $ZT="I9^%DARPRD" U 0:CTRAP=%ESC W %E,%P
+I1	S $ZT="I9^%DARPRD" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$ZPosition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%XX(0)=%XX(%XX) %XX(1)=%XX(0),%XX=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" ZQuit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %XX=%XX+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZPosition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%XX(%XX)=%XX(0),@%XX(0)
+	I %F="44"&%F S:%XX>1 %XX=%XX-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%XX(%XX)'="" @%XX(%XX) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

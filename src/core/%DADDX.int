@@ -1,0 +1,14 @@
+ROUTINE %DADDX [Type=INT,LanguageMode=6]
+%DADDX	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	S CNT=0 
+	K ^DADDX("DDREF")
+	S DDNM=""
+L1	S DDNM=$O(^DADD(DDNM)) I DDNM="" G L0
+	S DDREF=$P(^DADD(DDNM,"REF"),";",1)
+	I DDREF]"" S %EXT=DDREF DO XREF^%DASDUTL S:%INT'="" ^DADDX("DDREF",%INT,DDNM)=%EXT
+	S CNT=CNT+1
+	G L1
+L0	K CNT,DDNM,DDREF
+	Q

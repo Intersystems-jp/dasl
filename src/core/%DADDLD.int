@@ -1,0 +1,103 @@
+ROUTINE %DADDLD [Type=INT,LanguageMode=6]
+%DADDLD	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	W *7,!,"Enter at the appropriate compiler entry point.",!!
+	Q
+DATA	;
+	S %LOAD="DC"
+	G LOAD
+ADATA	;
+	S %LOAD="DC"
+	G ALOAD
+OPTION	;
+	S %LOAD="OC"
+	G LOAD
+AOPTION	;
+	S %LOAD="OC"
+	G ALOAD
+REPORT	;
+	I '$D(^DADD(%DDNM)) S %MSG="データネーム'"_%DDNM_"'が分かりません。" Q  ;	;%%Z1-T
+	I ITM'["NODATA",$P(^DADD(%DDNM,"REF"),";")="" S %MSG="データネーム'"_%DDNM_"'にはグローバルリファレンスがありません。" I %MSG]"",$P(^DADD(%DDNM,"REF"),";",4)'="" S %MSG="" ;	;%%Z1-T
+	Q:%MSG]""
+	I $D(%DN(%DDNM)) Q
+	S %LOAD="RC"
+	G LOAD
+AREPORT	;
+	S %LOAD="RC"
+	G ALOAD
+QUERY	;
+	W *7,!!,"YOU ARE CALLING A SUBROUTINE THAT IS INVALID- DADDLD"
+	Q 
+DDN	;
+	S %LOAD="DD"
+	G LOAD
+FORM	;
+	S %LOAD="FC"
+	G LOAD
+ALOAD	;
+	S %DDNM="" F  S %DDNM=$O(%DN(%DDNM)) Q:%DDNM=""  D LOAD2
+	G EXIT
+LOAD	D LOAD2
+EXIT	;
+	K %LOAD,%TMNM,%DF,%DF2,%DUM
+	Q
+ERROR	;
+	;**TM**; ZQUITで上位のトラップを実行させるため、引数に１をつけ、GOTO文で$ZTRAPのエントリに移動する
+	;I %MSG'="" ZQ
+	;S %MSG="未定義データネーム"_$S($D(%DDNM):"'"_%DDNM_"'",1:"")_"-"_$ZE ZQ  ;	;%%Z1-T
+	;ZQ
+	I %MSG'="" ZQ 1 GOTO @$ZT
+	S %MSG="未定義データネーム"_$S($D(%DDNM):"'"_%DDNM_"'",1:"")_"-"_$ZE ZQ 1 G @$ZT ;	;%%Z1-T
+	ZQ 1 G @$ZT
+LOAD2	;
+	I $D(%DN(%DDNM,"T")),%LOAD'="DD" Q
+	S $ZT="ERROR^%DADDLD"
+	;**TM**; $ZEのクリアを追加; I '$D(^DADD(%DDNM)) G ERROR
+	I '$D(^DADD(%DDNM)) S $ZE="" G ERROR
+	S %DF2=^DADD(%DDNM,"B")
+	I %LOAD'="FC" S %DF=^DADD(%DDNM,"DF","E")
+	I %LOAD="OC" G LOAD3
+	S %DN(%DDNM,"R")=^DADD(%DDNM,"REF")
+	I '$D(^DADD(%DDNM,"PIECE")) S %MSG="データネーム'"_%DDNM_"'のフォーマットが古いようです。コンバートが必要です。" ZQuit 1 G @$ZT
+	S %DN(%DDNM,"PI")=^DADD(%DDNM,"PIECE")
+	S %DN(%DDNM,"OT")=^DADD(%DDNM,"TR","O")
+	S %DN(%DDNM,"XT")=^DADD(%DDNM,"TR","X")
+	I %LOAD="FC" G LOAD5
+	I %LOAD="RC" G LOAD3
+	S %DN(%DDNM,"IT")=^DADD(%DDNM,"TR","I")
+	S %DN(%DDNM,"AT")=^DADD(%DDNM,"DF","AT",1)
+	I %LOAD="QU" G LOAD3
+	S %DN(%DDNM,"HT")=^DADD(%DDNM,"DF","HT")
+	S %DN(%DDNM,"V")=^DADD(%DDNM,"DF","V",1)
+	S %DN(%DDNM,"HS")=$P(%DF,";",3)
+LOAD3	;
+	S %DN(%DDNM,"L")=$P(%DF,";")
+	I %LOAD="QU" G LOAD5
+LOAD4	;
+	S %DN(%DDNM,"V")=^DADD(%DDNM,"DF","V",1),%DN(%DDNM,"P")=$P(%DF,";",2)
+LOAD5	;
+	S %DN(%DDNM,"T")=$P(%DF2,";",2),%TMNM=$P(%DF2,";",3) Q:%TMNM=""
+	I %LOAD'="QU" G TEMPL
+	S %DN(%DDNM,"S")=$P(%DF2,";")
+TEMPL	;
+	S %DF2=^DADDT(%TMNM,"B")
+	I %LOAD="FC" G TEMPL4
+	S %DF=^DADDT(%TMNM,"DF","E")
+	I %LOAD="OC" G TEMPL2
+	I %DN(%DDNM,"OT")="" S %DN(%DDNM,"OT")=^DADDT(%TMNM,"TR","O")
+	I %LOAD="RC" G TEMPL2
+	I %DN(%DDNM,"AT")="" S %DN(%DDNM,"AT")=^DADDT(%TMNM,"DF","AT")
+	I %LOAD="QU" G TEMPL2
+	I %DN(%DDNM,"HT")="" S %DN(%DDNM,"HT")=^DADDT(%TMNM,"DF","HT")
+	I %DN(%DDNM,"IT")="" S %DN(%DDNM,"IT")=^DADDT(%TMNM,"TR","I")
+	I %DN(%DDNM,"V")="" S %DN(%DDNM,"V")=^DADDT(%TMNM,"DF","V")
+	I %DN(%DDNM,"HS")="" S %DN(%DDNM,"HS")=$P(%DF,";",3)
+TEMPL2	;
+	I %DN(%DDNM,"L")="" S %DN(%DDNM,"L")=$P(%DF,";")
+	I %LOAD="QU" G TEMPL4
+TEMPL3	;
+	I %DN(%DDNM,"P")="" S %DN(%DDNM,"P")=$P(%DF,";",2)
+TEMPL4	;
+	I %DN(%DDNM,"T")="" S %DN(%DDNM,"T")=$P(%DF2,";",2)
+	Q

@@ -1,0 +1,233 @@
+ROUTINE %DARPSP [Type=INT,LanguageMode=6]
+%DARPSP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	W !,"Print Sample Report",!
+ASK	R !,"Report: ",RPNM I RPNM="" G KILL
+	D DEV G ASK
+KILL	K RPNM,%IOD,%MSG,%PDV,%ZIOD,RPWIDTH,RPLEN,%TMR,%DTR
+	K COL,RPLC,ITEM,RPNM
+	K %RPKPIT,%RPKTYP,%RPKON,%RPKOF ;	;%%Z1-F
+	Q
+DEV	;
+	K %IOD S (%DEF,%PDV)=$I D ^%IOS Q:'$D(%IOD)  W !
+PITCH	;%%Z1-F
+	R !,"Kanji Pitch: <2> ",%RPKPIT S:%RPKPIT="" %RPKPIT=2
+	I ",1.25,1.5,2,"'[(","_%RPKPIT_",") W $C(7),"Enter 1, 1.25, 1.5 or 2" G PITCH
+	S %RPKPIT=%RPKPIT*2
+	;**TM**; デフォルト漢字コードをUTF8にする
+	;KTYPE	R !,"Kanji type: <DEC> ",%RPKTYP S:%RPKTYP="" %RPKTYP="DEC"
+	;I ",DEC,JIS,SJIS,"'[(","_%RPKTYP_",") W $C(7),"Enter DEC, JIS or SJIS1" G KTYPE
+KTYPE	R !,"Kanji type: <UTF8> ",%RPKTYP S:%RPKTYP="" %RPKTYP="UTF8"
+	I ",UTF8,DEC,JIS,SJIS,"'[(","_%RPKTYP_",") W $C(7),"Enter UTF8, DEC, JIS or SJIS1" G KTYPE
+	;**TM**; Cache,IRISの場合、JISのKON,KOFは設定出来ないため、削除
+	;KONOF	S (%RPKON,%RPKOF)="" D:%RPKTYP="JIS"
+	;KON	.R !,"Kanji ON  code: <@$> ",%RPKON S:%RPKON="" %RPKON="@$"
+	;.I (%RPKON'?1.3ANP)!(%RPKON["?") W !?3,"Enter a Kanji ON sequence (exclude <ESC>)" G KON
+	;.S %RPKON=$C(27)_%RPKON
+	;KOF	.R !,"Kanji OFF code: <(J> ",%RPKOF S:%RPKOF="" %RPKOF="(J"
+	;.I (%RPKOF'?1.3ANP)!(%RPKOF["?") W !?3,"Enter a Kanji OFF sequence (exclude <ESC>)" G KOF
+	;.S %RPKOF=$C(27)_%RPKOF
+	;;%%Z1-F
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX
+	D GROUP,OUTPUT
+	U 0 I %IOD'=%PDV C %IOD
+EXIT	K IM,%DTI,%DTX,%TMX,%TMI,LINE,BLANK,LEN,X,POS,OCOL,COLL,%DTY,GROUP
+	K %N,%I,LN,JUS,RPLIST,CNT,DATA,ITM,Y,IX,I,J,GRP,ITEM,FN,COL
+	S RPGP=""
+	Q
+GROUP	;
+	K IM U %IOD
+	I $D(^DASD(RPNM,"V")) D LOADVL^%DARPUTL
+	S X=^DARD(RPNM,"REP"),RPWIDTH=$P(X,";",1),RPLEN=$P(X,";",2)
+	S LN=1
+ALLGRP	;
+	S RPLIST=^DARD(RPNM,"C","S")
+	S %N=1 F GRP="H","D","F","T" F %I=0:1:$L(RPLIST,",")-1 D  S %N=%N+1
+	.I "HT"[GRP,$D(^DARD(RPNM,"P",GRP_%I)) S GROUP(%N)=GRP_%I
+	.I $D(^DARD(RPNM,"P",GRP)) S GROUP(%N)=GRP,%I=$L(RPLIST)
+	S %N=""
+	F  S %N=$O(GROUP(%N)) Q:%N=""  S RPGP=GROUP(%N) D ONEGRP S:$D(IM(LN)) LN=LN+1
+	Q
+ONEGRP	S:RPGP="F" FLN=0  ;;%%Z3-DASLV61_BUGS-11
+	S RPLC="",CNT=1,OCOL=0 F  S RPLC=$O(^DARD(RPNM,"P",RPGP,"G",RPLC)) Q:RPLC=""  D
+	.S ITEM="",DATA=^DARD(RPNM,"P",RPGP,"G",RPLC,"I"),Y=^("E")
+	.S COL=$S($P(Y,";")]"":$P(Y,";"),1:0),JUS=$P(Y,";",2) D CHKREP D:ITEM]"" FORMAT
+	Q
+OUTPUT	;
+	S (OLDX,X)="",BLANK=$J("",RPWIDTH) F LN=1:1 Q:'$D(IM(LN))  D LN
+	Q
+LN	;
+	S LINE=BLANK,POS=0 F CNT=0:0 S CNT=$O(IM(LN,CNT)) Q:CNT=""  D COL
+	W:LINE]"" LINE
+	Q
+COL	F COL=-1:0 S COL=$O(IM(LN,CNT,COL)) Q:COL=""  D  S OLDX=X
+	.S X=IM(LN,CNT,COL),LEN=$Zwidth(X,%RPKPIT) I X="!" S POS="",LINE="" W:OLDX="!" BLANK,! Q  ;	;%%Z1-F
+	.I COL=0,POS+LEN'>80 D COL2 S:POS]"" POS=POS+LEN Q
+	.I COL=0,POS+LEN>80 W:LINE'=BLANK LINE S LINE=BLANK,POS=0 D COL2 Q
+	.I COL-1+LEN=RPWIDTH D COL1 Q
+	.I COL-1+LEN>RPWIDTH S LEN=RPWIDTH-COL+1,X=$E(X,1,$ZPosition(X,LEN,%RPKPIT)) D COL1 Q  ;	;%%Z1-G
+	.D COL1 S POS=COL-1+LEN
+	Q
+COL1	I LINE="" S LINE=BLANK
+	I LINE'=BLANK,$E(LINE,$ZPosition(LINE,COL,%RPKPIT)-1,$ZPosition(LINE,LEN,%RPKPIT))'?.P W LINE,! S LINE=BLANK ;	;%%Z1-G
+	S LINE=$E(LINE,1,$ZPosition(LINE,COL-1,%RPKPIT))_$J("",COL-1-$Zwidth($E(LINE,1,$ZPosition(LINE,COL-1,%RPKPIT)),%RPKPIT))_X_$E(LINE,$ZPosition(LINE,COL-1+LEN,%RPKPIT)+1,$ZPosition(LINE,RPWIDTH,%RPKPIT)) ;	;%%Z1-G
+	I POS'=0,COL-1+LEN=80 W LINE S POS="",LINE=""
+	Q
+COL2	I LINE="" S LINE=BLANK
+	S LINE=$E(LINE,1,$ZPosition(LINE,POS,%RPKPIT))_$J("",POS-$Zwidth($ZPosition(LINE,POS,%RPKPIT),%RPKPIT))_X_$E(LINE,$ZPosition(LINE,POS+LEN,%RPKPIT)+1,$ZPosition(LINE,RPWIDTH,%RPKPIT)) ;	;%%Z1-G
+	I POS+LEN=80,LINE'=BLANK W LINE S LINE="",POS=""
+	Q
+CHKREP	;
+	I DATA["/EVAL" Q
+SETUP	;
+	S ITM=$$BASEDIT^%DAZCALL(DATA,296)
+	S I=0
+	I "@!"[$E(ITM) Q
+	I ITM?1"["1A.ANP1"]" S ITEM=ITM Q
+	D EXPR
+VEND	K II,K,X,Y,STR,ZZ,LEN,PROM,DATA,%DF2,%DF
+	Q
+EXPR	;
+NEXT	S I=I+1 D ITEM:$E(ITM,I)]""
+	I ":;"[$E(ITM,I)!($E(ITM,I)=")") Q
+	G NEXT
+ITEM	;
+	S X=$E(ITM,I),Y=I
+	I X="""" D STRLIT Q
+	I X?1N D NUM Q
+	I X="%" D NAME,SUBS Q
+	I X="^" D NAME,SUBS Q
+	I X?1A D DNAME Q
+	I X="$" D SPECV,SUBS Q
+	I "'+-!&"[X S I=I+1 G ITEM 
+	Q
+STRLIT	;
+	F I=I:0 S I=$F(ITM,"""",I+1) Q:$E(ITM,I)'=""""
+	S STR=$S($E(ITM,I)="_"!($E(ITM,I)=":"):$E(ITM,$F(ITM,"""",Y)-1,I-1),1:$E(ITM,$F(ITM,"""",Y)-1,I))
+	I STR?1"""".UN1"""" S ITEM=ITEM_$E(STR,2,$L(STR)-1) Q
+	I STR?."""" S ITEM=ITEM_$E(STR) Q
+	I STR="""""""  """ S ITEM=ITEM_$E(STR)_"  " Q
+	S ITEM=ITEM_$E(STR,2,$F($E(STR,2,99),"""")-1)
+	Q
+NUM	F I=I+1:1 Q:$E(ITM,I)'?1N
+	I $E(ITM,I)="." F I=I+1:1 Q:$E(ITM,I)'?1N
+	Q
+DNAME	D NAME
+	I $E(ITM,I)="/" S I=I+($L(ITM)-I)  Q
+	Q:$E(ITM,I)'="("
+NAME	S J=I F I=I+1:1 Q:$E(ITM,I)'?1UN
+	I "%^"[$E(ITM,J) S X=$E(ITM,J,I-1),ITEM="" I X="%PC" S ITEM=ITEM_"1" Q
+	S X=$E(ITM,J,I-1)
+LOAD	;
+	I $D(%VL(X)) Q
+	I (X?1U.6UN!(X?1U.6UN1"("1N.N1")")!(X?1U.6UN1"("1""""1NAP.NAP1""""1")")),$D(^DADD(X)),$E(ITM,I,I+1)'=":0" D LOAD2 D
+	.S (PROM,ZZ)="",LEN=%DN(X,"L") I ITM["/PROMPT" S PROM=%DN(X,"P")
+	.F IX=1:1:LEN S ZZ=ZZ_"x"
+	.I X["SDFPR"!(ITEM["DDPR"!(ITEM["TMPR")) S ZZ=$E(ZZ,1,69)
+	.I X["SDFHT"!(ITEM["DDHELP"!(ITEM["TMHELP")) S ZZ=$E(ZZ,1,68)
+	.S ITEM=$S($L(ZZ)>0:ITEM_PROM_ZZ,1:ITEM_PROM)
+	Q
+SPECV	F I=I+1:1 Q:$E(ITM,I)'?1U
+	S X=$E(ITM,Y+1,I-1)
+	I $P($T(MUMPF),";",3)[(","_X_",") S I=$L(ITM),ITEM="" Q
+	I $P($T(SPECMD),";",3)[(","_X_",") S I=$L(ITM),ITEM="" Q
+	S ITEM=$S(ITM[":":$P(ITM,":"),1:ITM)
+	G FUNC:$E(ITM,I)="("
+	I $T(@("V"_X))]"" Q
+	Q
+SUBS	;
+	Q:$E(ITM,I)'="("  F I=I:0 D EXPR  Q:$E(ITM,I)'=","&($E(ITM,I)'=":")
+	I $E(ITM,I)'=")" Q
+	S I=I+1
+	Q
+FUNC	;
+	I $P($T(FUNCL),";",3)'[(","_X_",") Q
+	S II=I I $T(@("F"_X))]"" D @("F"_X) 
+	S I=II,I=$F(ITM,")",I)
+	Q
+FORMAT	;
+	I $E(ITEM)="$" G FMT
+	S LEN=$Zwidth(ITEM) ;	;%%Z1-G
+	S:JUS["C" COL=COL-(LEN\2) S:JUS["R" COL=COL-LEN
+	I COL=0,OCOL>0 S COL=OCOL
+	I ITEM]"" S IM(LN,CNT,COL)=ITEM,CNT=CNT+1
+	S:ITEM?1"["1A.ANP1"]" LN=LN+1,CNT=1
+	I LEN+COL>80!(LEN+COL=80) S LN=LN+1,CNT=1,OCOL=0
+	I ITEM="",COL>0 S OCOL=COL
+	Q
+FMT	S:ITEM["(" FN=$E(ITEM,2,$L(ITEM)-$L($P(ITEM,"(",2))-1) S:$E(ITEM,2,99)?1U.U FN=$E(ITEM,2,99)
+	I $P($T(FUNC2),";",3)[(","_FN_",") S IM(LN,CNT,COL)=$P(ITEM,")",2,99),CNT=CNT+1 Q
+	I $P($T(FUNC1),";",3)[(","_FN_",") Q
+	G @FN
+	Q
+REQUIRE	I RPLEN=0 Q
+	S LCNT=$P(ITEM,"(",2)-1
+	F Z=1:1:LCNT S IM(LN,CNT,COL)="!",LN=LN+1,CNT=1
+	Q
+DATE	S IM(LN,CNT,COL)=%DTR,CNT=CNT+1
+	Q
+TIME	S IM(LN,CNT,COL)=%TMR,CNT=CNT+1
+	Q
+LINE	I $D(IM(LN)) S LN=LN+1,CNT=1
+	S OCOL=0
+	I ITEM'["(" G LINEX 
+	I $E(ITEM,7)?1N G LINEN 
+	S JUS=+$P(ITEM,",",2),COLL=+$P(ITEM,",",3)
+	S:'JUS JUS=0 S:'COLL COLL=RPWIDTH-1
+	S X="" F J=JUS:1:COLL S X=X_$E(ITEM,8)
+	S IM(LN,CNT,JUS)=X,CNT=1,LN=LN+1
+	D LINEX
+	Q
+	;LINEX	I RPGP="F" S FLN=FLN+1
+LINEX	I RPGP="F" S LN=LN+1 ;	;%%Z1-Y
+	S IM(LN,CNT,COL)="!",CNT=1,LN=LN+1
+	Q
+LINEN	S X=+$E(ITEM,7,999)
+	I X>1 F %V=1:1:X D LINEX
+	Q
+FLINE	;
+	S J=$E(ITM,I+1,99)
+	Q
+FREQUIRE	Q:$E(ITM,I+1,99)?1.N1")".E
+FMAX	S I=I+1 D DNAME
+	Q
+FMIN	S I=I+1 D DNAME
+	Q
+FTOTAL	S I=I+1 D DNAME
+	Q
+FAVE	S I=I+1 D DNAME
+	Q
+FSTD	S I=I+1 D DNAME
+	Q
+	;	
+NUMARG	;
+	F I=I:1 Q:$E(DATA,I)'=" "
+	S Y=I F I=I:1 Q:$E(DATA,I)'?1N
+	S J=J_$E(DATA,Y,I-1)
+	Q
+NARG	D NUMARG
+	Q
+TARG	D NUMARG
+	Q
+LOAD2	;
+	S %DF=^DADD(X,"DF","E") S %DN(X,"L")=$P(%DF,";"),%DN(X,"P")=$P(%DF,";",2)
+	S $ZT="ERROR^%DADDLD",%DF2=^DADD(X,"B")
+	S %TMNM=$P(%DF2,";",3) Q:%TMNM=""
+TEMPL	;
+	S %DF2=^DADDT(%TMNM,"B")
+	S %DF=^DADDT(%TMNM,"DF","E")
+TEMPL2	;
+	I %DN(X,"L")="" S %DN(X,"L")=$P(%DF,";")
+TEMPL3	;
+	I %DN(X,"P")="" S %DN(X,"P")=$P(%DF,";",2)
+	Q
+ERROR	W "Error running report for sample rpeort on: ",!,$ZE,!!
+	Q
+SPECL	;;,LINE,NOLINE,PAGE,DATE,TIME,PAGEN,PAGEC,SETPAGE,COUNT,SECTION,ENDSEC,ENDREP,
+FUNCL	;;,AVE,MED,LINE,MAX,MIN,STD,TOTAL,REQUIRE,REPEAT,
+MUMPV	;;,HOROLOG,IO,JOB,STORAGE,TEST,X,Y,Z,
+MUMPF	;;,ASCII,CHAR,DATA,EXTRACT,FIND,JUSTIFY,LENGTH,NEXT,ORDER,PIECE,RANDOM,SELECT,TEXT,VIEW,Z,A,C,D,E,F,J,L,N,O,P,R,S,T,V,
+SPECMD	;;,SECTION,REPEAT,ENDSEC,ENDREP,
+FUNC1	;;,NOLINE,PAGE,PAGEN,PAGEC,SETPAGE,COUNT,
+FUNC2	;;,AVE,MAX,MED,MIN,STD,TOTAL,

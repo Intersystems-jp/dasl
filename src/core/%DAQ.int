@@ -1,0 +1,109 @@
+ROUTINE %DAQ [Type=INT,LanguageMode=6]
+%DAQ	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+QUERY	R !!,"Query: ",%NAME Q:%NAME=""
+	I '$D(^DAQD(%NAME)) W *7,"  Not defined." G QUERY
+DEV	R !,"Output device: <0> ",%IOD I %IOD="" S %IOD=$I W " = ",%IOD
+	I %IOD["?" W !?3,"Enter a valid VMS device, default = ",%PDV G DEV
+	O %IOD:(NEW):10 E  W " device unavailable" G DEV
+	;W ! S $ZT="ERROR^%DASL" ;	;%%Z2-Y "ERROR" LABEL MISSING
+	W ! S $ZT="RESET^%DASL" ;	;%%Z2-Y "ERROR" LABEL MISSING
+	S %FLANG=^%DAMSG
+	D PROG^%DASL,INIT^%DALOGIN S %PDV=$I D RUN
+	I %MSG]"" W !,%MSG q
+	I %IOD'=%PDV C %IOD
+	K %PDV,%IOD,%RPNM
+	D EXIT^%DALOGIN
+	Q
+RUN	;
+	S:'$D(%PP) %PP=0
+	S:$D(%NAME) QUNM=%NAME D ^%DAQC I %MSG]"" Q
+	U %IOD D QUERY^%DARUN
+	Q
+SQL(%QLOC,%QDES,%QOUT,%QERR,%QSEC)	;
+	;	%QLOC	Location of Query, could be an array or global 
+	;		reference.
+	; 	%QDES	Description of the query used in the monitor routine.
+	;	%QOUT	File or Global name for output.
+	;	%QERR	Variable or global reference where to return an 
+	; 		error message.
+	; 	%QSEC	Security ID and Password, for table access.
+	s $ZT="ERR^%DAQ"
+	G NEW  
+	I %QLOC["^"&(%QERR["^") N (%QLOC,%QDES,%QOUT,%QERR,%QSEC) G NEW
+	I %QLOC["^" N (%QLOC,%QDES,%QOUT,%QERR,@%QERR,%QSEC) G NEW
+	I %QERR["^" N (%QLOC,@%QLOC,%QDES,%QOUT,%QERR,%QSEC) G NEW
+	N (%QLOC,@%QLOC,%QDES,%QOUT,%QERR,@%QERR,%QSEC) G NEW
+NEW	;
+	K @%QERR S %FLANG=^%DAMSG
+	S %USR=$P(%QSEC,",",1),%EXT=$P(%QSEC,",",2)
+	I '$D(^DASYU("U","X","I",%USR)) G ERR3
+	S %USR=$O(^DASYU("U","X","I",%USR,"")) G:%USR="" ERR3
+	D ENCODE^%DALOGIN
+	G:%INT'=$P(^DASYU("U","D",%USR,"E"),";",2) ERR3
+	S %PPV="@" d PRIV^%DALOGIN
+	S %SPV=$P(^DASY("STATUS"),";",4),%WRITE=$S(%SPV="=":0,1:1)
+	S %SPV=%SPV_"+",%FPV=$S(%SPV["@":%PPV,%PPV["@":%SPV,1:"")
+	I %FPV="" F %I=1:1:$L(%SPV) I %PPV[$E(%SPV,%I) S %FPV=%FPV_$E(%SPV,%I)
+	S (%MSG,%LINE,%TYPE,%END)="",%R=%QLOC K %QUERY
+	S (%QUERY("FROM"),%QUERY("WHERE"),%QUERY("GROUP"),%QUERY("HAVING"))=""
+	S:$E(%QLOC,$L(%QLOC))=")" %QLOC=$E(%QLOC,1,$L(%QLOC)-1)
+	S:%QLOC'["(" %QLOC=%QLOC_"("
+	D GETLINE i %END s %MSG="Error in SELECT statement systax." G EXIT
+	S %TYPE=$$BASEDIT^%DAZCALL($P(%LINE," ",1),34) 
+	I %TYPE'="SELECT" S %MSG=^%DAMSG(%FLANG,"SELECT") G EXIT
+	S %WCT="SELECT",%LINE=$E(%LINE,8,255)
+	S %WORD=",FROM,WHERE,GROUP,HAVING," 
+	S %CT=0
+	F %=1:1 S %P=$E(%LINE,%) D  Q:%END!(%MSG]"")
+	. I %P="" D GETLINE S %CT=%+1 Q  
+	. 
+	. I "'"""[%P D  Q
+	. . S %Q=%P,%OK=0
+	. . F %=%+1:1 S %P=$E(%LINE,%) D   Q:%OK=1!(%MSG]"")
+	. . . D:%P="" GETLINE I %END S %MSG=^%DAMSG(%FLANG,"QPS6") Q
+	. . . Q:%Q'=%P  I $E(%LINE,%+1)'=%Q S %OK=1 Q
+	. . . S %=%+1 Q
+	. Q:%P'=" "
+	. S %W=$$BASEDIT^%DAZCALL($E(%LINE,%CT,%-1),34) Q:$L(%W)<4 
+	. I %WORD'[(","_%W_",") S %CT=%+1 Q  
+	. 
+	. S %QUERY(%WCT)=$E(%LINE,1,%CT-2)
+	. S %LINE=$E(%LINE,$S(%W="GROUP":%+3,1:%),512),(%CT,%)=0,%WCT=%W
+	. Q
+	G:%MSG]"" EXIT
+	S %QUERY(%WCT)=$E(%LINE,1,%)
+	; 	
+	I %QOUT["^" D  G:%MSG]"" EXIT 
+	. S:$E(%QOUT,$L(%QOUT))'=")"&(%QOUT["(") %QOUT=%QOUT_")"
+	. S $ZT="ERR1^%DAQ" S X=$G(@%QOUT) K @%QOUT
+	. S %GLOBAL=$S(%QOUT'["(":%QOUT_"(",%QOUT'[")":%QOUT,1:$E(%QOUT,1,$L(%QOUT)-1))
+	I %QOUT'["^" D  G:%MSG]"" EXIT
+	. S:%QOUT'["." %QOUT=%QOUT_".DAT" S %RES=%QOUT
+	. D PROG^%DADEV 
+	S %TMO=300,%CALL=1,QUNM="" 
+	S:'$D(%PP) %PP=0 S:'$D(%IOD) %IOD=0
+ROU	S %QROU="DAQ"_$R(1000) L +^ (%QROU):9 G:'$T ROU
+	D ^%DAQC G:%MSG]"" EXIT
+	I %IOD'=0 S $ZT="ERR2^%DAQ" O %IOD:NEW
+	U %IOD D ^@%QROU
+	C:%IOD'=0 %IOD X ("ZR  ZS "_%QROU)
+	L -^ (%QROU) G EXIT
+EXIT	;
+	S @%QERR=%MSG
+	Q
+GETLINE	;
+	S %R=$Q(@%R) 
+	I %R=""!($E(%R,1,$L(%QLOC))'=%QLOC) S %END=1 Q 
+	S %LINE=%LINE_$s(%LINE="":"",1:" ")_@%R
+	Q
+ERR	;
+	S:%MSG="" %MSG=^%DAMSG(%FLANG,"QCOMP") S @%QERR=%MSG Q
+ERR1	;
+	S %MSG=^%DAMSG(%FLANG,"GLOBAL") G EXIT
+ERR2	;
+	S %MSG=^%DAMSG(%FLANG,"FILE") X ("ZR  ZS "_%QROU) G EXIT
+ERR3	;
+	S %MSG=^%DAMSG(%FLANG,"SEC") g EXIT
+	

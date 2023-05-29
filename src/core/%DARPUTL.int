@@ -1,0 +1,114 @@
+ROUTINE %DARPUTL [Type=INT,LanguageMode=6]
+%DARPUTL	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	W !!,$C(7),"このルーチンは対話的には実行できません。",!! ;	;%%Z3-T
+	Q
+INIT	;
+	S RPCNT=0 S (RPLST,%LS)="" Q:RPSORT=""  K RP
+	I RPSORT["(" S %LS="" F I=1:1:$L(RPSORT,"(") D
+	. S:I=1 %LS=%LS_$P(RPSORT,"(",I) S:I>1 %LS=%LS_$P($P(RPSORT,"(",I),")",2)
+	I %LS]"" S RPSORTN=RPSORT,RPSORT=%LS
+	F I=1:1:$L(RPSORT,",") S X=$P(RPSORT,",",I) S:X[":" RP(I)=$P(X,":") S:$E(X)="-" X=$E(X,2,999) S RPLST=RPLST_","_X,RPCNT=RPCNT+1
+	I $D(RPSORTN) S RPSORT=RPSORTN
+	K RP,I,X,%LS,RPSORTN
+	Q
+LOADVL	;
+	K %VL I '$D(^DARD(RPNM,"V")) Q
+	S %RPVAR="" F  S %RPVAR=$O(^DARD(RPNM,"V",%RPVAR)) Q:%RPVAR=""  S %VL(%RPVAR)=^(%RPVAR)
+	K %RPVAR
+	Q
+DEL	;
+	S %NAME=RPNM D REPORT^%DANAME
+	K ^DANX("R","D",RPNM),^DARD(RPNM)
+	X "ZR  ZS "_$P(%PROGRAM,"^",2)
+	Q
+COPY	;
+	K ^DARD(RPNMX) S ^DARD(RPNMX,"A")=^DARD(RPNM,"A")
+	F DUM=1,2,3 S ^DARD(RPNMX,"C","FW",DUM)=^DARD(RPNM,"C","FW",DUM)
+	S ^DARD(RPNMX,"C","S")=^DARD(RPNM,"C","S")
+	S %CNT="" F  S %CNT=$O(^DARD(RPNM,"CM",%CNT)) Q:%CNT=""  S ^DARD(RPNMX,"CM",%CNT)=^DARD(RPNM,"CM",%CNT)
+	S ^DARD(RPNMX,"H")=$P(^DARD(RPNM,"H"),";")_";"_$S(%USR]"":$P(^DASYU("U","D",%USR,"E"),";"),1:"")_";;"_+$H_";;"_$P($H,",",2)
+	S RPGP="" 
+	F  S RPGP=$O(^DARD(RPNM,"P",RPGP)) Q:RPGP=""  S %CNT="" D LINE
+	S ^DARD(RPNMX,"REP")=^DARD(RPNM,"REP")
+	S %CNT="" F  S %CNT=$O(^DARD(RPNM,"V",%CNT)) Q:%CNT=""  S ^DARD(RPNMX,"V",%CNT)=^DARD(RPNM,"V",%CNT)
+	S %NAME=RPNMX D REPORT^%DANAME S RPN=$P(%PROGRAM,"^",2)
+	S %NAME=RPNM D REPORT^%DANAME S RPO=$P(%PROGRAM,"^",2)
+	S $ZT="COPYX^%DARPUTL" X ("ZL "_RPO_" ZS "_RPN)
+COPYX	K %CNT,RPGP,RPO,RPN
+	Q
+LINE	;
+	S %CNT=$O(^DARD(RPNM,"P",RPGP,"G",%CNT)) Q:%CNT=""
+	S ^DARD(RPNMX,"P",RPGP,"G",%CNT,"I")=^DARD(RPNM,"P",RPGP,"G",%CNT,"I")
+	S ^DARD(RPNMX,"P",RPGP,"G",%CNT,"E")=^DARD(RPNM,"P",RPGP,"G",%CNT,"E")
+	G LINE
+CODE	;
+	S %NAME=RPNM D REPORT^%DANAME
+	Q
+VGROUP	;
+	I %RES="D"!(%RES="F")!(%RES?1U1N&("HT"[$E(%RES)&($E(%RES,2)'>RPCNT))) Q
+	I "HT"[$E(%RES) S %MSG="グループ'"_%RES_"'がありません。" ;	;%%Z1-T
+	E  S %MSG="グループ指定が不適当です。" ;	;%%Z1-T
+	Q
+SET	;
+	S X=$E(%RES,1),Y=$E(%RES,2)
+	S NAME=$P(",Header,Data,Footer,Trailer",",",$F("HDFT",X))_" Level "
+	I "DF"'[%RES S NAME=NAME_Y
+	I Y S NAME=NAME_"  ("_$P(RPLST,",",Y+1)_")"
+	K X,Y
+	Q
+URPRT	;
+	S RPSORT=^DARD(RPNM,"C","S") D INIT
+	S %N=1 F %GRP="H","D","T","F" F %I=0:1:$L(RPLST,",")-1 D @$E(%GRP) S %N=%N+1
+	K %N,%GRP,%RPGRP
+	Q
+H	;
+T	S %RPGROUP(%N)=%GRP_%I Q
+D	;
+F	I $D(^DARD(RPNM,"P",%GRP)) S %RPGROUP(%N)=%GRP
+	S %I=999
+	Q
+RPVAR	;
+	I %RES?1A.7AN Q
+	I %RES?1AZ.7ANZ S %MSG="漢字変数は使用できません。" Q  ;	;%%Z2-R4
+	I $E(%RES)="%" S %MSG="％変数は使用できません。" Q  ;	;%%Z1-T
+	I %RES?1A.AN1"("1.ANP1")" S %MSG="サブスクリプトを持つ変数は使用できません。" Q  ;	;%%Z1-T
+	S %MSG=%RES_" は正しいMUMPS変数ではありません。" ;	;%%Z1-T
+	Q
+RUN	;
+	S %I="" F  S %I=$O(RL(%I)) Q:%I=""  I RL(%I,"GNDUM1")]"" S @RL(%I,"GNDUM1")=RL(%I,"GNDUM2")
+	Q
+GDEL	;
+	K ^DARD(RPNM,"P",RPGP) 
+	Q
+GCOPY	;
+	K ^DATG($J,"U")
+	S (LC1,LC2)=0
+	F  S LC1=LC1+1 D  Q:'$D(^DARD(RPNMT,"P",GROUPT,"G",LC1))
+	. I $D(^DARD(RPNMT,"P",GROUPT,"G",LC1)) D  
+	. . S LC2=LC2+1
+	. . S ^DATG($J,"U",GROUPT,"G",LC2,"E")=^DARD(RPNMT,"P",GROUPT,"G",LC1,"E")
+	. . S ^DATG($J,"U",GROUPT,"G",LC2,"I")=^DARD(RPNMT,"P",GROUPT,"G",LC1,"I")
+	. I LC1=AFTER D
+	. . S MSG1=" "_(TO-FROM+1)_" line"_$S((TO-FROM+1'=1):"s were",1:" was")
+	. . S MSG2="! inserted from report "_RPNMF_" group "_GROUPF_"."
+	. . S LC2=LC2+1
+	. . S ^DATG($J,"U",GROUPT,"G",LC2,"I")="! Following "_MSG1,^("E")=";"
+	. . S LC2=LC2+1
+	. . S ^DATG($J,"U",GROUPT,"G",LC2,"I")=MSG2,^("E")=";"
+	. . F LC3=FROM:1:TO D  
+	. . . S LC2=LC2+1
+	. . . S ^DATG($J,"U",GROUPT,"G",LC2,"E")=^DARD(RPNMF,"P",GROUPF,"G",LC3,"E")
+	. . . S ^DATG($J,"U",GROUPT,"G",LC2,"I")=^DARD(RPNMF,"P",GROUPF,"G",LC3,"I")
+	. . S LC2=LC2+1
+	. . S ^DATG($J,"U",GROUPT,"G",LC2,"I")="! Preceeding  "_MSG1,^("E")=";"
+	. . S LC2=LC2+1
+	. . S ^DATG($J,"U",GROUPT,"G",LC2,"I")=MSG2,^("E")=";"
+	K ^DARD(RPNMT,"P",GROUPT)
+	F LC1=1:1 Q:'$D(^DATG($J,"U",GROUPT,"G",LC1))  D  
+	. S ^DARD(RPNMT,"P",GROUPT,"G",LC1,"E")=^DATG($J,"U",GROUPT,"G",LC1,"E")
+	. S ^DARD(RPNMT,"P",GROUPT,"G",LC1,"I")=^DATG($J,"U",GROUPT,"G",LC1,"I")
+	K ^DATG($J,"U")
+	K LC1,LC2,LC3,MSG1,MSG2
+	Q

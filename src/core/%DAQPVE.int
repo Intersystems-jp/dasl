@@ -1,0 +1,108 @@
+ROUTINE %DAQPVE [Type=INT,LanguageMode=6]
+%DAQPVE(%VE,%VEFG)	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;	S    - String
+	;	S    - String
+	;	N    - Number
+	;	VE   - Column(s) and number(s)
+	S (%MSG,%NVE,%VETYPE,%FUN,%CNAME,%TYPE)=""
+	N %START,%N,%FSTRING
+	S %STOP="()+-*/. '""",(%FSTRING,%NEXT)=""
+	S (%START,%VERROR)=1,(%FUNCFG,%QUT,%PRN)=0,%VE=$$BASEDIT^%DAZCALL(%VE,426)
+	F %N=1:1:$L(%VE) S %P=$E(%VE,%N) Q:%P=""  I %STOP[%P D VEPOP Q:%MSG'=""
+	Q:%MSG'="" 
+	I %START'>$L(%VE) S %P=" ",%N=%N+1 D VEPOP  Q:%MSG'=""
+	I %VERROR=1 S %MSG="QPV1" Q
+	I %PRN'=0 S %MSG="QPS5" Q
+	S:$E(%NVE,$L(%NVE))=$C(0) %NVE=$E(%NVE,1,$L(%NVE)-1) S %FUN=%FSTRING
+	Q
+VEPOP	;
+	I "'"""[%P D STRING S %SATRT=%N Q
+	S %OSTART=%START
+	I "()"[%P S %PRN=%PRN+$S(%P="(":1,%P=")":-1)
+	S %Y=$E(%VE,%START,%N-1) S:"-+*/"[%P %TYPE=1 G:%Y="" VENO
+	I ",AVG,SUM,MAX,MIN,COUNT,"[(","_%Y_",") D FUNC G VEEND
+	I %Y?1A.E D COLUM G VEEND
+	I %Y?1N.E!(%Y?1"-"1N.E)!(%Y?1"+"1N.E) D NUMBER G VEEND
+	Q
+VENO	;
+	I %P="." D NUMBER G VEEND
+	I '$F(" ",%P) S %NVE=%NVE_%P_$C(0) S:%FSTRING'="" %FSTRING=%FSTRING_%P 
+	S %START=%N+1 I ("/*+-"[%P)&(%NEXT=""),%TYPE=1 S %NEXT="FCN"
+	Q
+VEEND	;
+	I %FUNCFG=1 S %FUNCFG=0,%FSTRING=%FSTRING_"%F"_%FUNC Q
+	S %NVE=%NVE_$E(%VE,%OSTART,%N-1)_$C(0) S:'$F(" ",%P) %NVE=%NVE_%P_$C(0)
+	Q:%FSTRING=""  S %FSTRING=%FSTRING_$E(%VE,%OSTART,%N-1)
+	S:'$F(" ",%P) %FSTRING=%FSTRING_%P
+	Q
+COLUM	;
+	I %NEXT'=""&(%NEXT'["C") S %MSG="QPV15" Q
+	I %VEFG'["C" S %MSG="QPV2;"_%VE Q 
+	S %TB="" I %P="." S %TB=%Y,%START=%N+1 D READ S:%P="" %P=" "
+	S %VETYPE=$S("SF"[%VETYPE&(%VETYPE'=""):%VETYPE,%VETYPE="":"C",1:"VE")
+	G:%P="*"&(%Y="") ALL
+	I '$D(^DATDX("CT",%Y)) S %MSG="QPV4;"_%Y Q
+	S %VERROR=0,%START=%N+1 
+	S:%TB'="" %Y=%TB_"."_%Y S:'$D(%QC(%Y)) %QC(%Y)=""
+	S:%CNAME'[";"_%Y_";" %CNAME=$S(%CNAME'="":%CNAME_%Y_";",1:";"_%Y_";") 
+	Q
+ALL	;
+	I %TB="" S %MSG="QPV5" Q
+	I %VEFG'["A" S %MSG="QPV17" Q
+	S %VERROR=0,%START=%N+1,%ALLFG=1,%VEFG="",%VETYPE="VE" Q
+FUNC	;
+	I %NEXT'=""&(%NEXT'["F") S %MSG="QPV16" Q
+	I %VEFG'["F" S %MSG="QPV6" Q
+	I %P=" " S %VE=$E(%VE,1,%N-1)_$E(%VE,%N+1,255),%P=$E(%VE,%N) S:%P="(" %PRN=%PRN+1 I %P'="(" S %MSG="QPV18" Q
+	S:$E(%VE,%N+1)=" " %VE=$E(%VE,1,%N)_$E(%VE,%N+2,255)
+	S %X=$E(%VE,%N+1),%FUNC=%FUNC+1,%QF("%F"_%FUNC)=%Y
+	I %X="*" D  Q
+	.I %Y'="COUNT" S %MSG="QPV7" Q 
+	.S %VERROR=0,%VETYPE="F",%FUNCFG=1,%NVE=%NVE_%Y_"(*)"_$C(0)
+	.S %START=%N+3,%N=%N+2,%PRN=%PRN-1,$P(%QF("%F"_%FUNC),";",2)=%X Q
+	S:$F("AVG,SUM",%Y) %TYPE=1 S %X=$E(%VE,%N+1,%N+8)
+	I %X="DISTINCT" S %DIST=1,%VEFG="C",%START=%N+9,%NEXT="C",$P(%QF("%F"_%FUNC),";",5)=1 S:$E(%VE,%START)=" " %START=%START+1 I $E(%VE,%START)'?1U S %MSG="QPS8" Q
+	I %X'="DISTINCT" S %VEFG="CN",%START=%N+1 S:$E(%VE,%START,%START+2)="ALL" %START=%START+3 I %Y="COUNT" S %MSG="QPV8" Q
+	F %N=%START:1:$L(%VE) S %P=$E(%VE,%N) S %PRN=%PRN+$S(%P="(":1,%P=")":-1,1:0) Q:%PRN=0
+	I %PRN'=0 S %MSG="QPS5" Q 
+	I %FSTRING=""&(%NVE'="") S %FSTRING=$TR(%NVE,$C(0),"")
+	S %ONVE=%NVE_%Y_$C(0)_"("_$C(0),%OCNAME=%CNAME,%OTYPE=%TYPE
+	D ^%DAQPVE($E(%VE,%START,%N-1),%VEFG)
+	I %VERROR=1!(%PRN'=0)!(%MSG'="") S %MSG="QPV14;"_%VE Q
+	S $P(%QF("%F"_%FUNC),";",2)=%NVE,%VETYPE="F"
+	S %NVE=%ONVE_%NVE_$C(0)_")"_$C(0),%VEFG="FN",%START=%N+1,%FUNCFG=1
+	S %CNAME=%OCNAME_%CNAME S:%TYPE="" %TYPE=%OTYPE
+	Q
+NUMBER	;
+	I %NEXT'=""&(%NEXT'["N") S %MSG="QPV17" Q
+	I %VEFG'["N" S %MSG="QPV9" Q
+NUM1	I %P="."&(%Y["E") S %MSG="QPV19" Q
+	I %P="." D READ G NUM1 
+	I $E(%Y,$L(%Y))="E" D READ G NUM1
+	S %NUM=$P(%Y,"E",1) I %NUM'?.1".".N.1".".N S %MSG="QPV10;"_%Y Q
+	S %NUM=$P(%Y,"E",2,255) I +%NUM'?.1"-".N S %MSG="QPV10;"_%Y Q
+	S %VETYPE=$S("SF"[%VETYPE&(%VETYPE'=""):%VETYPE,%VETYPE="":"N",1:"VE") 
+	S %START=%N+1,%VERROR=0,%TYPE=1 Q
+STRING	;
+	I %VEFG'["S" S %MSG="QPV11" Q
+	I %N'=%START S %MSG="QPV12" Q
+	I $E(%VE,$L(%VE))'=%P S %MSG="QPV21;"_%VE Q
+	S %QUT=%P F %N=%N:1 S %P=$E(%VE,%N) Q:%P=""  D:"'"""[%P  Q:%MSG'="" 
+	. I %QUT="""" D:%P=""""  Q
+	. . I $E(%VE,%N+1)'=""""&(%N'=$L(%VE))&(%N'=1) S %MSG="QPV21;"_%VE Q
+	. . S %N=%N+1 Q
+	. I %N=1!(%N=$L(%VE)) S %VE=$E(%VE,1,%N-1)_""""_$E(%VE,%N+1,255) Q
+	. I %P="""" S %VE=$E(%VE,1,%N-1)_""""""_$E(%VE,%N+1,255),%N=%N+1 Q
+	. I %P="'" D  Q
+	. . I $E(%VE,%N+1)="'" S %VE=$E(%VE,1,%N-1)_$E(%VE,%N+1,255),%N=%N+2 Q
+	. . S %MSG="QPV21;"_%VE
+	S %START=$L(%VE) Q:%MSG'=""  
+	S %VETYPE="S",%VERROR=0,%VEFG="",%NVE=%VE
+	Q
+READ	;
+	F %N=%N+1:1 S %P=$E(%VE,%N) Q:%STOP[%P
+	I "()"[%P&(%P'="") S %PRN=%PRN+$S(%P="(":1,%P=")":-1)
+	S %Y=$E(%VE,%START,%N-1) 
+	Q

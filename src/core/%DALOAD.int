@@ -1,0 +1,158 @@
+ROUTINE %DALOAD [Type=INT,LanguageMode=6]
+%DALOAD	;JEB/YJH/DBS,,UTILITY,DASL;4-Mar-92;V6.1 DASL Load Utility
+	;DASL;N;UTILITY
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	I '$D(^DASY("CONVERT")) W !,"^%DALOAD を実行する前に ^%DAINIT を実行して下さい。" Q  ;	;%%Z2-T
+	K ^DATG($J,"U") W !!,"DASL データ ロード ルーチン",! ;	;%%Z1-T
+	I $G(%KJCODE2)="" S %KJCODE2=$$DSMCODE^%DASJUTL() ;	;%%Z3A-save
+	;I %KJCODE2'=$$DSMCODE^%DASJUTL() W !,%KJCODE2,"漢字コードを",$$DSMCODE^%DASJUTL(),"漢字コードに変換してロードします。",!
+	;**TM**; S %QTY=1 D ^%IOS G EXIT:'$D(%IOD)
+	S %QTY=1 D ^%IO G EXIT:'$D(IO)!(IOT'="RMS") S %IOD=IO
+	U %IOD R %X,%Y,%Z U 0 W !!,%X,!,%Y,! ; Display header information
+	S %MSG="前バージョンを現バージョンにロードするとＤＡＳＬデータベース障害を引き起こします。",%QF=0 ;	;%%Z1-T
+	; A - saved file ver. B - current dir version.
+	S %X=$P(%Z,"J") ;	;%ZZ1
+	S A=%X_$C(38),B=$P(^DASY("CONVERT"),"J")_$C(37) ;	;%%Z1-B
+	I %X?.N1A,A']B D  ;	;%%Z1-B;%ZZ1-T
+	. W $C(7),!,"現在のＤＡＳＬのバージョンは "_$S(+^DASY("CONVERT")=50:"V1.0",+^DASY("CONVERT")=52:"V2.0",1:"V3.0")_" です。",!
+	. W "   ロードされるＤＡＳＬのバージョンは "_$S(+%X="50":"V1.0",+%X="52":"V2.0",1:"不明")_" です。",!!,%MSG  ;	;%%Z1-B;%%Z2-T
+	I %X'?1N.E W $C(7),!,"現在のＤＡＳＬのバージョンは "_$S(+^DASY("CONVERT")=50:"V1.0",+^DASY("CONVERT")=52:"V2.0",1:"V3.0")_" です。",!,"   ロードされるＤＡＳＬのバージョンは、前バージョンです。",!!,%MSG ;	;%%Z1-B;%%Z2-T
+	D OK G:%X="N" CLOSE
+	; If save set is old it will not have the save information.
+	G:%X']"53A" ASK U %IOD R %X ;	;%%Z1-B
+	; note, next line should not happen...
+	I %X'?1"**".E!(%X="***") C %IOD O %IOD U %IOD R %X,%Y,%Z G ASK
+	;;**TM**; W !!,"データ定義の整合性をチェック中..." S FFG=0 ;	;%%Z3-T
+	U 0 W !!,"データ定義の整合性をチェック中..." S FFG=0 ;	;%%Z3-T
+CHECK	; Check to make sure we are not writing over anything.
+	K ARRAY S FG=0,TYPE=$E(%X,3,5) d @TYPE
+	U %IOD F  R %X Q:%X?1"**".E  D
+	. ;**TM**;I TYPE="RTN" S:$D(^ (%X)) FG=FG+1,ARRAY(FG)=%X Q
+	. I TYPE="RTN" S:$D(^$routine(%X)) FG=FG+1,ARRAY(FG)=%X Q
+	. I TYPE="GBL" S:$D(@%X) FG=FG+1,ARRAY(FG)=%X Q
+	. I $D(@%GBL@(%X)) S FG=FG+1,ARRAY(FG)=%X
+	. Q
+	I FG'=0 U 0 W !!,TITLE,", 不整合:",! S FFG=1 F N=1:1:FG D  ;	;%%Z3-T
+	. W $J(ARRAY(N),16) W:$X>70 !
+	G:%X'="***" CHECK G:FFG=0 ASK
+	U 0 W !!,"全定義を上書きします," ;	;%%Z3-T
+	D OK G:%X="N" CLOSE
+ASK	U 0 R !!,"ＤＡＳＬをロード後、スクリーンとレポートをコンパイルしますか? <Y> ",%X ;	;%%Z2-T
+	S:%X="" %X="Y" S %X=$$UPCASE^%DAZCALL(%X)
+	I ",Y,N,"'[(","_%X_",") W *7," [Y or N]" G ASK
+	S %COMP=%X="Y" W ! D LOAD U 0
+	I %COMP,($D(^DATG($J,"U","S"))!$D(^DATG($J,"U","R"))) D COMP
+CLOSE	U 0 W ! C %IOD
+	I %QF W !,"テーブル クロス リファレンス ファイル 再構築。" D ALL^%DAQDUTL ;	;%%Z3-T
+EXIT	K A,ARRAY,B,FFG,FG,N,TITLE,TYPE,%DATA,%DTY,%DUM,%COMP,%GBL
+	K %MSG,%OPNPARM,%IOD,%X,%Y,%Z,%ZIOD,%TYPE,%REF,%NAME,%QF
+	Q
+OK	; Read continue question.
+	R !!,"よろしいですか? <N> ",%X S:%X=""!(%X="n") %X="N" ;	;%%Z2-T
+	I ",y,Y,N,"'[(","_$e(%X)_",") W *7," [Y or N]" G OK
+	Q
+	;+%%Z3-T
+D	S TITLE="データネーム",%GBL="^DADD" Q
+TB	S TITLE="テーブル",%GBL="^DATD" Q
+S	S TITLE="スクリーン",%GBL="^DASD" Q
+GBL	S TITLE="グローバル" Q
+RTN	S TITLE="ルーチン" Q
+Q	S TITLE="検索要素",%GBL="^DAQD" Q
+R	S TITLE="レポート",%GBL="^DARD" Q
+T	S TITLE="テンプレート",%GBL="^DADDT" Q
+	;-%%Z3-T
+LOAD	; Read component type:
+	;  Data Names, Screens, Templates, Groups, Reports, Routines,
+	;  Globals, Tables, and Queries
+	U %IOD set:%KJCODE2'="UNICODE" dum=$$SetIO^%NLS(%KJCODE2) ;;**TM**; 漢字コード変換
+	F %DUM=0:0 U %IOD R %TYPE Q:%TYPE=""  D LOADT
+	Q
+LOADT	; Load a single type
+	U 0 W !,%TYPE,!
+	I %TYPE="Tables" S %QF=1
+	S %GBL="^DA"_$S($E(%TYPE)="D":"DD",$E(%TYPE)="S":"SD",%TYPE="Templates":"DDT",%TYPE="Tables":"TD",%TYPE="Reports":"RD",$E(%TYPE)="G":"GR",$E(%TYPE)="Q":"QD",1:"^") ;	;%%Z2-Y
+	;**TM**; USEコマンドで漢字変換するためこの部分は使用しない
+	;I $$DSMCODE^%DASJUTL()'=%KJCODE2 D  Q  ;	;%%Z3A-save
+	;. ;**TM**; F %DUM=0:0 U %IOD R %NAME Q:%NAME=""  U 0 W:$X>70 ! W $J("",16-$ZL(%NAME)),$E(%NAME,1,$ZP(%NAME,16)) D LOADNV ;	;%%Z1-G
+	;. F %DUM=0:0 U %IOD R %NAME Q:%NAME=""  U 0 W:$X>70 ! W $J("",16-$Zwidth(%NAME)),$E(%NAME,1,$ZPosition(%NAME,16)) D LOADNV ;	;%%Z1-G
+	;;**TM**;F %DUM=0:0 U %IOD R %NAME Q:%NAME=""  U 0 W:$X>70 ! W $J("",16-$ZL(%NAME)),$E(%NAME,1,$ZP(%NAME,16)) D LOADN ;	;%%Z1-G
+	F %DUM=0:0 U %IOD R %NAME Q:%NAME=""  U 0 W:$X>70 ! W $J("",16-$Zwidth(%NAME)),$E(%NAME,1,$ZPosition(%NAME,16)) D LOADN ;	;%%Z1-G
+	Q
+LOADN	U %IOD I %TYPE="Routines" X "ZL  ZS "_%NAME Q  ; Load one name
+	; Build screen or report arrays for compilation
+	I %COMP,(%TYPE="Screens"!(%TYPE="Reports")) S ^DATG($J,"U",$E(%TYPE),%NAME)=""
+	K @%GBL@(%NAME)
+	F %DUM=0:0 R %REF Q:%REF=""  R %DATA S @%REF=%DATA ; Name and value
+	Q
+	;**TM**; USEコマンドで漢字変換するためこのルーチンは使用しない
+	;LOADNV	;+%%Z3-save
+	;U %IOD I %TYPE="Routines" D  Q
+	;. N %kjcnv,%kjcode,%i,%l,%ln,%dum S %ln=$J("",512)
+	;. I %KJCODE2="DSM" S %kjcode="S %dum=$ZC("_$S($$DSMCODE^%DASJUTL()="EUC":"%DSM2EUC",1:"%DSM2SDEC")_",%l,.%ln,0)"
+	;. I %KJCODE2="SDEC" S %kjcode="S %dum=$ZC(%SDEC2DSM,%l,.%ln,0)"
+	;. I %KJCODE2="EUC" S %kjcode="S %dum=$ZC(%EUC2DSM,%l,.%ln,0)"
+	;. I %KJCODE2="VMS" S %kjcode="S %ln=$ZC(%KJDSM,%l,"""","""")"
+	;. S %kjcnv="F %i=1:1 S %l=$T(+%i) Q:%l=""""  "_%kjcode_" ZI %ln:+%i ZR +%i"
+	;. X "ZL  X %kjcnv ZS "_%NAME ; Load one name
+	;; Build screen or report arrays for compilation
+	;I %COMP,(%TYPE="Screens"!(%TYPE="Reports")) S ^DATG($J,"U",$E(%TYPE),%NAME)=""
+	;K @%GBL@(%NAME)
+	;F %DUM=0:0 R %REF Q:%REF=""  R %DATA D
+	;. N %dum,%ref,%data S %ref=$J("",512),%data=%ref
+	;. I %KJCODE2="DSM",$$DSMCODE^%DASJUTL()="EUC" S %dum=$ZC(%DSM2EUC,%REF,.%ref,0),%dum=$ZC(%DSM2EUC,%DATA,.%data,0)
+	;. I %KJCODE2="DSM" S %dum=$ZC(%DSM2SDEC,%REF,.%ref,0),%dum=$ZC(%DSM2SDEC,%DATA,.%data,0)
+	;. I %KJCODE2="SDEC" S %dum=$ZC(%SDEC2DSM,%REF,.%ref,0),%dum=$ZC(%SDEC2DSM,%DATA,.%data,0)
+	;. I %KJCODE2="EUC" S %dum=$ZC(%EUC2DSM,%REF,.%ref,0),%dum=$ZC(%EUC2DSM,%DATA,.%data,0)
+	;. I %KJCODE2="VMS" S %ref=$ZC(%KJDSM,%REF,"",""),%data=$ZC(%KJDSM,%DATA,"","")
+	;. S @%ref=%data ; Name and value
+	;Q
+	;-%%Z3-save
+COMP	; Compile screens and reports
+	U 0 S (SDNM,RPNM)=""
+	I $D(^DATG($J,"U","S")) W !!,"スクリーン コンパイル中",!! F  S SDNM=$O(^DATG($J,"U","S",SDNM)) Q:SDNM=""  D COMP^%DASDCMP ;%%Z2-T
+	I $D(^DATG($J,"U","R")) W !!,"レポート コンパイル中",!! F  S RPNM=$O(^DATG($J,"U","R",RPNM)) Q:RPNM=""  D COMP^%DARPCMP ;%%Z1-T
+	K ^DATG($J,"U"),RPNM,SDNM,%Z
+	Q
+%CNV	;%%Z3-save;%%Z3A-save
+	;S %KJFRVAX=1 G %DALOAD
+	W $C(7),!,"このエントリ・ポイントはV3.0のものです。現バージョンでは"
+	W !,"ロードするファイルの漢字コードに対応するDSM,SDEC,EUC,VMS"
+	W !,"の各エントリ・ポイントを使用してください。",!
+	Q
+DSM	;
+	;;**TM**; S %KJCODE2="DSM"
+	S %KJCODE2="DSMKANJI" ; 漢字コード名にあわせる
+	;I $$DSMCODE^%DASJUTL()="VMS" G NOCNV
+	G %DALOAD
+	Q
+SDEC	;
+	;I $ZV["ULTRIX" G EUC
+	S %KJCODE2="SDEC"
+	;I +$P($ZV,"VAX DSM V",2)<6.2 G NOCNV
+	;I $$DSMCODE^%DASJUTL()="VMS" G NOCNV
+	G %DALOAD
+	Q
+EUC	;
+	;I $ZV'["ULTRIX" G SDEC
+	S %KJCODE2="EUC"
+	G %DALOAD
+	Q
+VMS	;
+	;I $ZV["ULTRIX" G EUC
+	;I $$DSMCODE^%DASJUTL()="SDEC" G SDEC
+	;;**TM**;S %KJCODE2="VMS" G %DALOAD
+	S %KJCODE2="EUC"
+	G %DALOAD
+	Q
+UTF8	;
+	;I $ZV["ULTRIX" G EUC
+	S %KJCODE2="UTF8"
+	G %DALOAD
+	Q
+NOCNV	;
+	W !,$C(7),"現在のDSMの内部コード'",$$DSMCODE^%DASJUTL(),"'には、ファイル・コード'",$G(%KJCODE2),"'からは変換できません。",!
+	K %KJCODE2
+	Q

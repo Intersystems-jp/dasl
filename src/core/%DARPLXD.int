@@ -1,0 +1,161 @@
+ROUTINE %DARPLXD [Type=INT,LanguageMode=6]
+%DARPLXD	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+FUNC	;
+	I $P($T(FUNCL),";",3)'[(","_X_",") D MUMPSF Q
+	I ",COUNT,AVE,MED,MIN,MAX,TOTAL,STD,"[X,$E(GRP)'="T" S %MSG="'$"_X_"'関数はトレイラレベル以外では使用できません。" Q  ;	;%%Z1-T
+	S II=I I $T(@("F"_X))]"" D @("F"_X) D  I %MSG]"" Q
+	. 
+	. Q:ITM'["REPEAT"  S I=$L(ITM)+1,ITM="\"_$E(ITM,2,255)
+	. K SUB,REF,COND,Z
+	Q:$E(ITM)="\"
+	S I=II,I=$F(ITM,")",I) I Y'=1!(":"'[$E(ITM,I)) S X="function" G FUNERR
+	S ITM=$E(ITM,0,Y-1)_"\"_$E(ITM,Y+1,99),X=$E(ITM,Y,I-1)
+	Q
+	;  	Z   - praenthis counter
+	;	Z1  - location of first parenthesis
+	;	Z2  - location of end of argument
+	;	Z3  - location of ":" in argument 
+FREPEAT	S (QU,Z)=0,(COND,Z1,Z2,Z3)="" 
+	F J=1:1 S P=$E(ITM,J) Q:P=""  S:P="""" QU=QU+1 D:QU#2=0  Q:%MSG'=""
+	. I P=":" S:(Z2="") Z3=J Q
+	. Q:"()"'[P  S Z=Z+$S(P="(":1,1:-1) 
+	. I Z<0 S %MSG="カッコの順序が正しくありません。" Q  ;	;%%Z1-T
+	. S:Z1="" Z1=J s:(Z=0&(Z2="")) Z2=J
+	. Q
+	I Z S %MSG="カッコのバランスがとれていません。" Q  ;     	;%%Z1-T
+	I QU#2 S %MSG="引用符のバランスがとれていません。" Q  ;	;%%Z1-T
+	S:Z3="" Z3=Z2
+	S DNG=$E(ITM,Z1+1,Z3-1),VARG=$E(ITM,Z3+1,Z2-1),COND=$E(ITM,Z2+2,255)
+	I COND]"" S I=0,ITMX=ITM,ITM=COND D EXPR^%DARPLXB S ITM=ITMX I %MSG]"" Q
+	S X=DNG D REPARG Q:%MSG'=""
+	I VARG'="" I VARG'?1N.N S X=VARG D  
+	. I (X?1U.6UN!(X?1U.6UN1"("1N.N1")")!(X?1U.6UN1"("1""""1NAP.NAP1""""1")")),$D(^DADD(X)) D LOAD^%DARPLXC,DN^%DARPLXC:COMPILE Q
+	. I $D(%VL(X)) Q
+	. S %MSG="データネームまたはユーザ定義変数'"_X_"'が分かりません。" Q
+	S ITM="\"_$E(ITM,2,99) S:COND]"" ITM=$E(ITM,1,Z2)_$C(123,1)_COND
+	K COND,QU,X,Z,Z1,Z2,Z3,VARG,DNG Q
+REPARG	;
+	I (X?1U.6UN!(X?1U.6UN1"("1N.N1")")!(X?1U.6UN1"("1""""1NAP.NAP1""""1")")),$D(^DADD(X)) D LOAD^%DARPLXC,DN^%DARPLXC:COMPILE Q
+	I "^%"[$E(X)
+	E  I X?1U.6UN1",".UNP!(X?1U.6UN1"("1N.N1")"1",".UNP)!(X?1U.6UN1"("1""""1NAP.NAP1""""1")"1",".UNP)
+	E  I $D(%VL($P(X,"(")))
+	E  S %MSG="データネームまたはユーザ定義変数'"_$P(X,"(")_"'が分かりません。" Q  ;   	;%%Z1-T
+	I X]"","^%"[$E(X),X'["("!($E(X,$L(X))'=")") S %MSG=X_" の使用が不適当です。" Q  ;	;%%Z1-T
+	S SUB=""
+	I X["(" S SUB=$E(X,$F(X,"("),$L(X)-1) I SUB="" S %MSG="ローカル変数にサブスクリプトがありません。" Q  ;	;%%Z1-T
+	I SUB="" S SUB=X 
+SUBLOOP	F J=1:1 S REF=$P(SUB,",",J) Q:REF=""  D  Q:%MSG]""
+	. I $E(REF)="""",REF=$P(SUB,",",$L(SUB,",")) S %MSG="文字列リテラルが、$REPEAT の最終サブスクリプトです。" Q  ;	;%%Z1-T
+	. I $E(REF)="""" S REF=$E(SUB,1,$F(SUB,"""",2)-1) S:REF="""""" %MSG="サブスクリプト(空文字)が不適当です。" Q  ;	;%%Z1-T
+	. I REF?1"%"1U.6UN!(REF?1"%"1U.6UN1"("1N.N1")")!(REF?1"%"1U.6UN1"("1""""1NAP.NAP1""""1")") Q 
+	. I $D(%VL(REF)),(REF?1U.6UN!(REF?1U.6UN1"("1N.N1")")!(REF?1U.6UN1"("1""""1NAP.NAP1""""1")")) Q 
+	. I (REF?1U.6UN!(REF?1U.6UN1"("1N.N1")")!(REF?1U.6UN1"("1""""1NAP.NAP1""""1")")),$D(^DADD(REF)) S X=REF D LOAD^%DARPLXC,DN^%DARPLXC:COMPILE Q
+	. 
+	. I $E(REF)?1"$".U S X=$E(REF,2,99) D MUMPSV Q
+	. S %MSG=$S(REF]"":"データネームまたはユーザ定義変数'"_REF_"'が分かりません。",1:"サブスクリプト '"_REF_"' が不適当です。") ;	;%%Z1-T
+	K ITMX,Z
+	Q
+MUMPSV	;
+	I $P($T(MUMPV),";",3)[(","_X_",") Q
+	S SV="" F LOOP=1:1 Q:$E(X,LOOP)'?1A  S SV=SV_$E(X,LOOP)
+	I SV?1"Z".A G MVX 
+	I $L(SV)'=1 S %MSG="ＭＵＭＰＳ特殊変数'$"_SV_"'が不適当です。" G MVX ;	;%%Z1-T
+	S VARS=$P($T(MUMPV),";",3),FOUND=0
+	F LOOP=2:1:$L(VARS,",")-1 I $E($P(VARS,",",LOOP))=SV S FOUND=1 Q
+	I 'FOUND S %MSG="ＭＵＭＰＳ特殊変数'$"_SV_"'が分かりません。" ;	;%%Z1-T
+MVX	K SV,FOUND,VARS,LOOP
+	Q
+MUMPSF	;
+	I $P($T(MUMPF),";",3)[(","_X_",") Q
+	S MF="" F LOOP=1:1 Q:$E(X,LOOP)'?1A  S MF=MF_$E(X,LOOP)
+	I MF?1"Z".ANP G MFX 
+	I $L(MF)'=1 S %MSG="ＭＵＭＰＳ特殊関数'$"_MF_"'が不適当です。" G MFX ;	;%%Z1-T
+	S FUNCS=$P($T(MUMPF),";",3),FOUND=0
+	F LOOP=2:1:$L(FUNCS,",")-1 I $E($P(FUNCS,",",LOOP))=MF S FOUND=1 Q
+	I 'FOUND S %MSG="ＭＵＭＰＳ特殊関数'$"_MF_"'が分かりません。" ;	;%%Z1-T
+MFX	K MF,FOUND,FUNCS,LOOP
+	Q
+FLINE	;
+	S J=$E(ITM,I+1,99)
+	Q:J?1.N1")".E
+	Q:J?1""""1P1""")".E
+	Q:J?1""""1P1""","1.N1")".E
+	Q:J?1""""1P1""","1.N1","1.N1")".E
+	G FUNERR
+FREQUIRE	Q:$E(ITM,I+1,99)?1.N1")".E  G FUNERR
+FCOUNT	S:COMPILE FNC(SP,"\COUNT")=""
+	Q
+FMAX	D FARG S:COMPILE FNC(SP,"\MAX("_X_")")=""
+	Q
+FMIN	D FARG S:COMPILE FNC(SP,"\MIN("_X_")")=""
+	Q
+FMED	D FARG S:COMPILE FNC(SP,"\COUNT")="",FNC(SP,"\MED("_X_")")=""
+	Q
+FTOTAL	D FARG S:COMPILE FNC(SP,"\TOTAL("_X_")")=""
+	Q
+FAVE	D FARG S:COMPILE FNC(SP,"\COUNT")="",FNC(SP,"\TOTAL("_X_")")=""
+	Q
+FSTD	D FARG S:COMPILE FNC(SP,"\COUNT")="",FNC(SP,"\STD("_X_")")="",FNC(SP,"\TOTAL("_X_")")=""
+	Q
+FARG	I $D(VS) S OLDVS=VS,VS=NS+1
+	D DNARG I $D(VS) S VS=OLDVS
+	K OLDVS
+	Q
+DNARG	S I=I+1 D DNAME^%DARPLXC I %MSG]"" Q
+	I $E(ITM,I)'=")",$E(ITM,I+1)="" S %MSG="右カッコがありません。" Q  ;	;%%Z1-T
+	D DN^%DARPLXC:COMPILE
+	Q
+FUNERR	S %MSG="'$"_X_"'シンタックスが不適当です。" ;	;%%Z1-T
+	Q
+VFMT	;
+	S (FMT,JUS)="" S I=1 G KILL:%RES=""
+VFLP	F I=I:1 Q:$E(%RES,I)'=" "
+	S J=I F I=I:1 Q:$E(%RES,I)'?.U."$"."+"."\"!($E(%RES,I)="")  ;	;%%Z1-J
+	S X=$E(%RES,J,I-1) S:X="+" X="PLUS" S:X="$" X="DOLLAR" S:X="\" X="YEN" ;	;%%Z1-J
+	S Y=$S(X'?1U.U:"",1:$P($T(@X),";",3))
+	I Y="" S %MSG="フォーマット項目"""_X_"""が分かりません。" G KILL ;	;%%Z1-T
+	S J=$P(Y,",",1),X=$P(Y,",",2),Y=$P(Y,",",3)
+	D:Y]"" @Y G KILL:%MSG]"" S @X=@X_J
+	F I=I:1 Q:$E(%RES,I)'=" "
+	I $E(%RES,I)="," S I=I+1 G VFLP
+	I $E(%RES,I)'="" S %MSG="フォーマット文字列の後部の文字"""_$E(%RES,I,99)_"""が分かりません。" G KILL ;	;%%Z1-T
+	I $L(JUS)>1 S %MSG="文字位置調整パラメータは２つ以上は認められません。" ;	;%%Z1-T
+	I FMT["D",FMT["P" S %MSG="""CR"" と ""P"" は同時には使用できません。" ;	;%%Z1-T
+KILL	K I,J,K,X,Y,SFT
+	Q:%MSG]""
+	I $D(SLA) D QFMT
+	Q
+QFMT	;
+	I '$D(%SP) Q 
+	I '$D(SLA(%SP,"RPITEM")) Q 
+	I SLA(%SP,"RPITEM")'?1U.6UN1"/".E!(SLA(%SP,"RPITEM")'?1U.6UN1",".UNP)!(SLA(%SP,"RPITEM")'?1U.6UN1"("1U.6UN1")"1"/") Q 
+	I FMT["$"!(FMT["\")!(FMT["+")!(FMT["CR")!(FMT["N")!(FMT["P") S %MSG="'/"_$P(SLA(%SP,"RPITEM"),"/",2,99)_"'修飾子に対するフォーマットが不適当です。" ;	;%%Z1-J;%%Z1-T
+	Q
+	;	
+NUMARG	;
+	F I=I:1 Q:$E(%RES,I)'=" "
+	S Y=I F I=I:1 Q:$E(%RES,I)'?1N
+	S J=J_$E(%RES,Y,I-1)
+	Q
+NARG	D NUMARG I J="N" S %MSG="""N"" には数値パラメータが必要です。" Q  ;	;%%Z1-T
+	Q
+TARG	D NUMARG
+	Q
+L	;;L,JUS
+R	;;R,JUS
+C	;;C,JUS
+N	;;N,FMT,NARG
+W	;;W,FMT
+B	;;B,FMT
+PLUS	;;+,FMT
+DOLLAR	;;$,FMT
+YEN	;;\,FMT;	;%%Z1-J
+CR	;;D,FMT
+P	;;P,FMT
+T	;;T,FMT,TARG
+SPECL	;;,LINE,NOLINE,PAGE,DATE,TIME,PAGEN,PAGEC,SETPAGE,COUNT,SECTION,ENDSEC,ENDREP,QUITREP,
+FUNCL	;;,AVE,COUNT,LINE,MAX,MIN,STD,TOTAL,REQUIRE,REPEAT,MED,
+MUMPV	;;,HOROLOG,IO,JOB,STORAGE,TEST,X,Y,Z,
+MUMPF	;;,ASCII,CHAR,DATA,EXTRACT,FIND,FNUMBER,GET,JUSTIFY,LENGTH,NEXT,ORDER,PIECE,QUERY,RANDOM,SELECT,TEXT,TRANSLATE,VIEW,

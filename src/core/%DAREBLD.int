@@ -1,0 +1,22 @@
+ROUTINE %DAREBLD [Type=INT,LanguageMode=6]
+%DAREBLD	; [DASL] INSTALL ;V3.0 ;DASL INSTALLATION ROUTINE REBUILD ROUTINE
+	Q
+	;
+	; Created	at  15-Feb-1989	by K.Yamamoto
+	; Modified      at  13-Aug-1992 by tt for V3.0
+	;
+%COM	; Entry point for DASL Installation command procedure (DSM$DASL_INST.COM)
+	U 0:NOCENA S $ZT="TRAP^"_$T(+0)
+	X "S %SS=$ZC(%ZSECUR)"
+	D %INST^%DASRNM
+	S N="" F  S N=$O(%daslrtn(N)) Q:N=""  I %daslrtn(N) S %zSECrtn=N,%ZSN=$S($ZV["VAX":1004,1:1001),%NP="",STAT=$$%REBUILD^%ZSECUR I STAT'=1 ZT
+	S $ZE=""
+	D CLEAN
+	Q
+TRAP	;
+	I $ZE["ZTRAP" U 0 W !!,?5,*7,"Unexpected Secure Error ( code : "_STAT_" )",!!
+	I $ZE'="" U 0 W !!,?5,*7,"Unexpected Error occured $ZE = "_$ZE,!!
+	;
+CLEAN	K %SS,%zSECrtn,%daslrtn,%ZSN,%NP,STAT,N
+	U 0:CENA
+	Q

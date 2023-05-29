@@ -1,0 +1,425 @@
+ROUTINE %DAQPAR [Type=INT,LanguageMode=6]
+%DAQPAR	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;	%QE  - Value expression, related to output
+	;	%QC  - List of column names
+	;	%QA  - List of column to check data types
+	;	%QF  - List of Functions
+	;	%QT  - List of table/correlation names
+	;	%QW  - Predicates from the Where statement
+	;	%QO  - OR array from Where statement
+	;	%QG  - Column name for Group by
+	;	%QH  - Predicates from the Having statement
+	;	%QR  - OR array form Having statement
+	;	%QI  - IN value list from the Where and Having
+	;	%G   - Column Names for select for Group by and Having
+	;		used in post parser
+	;	%ALLFG  - Flag a "*" entered in Select
+	;	%FUNC   - Function counter, set to 0 if no functions
+	I '$D(QUNM) S %MSG="QP1" Q
+	I '$D(^DAQD(QUNM)) S %MSG="QP2" Q
+	K %QUERY
+	S %QUERY("SELECT")=^DAQD(QUNM,"S","1S",1)_" "_^(2)_" "_^(3)
+	S %QUERY("FROM")=^DAQD(QUNM,"S","2F",1)_" "_^(2)
+	S %QUERY("WHERE")=^DAQD(QUNM,"S","3W",1)_" "_^(2)_" "_$G(^(3))
+	S %QUERY("GROUP")=^DAQD(QUNM,"S","4G",1)_" "_^(2)
+	S %QUERY("HAVING")=^DAQD(QUNM,"S","5H",1)_" "_^(2)
+RUN	;
+	S %RUN=1 W:DB=1 !!,"PARSER**DAQPAR**" S:'$D(%FPV) %FPV="@" 
+	S:'$D(QUG1) QUG1=" "
+	S %LINE=%QUERY("SELECT") D SELECT
+	W:DB=1&(%MSG'="") !!,"ERROR PARSING SELECT STATEMENT"
+	Q:%MSG'="" 
+	S %LINE=%QUERY("FROM") D FROM
+	W:DB=1&(%MSG'="") !!,"ERROR PARSING FROM STATEMENT"
+	Q:%MSG'=""  
+	S %LINE=%QUERY("WHERE") D WHERE
+	W:DB=1&(%MSG'="") !!,"ERROR PARSING WHERE STATEMENT"
+	Q:%MSG'=""  
+	S %LINE=%QUERY("GROUP") D GROUP
+	W:DB=1&(%MSG'="") !!,"ERROR PARSING GROUP BY STATEMENT"
+	Q:%MSG'=""  
+	S %LINE=%QUERY("HAVING") D:" "'[%LINE HAVING
+	W:DB=1&(%MSG'="") !!,"ERROR PARSING HAVING STATEMENT"
+	Q:%MSG'=""  
+	g ^%DAQPAR1
+	Q
+EXIT	;
+	S %LINE=QUS1_" "_QUS2_" "_QUS3 D SELECT1
+	G:%MSG'="" EXIT1
+	S %LINE=QUF1_" "_QUF2 D FROM
+	G:%MSG'="" EXIT1
+	S %LINE=QUW1_" "_QUW2_" "_QUW3 D:%LINE'="  " WHERE1
+	G:%MSG'="" EXIT1
+	S %LINE=QUG1_" "_QUG2 D GROUP1
+	G:%MSG'="" EXIT1
+	S %LINE=QUH1_" "_QUH2 D:%LINE'=" " HAVING1
+EXIT1	D KILLALL
+	Q
+SELECT	;
+	N %COUNT,%P,%PRN,%QUT,%SEC,%SFUNC,%TB,%TTB,%VERROR,%X,%Y
+SELECT1	;
+	K %QC,%QE,%QF,%QA,%QD
+	S (%MSG,%ALLFG,%QGROUP,%DIST)="",%FUNC=0,(%START,%COUNT,%QACNT,%GCNT)=1
+	S:'$D(DB) DB="" S %LINE=$$BASEDIT^%DAZCALL(%LINE,440)
+	S %Y=$P(%LINE," ",1)
+	I %Y="*" S:%Y'=%LINE %MSG="QPS2" S:%MSG="" %QE(1)="*",%ALLFG=1 G END
+	I %Y="" S %MSG="QPS1" G END
+	I %Y="DISTINCT" S %START=10,%QE(0)=%Y,%DIST=1
+	I %Y="ALL" S %START=5
+	I $E(%LINE,%START,255)="" S %MSG="QPS9" G END
+SEL1	;
+	F %=%START:1 S %P=$E(%LINE,%) Q:%P=""!(%P=",")  D:"'"""[%P QUOTE
+	S %VE=$E(%LINE,%START,%-1) S:$E(%VE)=" " %VE=$E(%VE,2,255)
+	I %VE="" S:%COUNT=1 %MSG="QPS3" G SELCK
+	S %QE(%COUNT,"HEAD")=%VE,%VEFG="ANSCF",%SFUNC=%FUNC,%START=%+1 
+	D ^%DAQPVE(%VE,%VEFG)   
+	g:%MSG'="" END I %VERROR'=0 S %MSG="QPS4;"_%VE G END
+	I +%PRN'=0&(%MSG="") S %MSG="QPS5" G END
+	S %QE(%COUNT)=%NVE,%QE(%COUNT,"FLAG")=%VETYPE_";"_%TYPE
+	S:"NCS"'[%VETYPE %QA(%QACNT)=%TYPE_%CNAME,%QA(%QACNT,"VE")="S"_%COUNT,%QACNT=%QACNT+1
+	I %VETYPE="F" S %QE(%COUNT,"FUNC")=%FUN,%F="" D
+	.F %N=%SFUNC+1:1:%FUNC S $P(%QF("%F"_%N),";",4)="QE"_%COUNT,%F=%F_"%F"_%N_","
+	.S $P(%QE(%COUNT,"FLAG"),";",3)=$E(%F,1,$L(%F)-1),FLAG("SFUNC")=1 Q
+	S %COUNT=%COUNT+1
+	G SEL1
+SELCK	;
+	G:%MSG'="" END S %="",%SEC=""
+	F  S %=$O(%QC(%)) Q:%=""  D S1 I %SEC=0 S %MSG="QPV4;"_%Y Q
+	I %MSG'=""!(%FUNC=0) G END
+	S %=0 F  S %=$O(%QE(%)) Q:%=""  D  Q:%MSG'=""
+	.I "FC"'[$P(%QE(%,"FLAG"),";",1) S %MSG="QPS7" Q
+	.S:$P(%QE(%,"FLAG"),";",1)'="F" %QGROUP=$S(%QGROUP="":%QE(%),%QGROUP'="":%QGROUP_","_%QE(%)) Q
+	G END
+S1	S %TB=$S(%[".":$P(%,".",1),1:""),%Y=$S(%[".":$P(%,".",2),1:%),%SEC=0 
+	I %TB'="",$D(^DATD(%TB)) S %TTB=%TB G SEC
+	S %TTB="" 
+S2	S %TTB=$O(^DATDX("CT",%Y,%TTB)) Q:%TTB=""  D SEC G:%SEC=0 S2
+	Q
+SEC	;
+	S %X=$P(^DATD(%TTB,"REF"),";",4)
+	I %FPV_%X["@" S %SEC=1 Q
+	F %N=1:1:$L(%FPV) I %X[$E(%FPV,%N) S %SEC=1 Q
+	Q
+FROM	;
+	N %COUNT,%SEC,%T,%TB,%TC
+	S %MSG="QPF1",%COUNT=1,%LINE=$$BASEDIT^%DAZCALL(%LINE,184),QUPRV="" K %QT
+F1	;
+	S %T=$$BASEDIT^%DAZCALL($P(%LINE,",",%COUNT),152)
+	G F2:%T="" 
+	S (%TB,%TE)=$P(%T," ",1),%TC=$P(%T," ",2),%MSG=""
+	S:%TC'="" %TE=%TC
+	I '$D(^DATD(%TB)) S %MSG="QPF3;"_%TB G END
+	I $D(%QT(%TE)) S %MSG="QPF5;"_%TC G END
+	S %SEC=0,%X=$P(^DATD(%TB,"REF"),";",4),$P(QUPRV,";",%COUNT)=%X
+	I %FPV_%X["@" S %SEC=1
+	I %SEC'=1 F %I=1:1:$L(%FPV) I %X[$E(%FPV,%I) S %SEC=1 Q
+	I %SEC'=1 S %MSG="QPF3;"_%TB G END
+	S %QT(%TE)=%TB,%COUNT=%COUNT+1 
+	G:%TC="" F1
+	I %TC'?1A.A.1"_".A.1"_".A S %MSG="QPF4;"_%TC G END
+	G F1
+F2	;
+	S %T=$P(%LINE,",",%COUNT+1,255) S:%T'="" %MSG="QPF2"
+	D COLSEC G:%MSG'="" END
+	Q:(QUG1'=""!(%FUNC=0))  S %COUNT=1
+	I $L(%QGROUP)<66 S QUG1=%QGROUP Q
+F3	S %COUNT=$F(%QGROUP,",",%COUNT) I %COUNT<65,%COUNT'=0 S %T=%COUNT G F3
+	S QUG1=$E(%QGROUP,1,%T-1),QUG2=$E(%QGROUP,%T,255) Q
+WHERE	;
+	;	%PREDCNT  - Counter of preicates
+	;	%ORFLAG   - Flag 1 if where includes an OR
+	;	%PRNW     - Count parentheses in Where
+	;	%WHERE    - Parsed where statement
+	;	%WCT      - Read position
+	;	%NOT      - Flag if predicate contains a not
+	;	%TYPE     - Type of predicate found (subroutine)
+	;	%KW       - counter of parenthese in part of the predicate
+	;	%WNAME    - Column names in a predicate
+WHERE1	;
+	K %QW,%QO,%QI S (%WHHV,%ORFLAG,%PRNW)=0,(%PREDCNT,%WCT)=1
+	S (%MSG,%WHERE,%WNAME)="",%LINE=$$BASEDIT^%DAZCALL(%LINE,440)
+W1	S (%NOT,%KW)=0,(%WPRED,%TYPE,%WORD,%NOTFG,%START,%END)=""
+	D WREAD G:%MSG]"" END
+	G:%WPRED="" W2
+	I %TYPE="" S %MSG="QPW1;"_%WPRED G END
+	S %X=$E(%WPRED,1,%START-1),%P=%KW D STRIP:%P'=0 S %P1=%X
+	S %PRE=$$BASEDIT^%DAZCALL($E(%WPRED,%START,%END),440)
+	s %X=$E(%WPRED,%END+1,255),%P=%PRN D STRIP:%P'=0 S %P2=%X
+	D @%TYPE G:%MSG'="" END 
+	S %QW(%PREDCNT)=%WPRED
+	S:%WNAME'="" %QA(%QACNT)=%WNAME,%QA(%QACNT,"VE")="W"_%PREDCNT,%QACNT=%QACNT+1
+	S %LINE=$E(%LINE,%WCT,255),%PREDCNT=%PREDCNT+1,%WCT=1 G:%LINE="" W2
+	G W1
+W2	;
+	I %PRNW'=0 S %MSG="QPS5" G END
+	D COLSEC s %QO(0)=%WHERE D:%ORFLAG=1 OR
+	G END
+GROUP	;
+	N:'DB (%LINE,%MSG,%FPV,%FUNC,%QGROUP,%QGB,%QC,%QE,%QF,%QT,%QW,%QO,%QG)
+GROUP1	K %QG S %QGB=""
+	S:%LINE=" " %LINE="" 
+	I %LINE=""&(%FUNC'=0)&(%QGROUP'="") S %MSG="QPG5" G END
+	Q:%LINE=""
+	F %COUNT=1:1 S %VE=$P(%LINE,",",%COUNT),%VEFG="C" Q:%VE=""  D G1 Q:%MSG'=""
+	D COLSEC G:%MSG'="" END
+	G:%FUNC=0 END
+	K %T 
+	F %=1:1 Q:'$D(%QG(%))  S %X=%QG(%),%T(%QC(%X))=%X 
+	F %=1:1 S %X=$P(%QGROUP,",",%) Q:%X=""  D    
+	.S %X=%QC(%X)   
+	.I '$D(%T(%X)) S %MSG="QPG7;"_%X Q
+	.K %T(%X) Q
+	G END
+G1	D ^%DAQPVE(%VE,%VEFG) Q:%MSG'=""  
+	I %VETYPE'="C" S %MSG="QPG1" Q
+	S %QG(%COUNT)=%NVE,%QGB=%QGB_%NVE_";"
+	Q
+HAVING	;
+	N:'DB (%LINE,%MSG,%FPV,%FUNC,FLAG,%QACNT,%QGB,%QA,%QC,%QE,%QF,%QT,%QW,%QO,%QG,%QH,%QR)
+HAVING1	;
+	K %QH,%QR S (%ORFLAG,%PRNW)=0,(%PREDCNT,%WCT)=1,%OFUNC=%FUNC
+	S (%WHERE,%MSG,%WNAME)="",%LINE=$$BASEDIT^%DAZCALL(%LINE,440)
+H1	S (%NOT,%KW)=0,(%WPRED,%TYPE,%WORD,%NOTFG,%START,%END)="",%WHHV=1
+	D WREAD
+	G:%WPRED="" H2
+	I %TYPE="" S %MSG="QPW1;"_%WPRED G HEND
+	S %X=$E(%WPRED,1,%START-1),%P=%KW D STRIP:%P'=0 S %P1=%X
+	S %PRE=$$BASEDIT^%DAZCALL($E(%WPRED,%START,%END),440) 
+	s %X=$E(%WPRED,%END+1,255),%P=%PRN D STRIP:%P'=0 S %P2=%X
+	S %SFUNC=%FUNC,%QH(%PREDCNT)=%TYPE
+	D @%TYPE G:%MSG'="" HEND 
+	S %QH(%PREDCNT)=%WPRED
+	S:%WNAME'="" %QA(%QACNT)=%WNAME,%QA(%QACNT,"VE")="H"_%PREDCNT,%QACNT=%QACNT+1
+	S %PREDCNT=%PREDCNT+1,%LINE=$E(%LINE,%WCT,255),%WCT=1 G:%LINE="" H2
+	G H1
+H2	;
+	I %PRNW'=0 S %MSG="QPS5" G END
+	D COLSEC s %QR(0)=%WHERE
+HEND	;
+	G END
+OP	;
+	N %OP S %OP=$$BASEDIT^%DAZCALL(%PRE,2) 
+	I '$D(^%DASY("OP",%OP)) S %MSG="QPW2;"_%OP Q
+	S %VEFG="CNS",%VE=%P1 S:%WHHV'=0 %VEFG="SNCF",%SFUNC=%FUNC
+	D ^%DAQPVE(%VE,%VEFG)
+	Q:%MSG'=""!(%PRN'=0)  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	S %SAVE=%NVE,%WNAME=%CNAME 
+	S:%TYPE=1&(%WNAME'="") $P(%WNAME,";",1)=1 D:%WHHV'=0 HAVE
+	S %VEFG="CNS",%VE=%P2 S:%WHHV'=0 %VEFG="SNCF",%SFUNC=%FUNC
+	D ^%DAQPVE(%VE,%VEFG)
+	Q:%MSG'=""!(%PRN'=0)  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	S %OP=^%DASY("OP",%OP)
+	S %WPRED=$S(%OP="<":%NVE_$C(0)_">"_$C(0)_%SAVE,%OP="'<":%NVE_$C(0)_"'>"_$C(0)_%SAVE,1:%SAVE_$C(0)_%OP_$C(0)_%NVE)
+	S:%CNAME'="" %WNAME=%WNAME_$P(%CNAME,";",2,99) 
+	S:%TYPE=1&(%WNAME'="") $P(%WNAME,";",1)=1 D:%WHHV'=0 HAVE
+	S:"'>'<'"[%OP&(%WNAME'="")&(%MSG="") %QA(%QACNT,"OP")=$S(%OP="<":">",%OP="'<":"'>",1:%OP)
+	Q
+BETWEEN	;
+	S %SAVE=%WPRED D WREAD S %X=%WPRED,%P=%PRN D STRIP:%P'=0 S %P3=%X
+	S %VE=%P1,%VEFG="CNS" S:%WHHV'=0 %VEFG="SNCF",%SFUNC=%FUNC
+	D ^%DAQPVE(%VE,%VEFG)
+	Q:%MSG'=""  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	I %WHHV'=0 D HAVE S %PREDCNT=%PREDCNT+1,%WHHV=%WHHV-1 D HAVE S %PREDCNT=%PREDCNT-1
+	S %P1=%NVE,%WNAME=%CNAME 
+	S:%TYPE=1&(%WNAME'="") $P(%WNAME,";",1)=1
+	S %VE=%P2,%VEFG="SCN" S:%WHHV'=0 %VEFG="SNCF",%SFUNC=%FUNC
+	D ^%DAQPVE(%VE,%VEFG)
+	Q:%MSG'=""  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	I %WHHV'=0 D HAVE
+	S %P2=%NVE S:%CNAME'="" %WNAME=%WNAME_$P(%CNAME,";",2,99) 
+	S:%TYPE=1&(%WNAME'="") $P(%WNAME,";",1)=1
+	S %VE=%P3,%VEFG="CNS" S:%WHHV'=0 %VEFG="SNCF",%SFUNC=%FUNC
+	D ^%DAQPVE(%VE,%VEFG) 
+	Q:%MSG'=""  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	I %WHHV'=0 S %WHHV=%WHHV-1,%PREDCNT=%PREDCNT+1 D HAVE S %PREDCNT=%PREDCNT-1
+	S %WHERE=%WHERE_%PREDCNT_"&"_(%PREDCNT+1)_$S(%WORD="AND":"&",%WORD="OR":"!",1:"")
+	I %WHHV=0  S %QW(%PREDCNT)=%P2_$C(0)_$S(%NOT=1:">",1:"'>")_$C(0)_%P1,%PREDCNT=%PREDCNT+1
+	I %WHHV'=0  S %QH(%PREDCNT)=%P2_$C(0)_$S(%NOT=1:">",1:"'>")_$C(0)_%P1,%PREDCNT=%PREDCNT+1
+	S %WPRED=%P1_$C(0)_$S(%NOT=1:">",1:"'>")_$C(0)_%NVE
+	S:%CNAME'="" %WNAME=%WNAME_$P(%CNAME,";",2,99) 
+	S:%TYPE=1&(%WNAME'="") $P(%WNAME,";",1)=1
+	S:%WNAME'="" %QA(%QACNT)=%WNAME,%QA(%QACNT,"VE")="W"_(%PREDCNT-1),%QA(%QACNT,"OP")=$S(%NOT=1:">",1:"'>"),%QACNT=%QACNT+1,%QA(%QACNT,"OP")=$S(%NOT=1:">",1:"'>")
+	Q
+IN	;
+	S %VE=%P1,%VEFG="CNS" S:%WHHV'=0 %VEFG="SNCF",%SFUNC=%FUNC
+	D ^%DAQPVE(%VE,%VEFG) 
+	Q:%MSG'=""  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	D:%WHHV'=0 HAVE
+	S %P2=$$BASEDIT^%DAZCALL(%P2,184),%WNAME=%CNAME
+	I $E(%P2)'="(" S %MSG="QPW6;" Q
+	I $E(%P2,$L(%P2))'=")" S %MSG="QPW7" Q
+	S %P2=$E(%P2,2,$L(%P2)-1) D WCOUNT Q:%MSG'=""
+	S:'$D(%QI) %QI=0 S %QI=%QI+1,VAL=","
+	I $E(%P2)="""" D 
+	. s FG=0,START=2,%P2=%P2_","
+	. F N=1:1 S P=$E(%P2,N) Q:P=""  D  Q:%MSG'=""
+	. . I P="""" S FG=FG+1 Q
+	. . Q:(FG#2=1)  I P'="," S %MSG="ERROR IN STRING" Q
+	. . S V=$E(%P2,START,N-2),START=N+2,%QI(%QI,V)=""
+	. . S VAL=VAL_""""""_V_""""","
+	. Q:%MSG'=""  S %WPRED=""""_VAL_""""_$S(%NOT=1:"'[",1:"[")_"("",""""""_"_$C(0)_%NVE_$C(0)_"_"""""","")&("_$C(0)_%NVE_$C(0)_"'="""")"
+	. S $P(%WNAME,";",1)="S",%QI(%QI)="S"_";"_%NVE
+	I $E(%P2)'="""" D 
+	. I %P2["""" S %MSG="In value list has a quote, NUMBERS ONLY" Q
+	. F N=1:1 Q:$P(%P2,",",N)=""  S V=$P(%P2,",",N) D  Q:%MSG]""
+	. . I V'=+V S %MSG="Value list must either be numbers or strings (in quotes) and "_V_" was entered."
+	. . S VAL=VAL_V_",",%QI(%QI,V)=""
+	. Q:%MSG'=""  S %WPRED=""""_VAL_""""_$S(%NOT=1:"'[",1:"[")_"("",""_+"_$C(0)_%NVE_$C(0)_"_"","")&("_$C(0)_%NVE_$C(0)_"'="""")"
+	. S $P(%WNAME,";",1)="1",%QI(%QI)="N"_";"_%NVE
+	S:%WHHV=0 %QW(%PREDCNT,"IN")=%QI S:%WHHV=1 %QH(%PREDCNT,"IN")=%QI
+	K N,V,VAL,START 
+	Q
+LIKE	;B  W !,"LIKE" ;	;%%Z3-Y
+	S %VE=%P1,%VEFG="C"
+	D ^%DAQPVE(%VE,"CNS") 
+	Q:%MSG'=""  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	D:%WHHV'=0 HAVE
+	S %SAVE=%NVE,%P3=$$BASEDIT^%DAZCALL($P(%P2,"ESCAPE",2),440)
+	S %P2=$$BASEDIT^%DAZCALL($P(%P2,"ESCAPE",1),440)
+	I %P2="" S %MSG="QPW8" Q
+	D ^%DAQPVE(%P2,"S") 
+	Q:%MSG'=""  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	S %P2=$E(%P2,2,$L(%P2)-1) D WCOUNT
+	I %P3'="" D
+	.I %P3'?1""""1APN1"""" S %MSG="QPW9" Q
+	.S %P3=$E(%P3,2) Q
+LIKE1	;
+	S %PRE=$s(%NOT=0:"?",1:"'?"),%MODE="",%NMODE="",%TEMP="",%FLAG=0
+	F %I=1:1:$L(%P2) S %P=$E(%P2,%I) D  Q:%MSG'=""
+	.I %P=%P3,%FLAG=0 S %FLAG=1 S:(%P3_"%_")'[$E(%P2,%I+1)!($E(%P2,%I+1)="") %MSG="QP10" Q
+	.S %NMODE=$S(%FLAG:"A","_%"[%P:%P,1:"A")
+	.S %FLAG=0
+	.S:%MODE="" %MODE=%NMODE
+	.I %MODE=%NMODE S %TEMP=%TEMP_%P Q
+	.S %PRE=%PRE_$S(%MODE="A":"1"""_%TEMP_"""",%MODE="_":$L(%TEMP)_"E",%MODE="%":".E",1:"")
+	.S %TEMP=%P
+	.S %MODE=%NMODE
+	S %PRE=%PRE_$S(%MODE="A":"1"""_%TEMP_"""",%MODE="_":$L(%TEMP)_"E",%MODE="%":".E",1:"")
+	S %WPRED=%SAVE_$C(0)_$$BASEDIT^%DAZCALL(%PRE,184)
+	Q
+IS	;
+	i %WPRED'["NULL" S %MSG="QPW11" q
+NULL	;
+	S %VE=%P1,%VEFG="C"
+	D ^%DAQPVE(%VE,%VEFG)
+	Q:%MSG'=""!(%PRN'=0)  S:%VETYPE="VE" %NVE="("_$C(0)_%NVE_$C(0)_")"
+	D:%WHHV'=0 HAVE 
+	S %WPRED=%NVE_$C(0)_$S(%NOT=1:"'",1:"")_"="_$C(0)_"""""" 
+	Q
+HAVE	;
+	S %QH(%PREDCNT,%WHHV)=%NVE,%QH(%PREDCNT,%WHHV,"FLAG")=%VETYPE_";"_%TYPE
+	S %QH(%PREDCNT,%WHHV,"COL")=%CNAME
+	I %VETYPE="F" S %QH(%PREDCNT,%WHHV,"FUNC")=%FUN,%F="" D
+	. F %N=%SFUNC+1:1:%FUNC S $P(%QF("%F"_%N),";",4)="QH"_%PREDCNT,%F=%F_"%F"_%N_","
+	. S $P(%QH(%PREDCNT,%WHHV,"FLAG"),";",3)=$E(%F,1,$L(%F)-1) 
+BREAK	. S FLAG("HFUNC")=1 Q
+	S %WHHV=%WHHV+1
+	Q
+OR	;
+	S %L1=1,%POS=0 K A D OR1
+	S %L2=1,%CT=1 D OR3
+	Q
+OR1	N %L2,%PP S %L2=1,%PP=1,%SAVE=""
+OR2	S %POS=%POS+1,%P=$E(%WHERE,%POS) Q:%P=""
+	I %P?1N S:$E(%WHERE,%POS+1)?1N %P=%P_$E(%WHERE,%POS+1),%POS=%POS+1 S $P(A(%L1,%L2),",",%PP)=%P G OR2
+	I %P="!" S %PP=%PP+1 G OR2
+	I %P="&" S %L2=%L2+1,%PP=1 G OR2
+	I %P="(" S $P(A(%L1,%L2),",",%PP)=%L1+1,%L1=%L1+1 D  G OR2
+	.D OR1 S %L1=%L1-1 Q
+	I %P=")" Q
+OR3	S %A="",%CK=0
+	F %I=1:1 S %P=$P(A(1,%L2),",",%I) Q:%P=""  S:%P'?1N.N CK=1 S %A=%A_%P_"&" 
+	I %CK=0 S %QO(%CT)=$E(%A,1,$L(%A)-1),%CT=%CT+1
+	S %L2=%L2+1 Q:'$D(A(1,%L2))  G OR3
+END	;
+	Q:%MSG=""  G:(%MSG'?1"Q".E) KILLVAR
+	;S %FLANG="US",%=$P(%MSG,";",2,5) ;	;%%Z2-T
+	S %FLANG=^%DAMSG,%=$P(%MSG,";",2,5) ;	;%%Z2-T
+	I %="" S %MSG=^%DAMSG(%FLANG,$P(%MSG,";",1)) G KILLVAR
+	F %N=1:1 Q:$P(%,",",%N)=""  S @("%"_%N)=$P(%,",",%N)
+	X ^%DAMSG(%FLANG,$P(%MSG,";",1))
+	G KILLVAR
+KILLALL	;
+	K %ALLFG,%DIST,%FUNC,%QA,%QACNT,%QC,%QD,%QE,%QG,%QGROUP,%QH
+	K %QO,%QR,%QT,%QV,%QW
+KILLVAR	;
+	K %CK,%CN,%CNAME,%COL,%COUNT,%CT,%DDP,%DT,%END,%FSTRING,%FUN,%FUNCFG
+	K %GCNT,%K3,%KW,%KY,%NEXT,%NOT,%NOTFG,%NUM,%NVE,%OCNAME,%ONVE,%ORFLAG
+	K %OSTART,%P1,%P2,%P3,%PRE,%PREDCNT,%PRN,%PRNW,%QA,%QUT,%RUN
+	K %SAVE,%SEC,%SFUNC,%START,%STOP,%TB,%TBB,%TC,%TYPE
+	K %WCT,%WHERE,%WORD,%WPRED,%WST,%VE,%VEFG,%VERROR,%VETYPE 
+	K %LINE,%LOAD,%NK,%NX,%NUMFG,%TCNM,%TE,%WHHV,%WNAME
+KILLSCH	;
+	K %,%N,%P,%T,%X,%Y
+	Q
+QUOTE	;
+	S %Q=%P,%OK=0
+	F %=%+1:1 S %P=$E(%LINE,%) D:%Q=%P  Q:%P=""
+	. I $E(%LINE,%+1)'=%Q S %P="",%OK=1 Q
+	. S %=%+1 Q
+	S:%OK'=1 %MSG="ERROR IN QUOAT" Q
+COLSEC	;
+	S %T="" 
+COLSEC1	S %T=$O(%QC(%T)) Q:%T=""  G:%QC(%T)'="" COLSEC1
+	S %TB=$S(%T[".":$P(%T,".",1),1:""),%TC=$S(%T[".":$P(%T,".",2),1:%T)
+	S %SEC=0,%CT="",%TE=""
+	I %TB'="" D  Q:%MSG'=""  G COLSEC1
+	.I '$D(%QT(%TB)) S %MSG="QPF7;"_%TB K %QC(%T) Q
+	.I '$D(^DATDX("CT",%TC,%QT(%TB))) S %MSG="QPF8;"_%TC_","_%TB K %QC(%T) Q
+	.S %QC(%T)=%QT(%TB)_"."_%TC,%QC(%T,"TE")=%TB
+	.Q
+	F  S %CT=$O(%QT(%CT)) Q:%CT=""  S %TB=%QT(%CT) D  Q:%MSG'="" 
+	. Q:'$D(^DATDX("CT",%TC,%TB)) 
+	. S %MSG=$S(%SEC=0:"",1:"QPF9;"_%TC) S %SEC=%TB,%TE=%CT
+	I %SEC=0 S %MSG="QPF10;"_%TC K %QC(%T)
+	Q:%MSG'=""
+	S %QC(%T)=%SEC_"."_%TC,%QC(%T,"TE")=%TE
+	G COLSEC1
+STRIP	;
+	;	%P  - couter or parenthese
+	;	%X  - string to strip
+	I %P<0 F %=$L(%X):-1:0 S:$E(%X,%)=")" %X=$E(%X,1,%-1)_$E(%X,%+1,255),%P=%P+1 Q:%P=0
+	I %P>0 F %=1:1:$L(%X) S:$E(%X,%)="(" %X=$E(%X,1,%-1)_$E(%X,%+1,255),%P=%P-1,%=%-1 Q:%P=0
+	Q
+WREAD	;
+	S %CK=0,%QUT=0,%WST=%WCT,%PRN=0,%TYPE="",%Q=""
+	F %=%WCT:1 S %P=$E(%LINE,%) Q:%P=""  I %P?1P D WCHECK Q:%CK=1
+	Q:%MSG]""
+	I %TYPE="",%P="" S %P=" " D WCHECK
+	I %QUT#2'=0 S %MSG="QPS6" Q
+	S:%P="" %WST=% S %WPRED=$E(%LINE,%WCT,%WST-1) S %WCT=%+1 
+	Q:%WPRED=""!("BETWEEN"[%TYPE)
+WPRN	I %KW-%PRN=0 S %WHERE=%WHERE_%PREDCNT_$S(%WORD="AND":"&",%WORD="OR":"!",1:"") Q
+	S %XX=%KW+%PRN I %XX>0 D  Q
+	.F N=1:1:%XX S %WHERE=%WHERE_"(" 
+	.S %WHERE=%WHERE_%PREDCNT_$S(%WORD="AND":"&",%WORD="OR":"!",1:"")
+	S %WHERE=%WHERE_%PREDCNT F N=-1:-1:%XX S %WHERE=%WHERE_")" 
+	S %WHERE=%WHERE_$S(%WORD="AND":"&",%WORD="OR":"!",1:"")
+	Q
+WCHECK	;
+	I "'"""[%P S:%Q="" %Q=%P S:%P=%Q %QUT=%QUT+1 Q
+	Q:%QUT#2'=0  S %PRN=%PRN+$S(%P="(":1,%P=")":-1,1:0)
+	S %PRNW=%PRNW+$S(%P="(":1,%P=")":-1,1:0) Q:" =><'["'[%P
+	I "<>=["[%P D  Q
+	. I %TYPE'=""&(%TYPE'="OP") S %MSG="QPW12",CK=1 Q
+	. S %TYPE="OP",%NOTFG=0,%END=%,%WST=% 
+	. S:%START="" %START=%,%KW=%PRN,%PRN=0
+	I %P="'" S:%NOTFG=1 %MSG="QPW3" S %NOTFG=1,%NOT=1,%START=%,%KW=%PRN,%PRN=0,%WST=% Q
+	I %P'=" " S %MSG="QPW4",CK=1 Q
+	S %WORD=$E(%LINE,%WST,%-1)
+	I %WORD="NOT" S:%START="" %START=%WST S %NOT=1,%KW=%PRN,%PRN=0,%WST=%+1,%NOTFG=1 Q
+	I ",BETWEEN,IN,LIKE,IS,NULL,GREATER,LESS,THEN"[(","_%WORD_",") D  Q
+	. I %TYPE'="" S %MSG="QPW12",CK=1 Q
+	. S:%START="" %KW=%PRN,%PRN=0,%START=%WST
+	. S %TYPE=%WORD,%END=%,%NOTFG=0,%WST=%+1 
+	I %NOTFG=1 S %MSG="QPW5",CK=1 Q
+	I ",AND,OR,"'[(","_%WORD_",") S %WST=%+1 Q
+	S %CK=1 S:%WORD="OR" %ORFLAG=1 Q
+WCOUNT	;
+	S %QUT=0,%PRN=0
+	F %=1:1 S %P=$E(%P2,%) Q:%P=""  I "()"""[%P S:%P="("&(%QUT#2=0) %PRN=%PRN+1 S:%P=")"&(%QUT#2=0) %PRN=%PRN-1 S:%P="""" %QUT=%QUT+1
+	I %PRN'=0 S %MSG="QPS5" Q
+	I %QUT#2'=0 S %MSG="QPS6"
+	Q

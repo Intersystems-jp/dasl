@@ -1,0 +1,66 @@
+ROUTINE %DARPDIR [Type=INT,LanguageMode=6]
+%DARPDIR	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+EVAL	;
+	S %COUNT=0,RPDID=""
+	F  S RPDID=$O(^DADR("D",RPDID)) Q:RPDID=""  D SELECT,SETUP:%FND
+	S %FND=%COUNT K %COUNT
+	Q
+SELECT	;
+	S %X=^DADR("D",RPDID,"E"),%Y=$P(%X,";",5) D PCHK S %FND=$T
+	Q
+PCHK	;
+	I %Y["@" Q
+	I %PPV["@" Q
+	F %=1:1:$L(%Y) I %PPV[$E(%Y,%) Q
+	Q
+SETUP	;
+	S %COUNT=%COUNT+1
+	S ^DATG($J,"S","%REPDIR",%COUNT,"RPDID")=RPDID
+	S ^("RPDNAM")=$E($P(%X,";",2),1,35)
+	S ^("RPDPG")=$P(%X,";",4),^("RPDSTA")=$P(%X,";",1),^("RPDTIM")=$P(%X,";",3)
+	Q
+PRINT	;
+	I '$D(^DADR("D",RPDID)) S MSG="このレコードは削除されています。" Q  ;%%Z1-T
+	ZA ^DADR("D",RPDID):9 S %FND=$T
+	I '%FND S MSG="この情報は現在他の人が使用中です。しばらくしてから実行して下さい。" Q  ;%%Z1-T
+	S %X=^DADR("D",RPDID,"E")
+	;**TM**; Pitchを２倍しない
+	;S %RPID=RPDID,(%RPFILE,%PARM)=$P(%X,";",6),%RPWIDTH=+$P(%X,";",7),%RPKPIT=$P(%X,";",9)*2 ;	;%%Z1-A
+	S %RPID=RPDID,(%RPFILE,%PARM)=$P(%X,";",6),%RPWIDTH=+$P(%X,";",7),%RPKPIT=$P(%X,";",9) ;	;%%Z1-A
+	D PRINT^%DARPDRV
+	ZD ^DADR("D",RPDID)
+	K %RPID,%RPFILE,%RPWIDTH,%RPKPIT ;	;%%Z1-F
+	Q
+DEL	;
+	I '$D(^DADR("D",RPDID)) S MSG="このレコードはすでに削除されています。" Q  ;	;%%Z1-T
+	ZA ^DADR("D",RPDID):9 S %FND=$T
+	I '%FND S MSG="この情報は現在他の人が使用中です。しばらくしてから実行して下さい。" Q  ;	;%%Z1-T
+	S %X=^DADR("D",RPDID,"E"),%RPFILE=$P(%X,";",6)
+	S $ZT="DELERR^%DARPDIR"
+	I %RPFILE]"",$ZSE(%RPFILE)]""
+	E  G DELX
+	O %RPFILE::10 
+	C %RPFILE:DELETE
+DELX	K ^DADR("D",RPDID),%RPFILE
+	ZD ^DADR("D",RPDID)
+	Q
+DELERR	;
+	ZD ^DADR("D",RPDID)
+	I $ZE["OPENERR" S MSG="レポートが削除できません。" G DELX ;	;%%Z1-T
+	I $ZE["SEARCHERR" S MSG="出力イメージファイル'"_$P(%RPFILE,".")_"'がありません。" G DELX ;	;%%Z1-T
+	ZQuit 1 G @$ZT
+LIST	;
+	S %RPNAME="%REPDIRLIST",%RPFNC="P",%RPCOPY=1,%RPPAGE=1,%RPTIME="",%RPWIDTH=0
+	S %PARM("PV")=%PPV  D IMMED^%DARPDRV K %PARM("PV")
+	Q
+OWNER	I '$D(^DADR("D",RPDID)) S MSG="このレコードはすでに削除されています。" Q  ;	;%%Z1-T
+	ZA ^DADR("D",RPDID):9 S %FND=$T
+	I '%FND S MSG="この情報は現在他の人が使用中です。しばらくしてから実行して下さい。" Q  ;	;%%Z1-T
+	S %RPID=RPDID,%X=^DADR("D",%RPID,"E"),RPDUSR=$P(%X,";",8)
+	I RPDUSR="" S RPDUNM="オーナが未定義です。" G OWNERE ;	;%%Z3-T
+	S RPDUNM=$P($G(^DASYU("U","D",RPDUSR,"E")),";",4)
+	I RPDUNM="" S RPDUMN="オーナが未定義です。" ;	;%%Z3-T
+OWNERE	ZD ^DADR("D",RPDID)
+	Q

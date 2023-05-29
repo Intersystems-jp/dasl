@@ -1,0 +1,151 @@
+ROUTINE %DARPLXC [Type=INT,LanguageMode=6]
+%DARPLXC	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+ITEM	;
+	Q:%MSG]""  S X=$E(ITM,I) Q:X=""  S Y=I
+	I X="""" D STRLIT Q:%MSG]""  D ITCK Q
+	I X?1N,$E(ITM,I-1)'="?" D NUM Q:%MSG]""  D ITCK Q
+	I X="^"!(X="%") D NAME Q:%MSG]""  D SUBS Q:%MSG]""  D ITCK Q
+	I X?1U D DNAME Q:%MSG]""  D ITCK Q
+	I X="$" D SPECV Q:%MSG]""  D SUBS Q:%MSG]""  D ITCK Q
+	I "'+-!&"[X S I=I+1 G ITEM 
+	I I=1,X?1P S %MSG="出力項目がの表現が不適切です。" ;	;%%Z1-T
+	Q
+ITCK	;
+ITX	S X=$E(ITM,Y,I-1) S:"'+-"[X&$L(X) %MSG="表現項目が不適当です。" ;	;%%Z1-T
+	Q:%MSG]""!($E(ITM,I)="")
+	I "'+-&"[$E(ITM,I) D  Q
+	. I I=1 S:"-'&"[$E(ITM,I) %MSG="1_"_$E(ITM,I)_"の使用が不適当です。" S:"+"[$E(ITM,I) %MSG="" Q  ;	;%%Z3-T
+	. I $E(ITM,I-1)?1U.UN!($E(ITM,I-1)?1N.UN),$E(ITM,I+1)?1U.UN!($E(ITM,I+1)?1N.UN) Q
+	. I ")"[$E(ITM,I-1)!("()"[$E(ITM,I+1)) Q
+	. 
+	. I "'"[$E(ITM,I),"=[]><?^%($"[$E(ITM,I+1) Q
+	. I "%$"[$E(ITM,I+1) Q
+	. I "&"[$E(ITM,I) Q
+	. E  S %MSG="2_Improper use of "_$E(ITM,I)
+	I $E(ITM,I)=":",$E(ITM,I+1)=" " S %MSG="シンタックスが不適当です。" ;	;%%Z3-T
+	Q
+STRLIT	F I=I:0 S I=$F(ITM,"""",I+1) Q:$E(ITM,I)'=""""
+	S:'I %MSG="文字リテラルが不適当です。" ;	;%%Z1-T
+	Q:%MSG]""!(I=$L(ITM))
+	I $E(ITM,I)=" " D
+	. I $D(%VKEY) Q 
+	. I Z>0 S %MSG="サブスクリプトのシンタックスが不適当です。- スペースを含んでいます。" Q  ;	;%%Z3-T
+	Q
+NUM	F I=I+1:1 Q:$E(ITM,I)'?1N
+	I $E(ITM,I)="." F I=I+1:1 Q:$E(ITM,I)'?1N
+	I $E(ITM,Y,I-1)="." S %MSG=""".""の使用が不適当です。" Q  ;	;%%Z1-T
+	I $E(ITM,I)=" ",$E(ITM,I+1)'="T" S %MSG="スペースは使用できません。" Q  ;	;%%Z1-T
+	I $E(ITM,I)'="" D
+	. 
+	. I " :&![]=+-'*/\#><,"[$E(ITM,I) S OK=1 D  Q:OK=1
+	. . I "%$"[$E(ITM,I+1) Q
+	. . I ","[$E(ITM,I),$E(ITM,I+1)?.UNP Q
+	. . I "'"[$E(ITM,I),"=[]><"[$E(ITM,I+1) S I=I+1 Q
+	. . I " "[$E(ITM,I),$E(ITM,I+1)?1N.N!($E(ITM,I+1)="%") Q 
+	. . I $E(ITM,I+1)?.UNP Q
+	. . E  S OK=0
+	. I ")"[$E(ITM,I),$E(ITM,I+1)=""!($E(ITM,I+1)'="") Q
+	. I "("[$E(ITM,I),$E(ITM,I+1)="" S %MSG=$E(ITM,I)_" 中にスペースは使用できません。" Q  ;	;%%Z3-T
+	. E  S %MSG="演算子 "_$E(ITM,I)_" のシンタックスが誤っています。" Q  ;	;%%Z3-T
+	Q
+PATTERN	;
+	S ITMX=$E(ITM,I,99),ZZ=I,MSG="パターンマッチングが不適当です。" ;	;%%Z1-T
+	S QU=0 F J=1:1 S X=$E(ITMX,J) Q:X=""  S:X="""" QU=QU+1 I "!&()"[X,QU#2=0 S ITMX=$E(ITMX,1,J-1) Q
+	I $E(ITMX)="@" D  G PATTX
+	. 
+	. I $E(ITMX,2)?1N S %MSG=MSG Q
+	. F J=2:1 S X=$E(ITMX,J) Q:X=""  I J>2&(X'="%"),X'?1U&(X'?1N) S %MSG=MSG Q
+	S QU=0 F J=1:1 S X=$E(ITMX,J) Q:X=""  S:X="""" QU=QU+1 I QU#2=0,"""%AUNPCEKZ.0123456789"'[X S %MSG=MSG G PATTX  ;	;%%Z1-K
+	S I=ZZ+(J-1)
+PATTX	K ZZ,QU,ITMX,MSG
+	Q
+DNAME	S FLAG("pointer")=0 D NAME Q:%MSG]""
+	S (%DDNM,OLDX)=X I COMPILE D DN
+	I $E(ITM,I)=" " S %MSG="スペースは使用できません。" Q  ;	;%%Z1-T
+	I $D(%SORTV),I<$L(ITM),":(),"'[$E(ITM,I) S %MSG="ソートのシンタックスに誤りがあります。" Q  ;	;%%Z1-T
+	;I ITM["/EVAL",$E(ITM,I)="(",$L($P($E(ITM,I+1,99),")"),",")>1 S %MSG="Pointer syntax /EVAL can't have multiple datanames" Q
+	I ITM["/EVAL",$E(ITM,I)="(",$L($P($E(ITM,I+1,99),")"),",")>1 S %MSG="ポインタシンタックス /EVAL は複合データネームを含めません。" Q  ;	;%%Z3-T
+	G QUAL:$E(ITM,I)="/" I $E(ITM,I)'="(" Q
+	S K=I,PCNT=1
+DNLP	;
+	S FLAG("pointer")=1,I=I+1 I $E(ITM,I)'?1U S %MSG="従属データネームが不適当です。" Q  ;	;%%Z3-T
+	S VPTR=$E(ITM,I,$F(ITM,")",I-1)-2)
+	F N=1:1:$L(VPTR,",") S X=$P(VPTR,",",N) Q:X=""  D  Q:%MSG]""
+VALIAS	. 
+	. S %MSG=$S($D(%VL(X)):"ユーザ定義変数はポインタ'"_X_"'として使用できません。",'$D(^DADD(X)):"データネーム'"_X_"'がわかりません。",$P(^DADD(X,"REF"),";",7)="":X_" にはポインタデータネームが定義されていません。",1:"") ;	;%%Z1-T
+	. I %MSG]"" Q
+	. S I=I+$L(X)
+	. 
+	. D LOAD,DND Q:%MSG]""  S X=$P(%DN(X,"R"),";",7) D LOAD:X]""
+	. 
+	. I N>1,N=$L(VPTR,",") S I=I+1
+	Q:%MSG]""  S:$E(ITM,I)="," I=I+1
+	I $E(ITM,I)'=")" S %MSG="右カッコが欠けています。" Q  ;	;%%Z1-T
+	I COMPILE,$D(GRP),GRP]"",'$D(ALIAS(GRP,LI,OCNT,OLDX)) S FLAG("ALIAS",VS,OCNT,OLDX)="" S:VS ALIAS(GRP,LI,OCNT,OLDX)=VPTR
+	K OLDX,VPTR
+	S ITM=$E(ITM,1,K-1)_$E(ITM,I+1,99),I=K,FLAG("pointer")=0
+	Q:$E(ITM,I)'="/" 
+QUAL	S K=I+1 F I=I+1:1 S:$E(ITM,I)="/" I=I+1 Q:$E(ITM,I)'?1U
+	S QUAL=$E(ITM,K,I-1) D  Q:%MSG]""
+	. I QUAL]"" D DARPLXQ^%DARPLXA
+	. E  S %MSG="修飾子が指定されていません。" ;	;%%Z3-T
+	S ITM=$E(ITM,0,K-1)_$C(2)_QUAL_$E(ITM,I,255),I=I+1
+	Q
+NAME	;
+	S J=I F I=I+1:1 I $E(ITM,I)'?1UN Q
+	I $E(ITM,J)="%",$E(ITM,I)=" " D  Q:%MSG]""
+	. I $E(ITM,I+1,I+4)="FROM"!($E(ITM,I+1,I+2)="TO") Q
+	. S %MSG="スペースは使用できません。" ;	;%%Z3-T
+	Q:"%^"[$E(ITM,J)  S X=$E(ITM,J,I-1)
+	I $E(ITM,I)="(" I $E(ITM,I+1)?.N!($E(ITM,I+1)="""") F I=I+1:1 I $E(ITM,I)=")" S X=$E(ITM,J,I),I=I+1 Q 
+LOAD	;
+	I $D(%VL(X)) D  Q
+	. 
+	. Q:'$D(%SORTV)  I $E(ITM,I)'=":" S %MSG="ユーザ定義変数にはトランケーション(切り縮め)が必要です。" ;	;%%Z1-T
+	I (X?1U.6UN!(X?1U.6UN1"("1N.N1")")!(X?1U.6UN1"("1""""1NAP.NAP1""""1")")),'$D(%DN(X)) N %DDNM S %DDNM=X D REPORT^%DADDLD Q:%MSG]""
+	I '$D(%DN(X)) S %MSG="データネーム'"_X_"'がわかりません。" Q  ;	;%%Z3-T
+	S %DDXTYP=$S($P(%DN(X,"R"),";",5)]"":$P(%DN(X,"R"),";",5),1:"")
+	I $P(%DN(X,"R"),";",7)'="" S ALI=$P(%DN(X,"R"),";",7) I '$D(%DN(ALI)) N %DDNM S %DDNM=ALI D REPORT^%DADDLD K ALI
+	S:'$D(FLAG("pointer")) FLAG("pointer")=0
+	I Z>0,"%^"'[$E(ITM,Z(Z)\100),ITM'["NODATA",COMPILE,'FLAG("pointer"),$D(GRP),GRP]"" D XFORM Q  ;;%%Z3-DASLV61_BUGS-25.1
+	I Z=0,ITM'["NODATA",COMPILE,'FLAG("pointer"),$D(GRP),GRP]"" D XFORM  ;;%%Z3-DASLV61_BUGS-25.1
+	Q
+XFORM	;
+	Q:ITM[$C(1) 
+	I %DN(X,"OT")="",%DN(X,"T")'="DATE",%DN(X,"T")'="TIME" Q
+	S FLAG("OT",GRP,LI,(I-$L(X)))=X,FLAG(SP,"OT",X)=X
+	Q
+SUBS	;
+	Q:$E(ITM,I)'="("!(%MSG]"")  S Z=Z+1,Z(Z)=Y*100+PC,PC=0
+	F I=I:0 D EXPR^%DARPLXB Q:%MSG]""!(",:"'[$E(ITM,I))
+	I $E(ITM,I)'=")",%MSG="" S %MSG="括弧がありません。" Q  ;	;%%Z1-T
+	S I=I+1 I $L(ITM)=I S PC=Z(Z)#100,Y=Z(Z)\100,Z=Z-1 Q
+	S PC=Z(Z)#100,Y=Z(Z)\100,Z=Z-1
+	I Z>1,$E(ITM,I)'="," S %MSG="Illegal syntax" Q
+	Q
+DN	;
+	I $D(%VL(X)) Q 
+	S FLAG=0 S:$D(VS)&'$D(DN(X)) DN(X)="" I $D(VS) D CHKVAR I 'FLAG S VAR(VS,VCNT,X)="",OCNT=VCNT,VCNT=VCNT+1
+	K XXDN,VCT
+	Q
+DND	;
+	Q:$D(%VL(X))  S:'$D(DN(X)) DN(X)="" S:'$D(OCNT) OCNT=1
+	I $D(VS) S PTR(VS,OCNT,PCNT,X)="",DN($P(%DN(X,"R"),";",7))="",PCNT=PCNT+1 I VS>NS D
+DNDX	. S %LIST="PK,SK" N %Z
+	. F %Z=1,2 S ARY=$P(%LIST,",",%Z) I $D(@ARY) S DUM="" F  S DUM=$O(@ARY@(DUM)) Q:DUM=""  I @ARY@(DUM)=X Q
+	. D CHKVAR I 'FLAG S VAR(VS,VCNT,X)="",OCNT=VCNT,VCNT=VCNT+1
+	. S FLAG=0
+	K %LIST,ARY,VCT,XXDN
+	Q
+CHKVAR	S VCT="" F  S VCT=$O(VAR(VS,VCT)) Q:VCT=""  S XXDN="" F  S XXDN=$O(VAR(VS,VCT,XXDN)) Q:XXDN=""  I XXDN=X S FLAG=1 Q
+	Q
+SPECV	F I=I+1:1 Q:$E(ITM,I)'?1U
+	S X=$E(ITM,Y+1,I-1) G FUNC^%DARPLXD:$E(ITM,I)="("
+	I $P($T(SPECL),";",3)'[(","_X_",") D MUMPSV^%DARPLXD Q
+	I Y'=1!(":"'[$E(ITM,I)) S %MSG="特殊変数シンタックスが不適当です。" Q  ;	;%%Z1-T
+	S ITM=$E(ITM,0,Y-1)_"\"_$E(ITM,Y+1,99)
+	I $T(@("V"_X))]"" D @("V"_X)^%DARPLXD
+	Q
+SPECL	;;,LINE,NOLINE,PAGE,DATE,TIME,PAGEN,PAGEC,SETPAGE,COUNT,SECTION,ENDSEC,ENDREP,QUITREP,

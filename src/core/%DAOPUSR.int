@@ -1,0 +1,106 @@
+ROUTINE %DAOPUSR [Type=INT,LanguageMode=6]
+%DAOPUSR	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+NEWUSR	;
+	I USR]"" Q
+	ZA ^DASYU("U","CNT"):9
+	E  S %MSG="ユーザディクショナリへの機密保護アクセスができません。" ZT %MSG ;	;%%Z1-T
+	S (USR,^DASYU("U","CNT"))=^DASYU("U","CNT")+1
+	ZD ^DASYU("U","CNT")
+	S USR=$C(USR\676+65,USR\26#26+65,USR#26+65)
+	Q
+VATTR	;
+	F %=1:1:$L(%RES,",") S %X=$P(%RES,",",%) I $S(%X="":1,'$D(^DASY("DEV",%X)):1,1:0) S %MSG="アトリビュート"""_$P(%RES,",",%)_"""が分かりません。" Q  ;	;%%Z1-T
+	Q
+OPFILL	;
+	K OPLIST
+	I %NO<11 S %R=%NO F %I=1:1:%NO S OPLIST(%I,"GNDUM1")=$J(%I,17)_". "_$P(%NO(%I),"`",5) ;	;%%Z1-I
+	E  S %R=%NO+1\2 F %I=1:1:%NO\2 S %X=$J(%I,2)_". "_$P(%NO(%I),"`",5),OPLIST(%I,"GNDUM1")=%X_$J("",40-$Zwidth(%X))_$J(%I+%R,2)_". "_$P(%NO(%I+%R),"`",5) ;	;%%Z1-I;%%Z3-G
+	E  I %NO#2 S OPLIST(%R,"GNDUM1")=$J(%R,2)_". "_$P(%NO(%R),"`",5) ;	;%%Z1-I
+	Q
+COMCHK	;
+	S %FND=0 F %I=1:1:%NO I %NO(%I)[USRCMDX S %FND=%I Q
+	Q
+DELCMD	;
+	K ^DASYU("U","CMD")
+	Q
+PEVENT	;
+	S %RPNAME="%SYSREP",%RPDEV=DEV,%PARM=LOG
+	D IMMED^%DARPDRV
+	C LOG
+	K LOG
+	Q
+GETLOG	;
+	S $ZT="OPERR^%DAOPUSR"
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. S LOG=$$TRNLOG^%DAZCALL("DSM$DASL_EVENTLOG")
+	;. I LOG="" S LOG="DSM$DASL_EVENTLOG.LOG"
+	;I $ZV["DSM for ULTRIX" S LOG="dsm_dasl_eventlog.log"
+	I $ZV["IRIS" S LOG="dsm_dasl_eventlog.log"
+	I $ZV["Cache" S LOG="dsm_dasl_eventlog.log"
+	;**TM**;O LOG:(READ:SHARE):10 E  S %MSG="イベントログをオープンできません。" ;	;%%Z1-T
+	O LOG:READ:10 E  S %MSG="イベントログをオープンできません。" ;	;%%Z1-T
+	Q
+OPERR	I $ZE["NOTOPEN" S %MSG="イベントログには何もありません。" Q  ;	;%%Z1-T
+	ZQuit 1 G @$ZT
+PURGE	;
+	S $ZT="OPERR^%DAOPUSR"
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. S LOG=$$TRNLOG^%DAZCALL("DSM$DASL_EVENTLOG")
+	;. I LOG="" S LOG="DSM$DASL_EVENTLOG.LOG"
+	;I $ZV["DSM for ULTRIX" S LOG="dsm_dasl_eventlog.log"
+	I $ZV["IRIS" S LOG="dsm_dasl_eventlog.log"
+	I $ZV["Cache" S LOG="dsm_dasl_eventlog.log"
+	C LOG O LOG:READ:10 E  S %MSG="イベントログをオープンできません。" G PEX ;	;%%Z1-T
+	C LOG:DELETE
+PEX	K LOG
+	Q
+COUNT	;
+	S %="" F %FND=0:1 S %=$O(^DAMC(%USR,"N",%)) Q:%=""
+	Q
+SEND	;
+	D NOW^%DAUDTTM S HEAD=%DTX_";"_%TMX_";"_%USR_";"_MESSUB_";"_MESCC_";"_TO1
+	S TO=TO1,TO1=""
+SEND1	I TO'["@" S USR=TO D SND S USR="" G SNEXT
+	S TO=","_$E(TO,2,99)_",",USR=""
+SLOOP	F I=0:0 S USR=$O(^DASYU("U","D",USR)) Q:USR=""  D CLASS Q:MSG]""
+SNEXT	;
+	Q:MSG]""
+	I USR]"" G SLOOP
+	I TO2]"" S TO=TO2,TO2="" G SEND1
+	Q
+CLASS	;
+	S CLASS="" F J=0:0 S J=$O(^DASYU("U","D",USR,"S",J)) Q:J=""  S CLASS=CLASS_^(J)_","
+	S CLASS=","_CLASS S:CLASS'?.E1"," CLASS=CLASS_","
+	I CLASS[TO D SND
+	Q
+SND	;
+	I USR'="SYS",$P(^DASYU("U","D",USR,"E"),";",5)'="Y" Q 
+	ZA ^DAMC(USR)
+	I USR'="SYS" S (MESKEY,^DAMC(USR,"NK"))=$G(^DAMC(USR,"NK"))+1
+	E  S (MESKEY,^DAMC(USR,"NK"))=$G(^DAMC(USR,"NK"))-1
+	S %PKEY=MESKEY,%PUSR=USR 
+	S ^DAMC(USR,"M",MESKEY,"H")=HEAD,K=""
+	F J=1:1 S K=$O(SEND(K)) Q:K=""  S ^DAMC(USR,"M",MESKEY,"T",J)=SEND(K,"MESLINE")
+	I USR'="SYS" D  
+	.S ^DAMC(USR,"N",MESKEY)=""
+	.
+	.
+	.S J=$G(^DAMC(USR,"NMF"))
+	.S K=$P($P(^DASYU("U","D",%USR,"E"),";",4),",") 
+	.I ","_J_","'[K S J=$S(J="":K,1:J_", "_K) 
+	.S J=$P(J,",",1,5) 
+	.S ^DAMC(USR,"NMF")=J
+	ZD ^DAMC(USR)
+	K J,K
+	Q
+FOWARD	;
+	K SEND F I=1:1 Q:'$D(READ(I,"MESLINE"))  S SEND(I,"MESLINE")=READ(I,"MESLINE")
+	Q
+VCLS	;
+	S %MSG="*"
+	I $E(%RES)="@",$L(%RES)>1 S:$D(^DASYU("C","D",$E(%RES,2,99))) %MSG="",USR=%RES
+	Q

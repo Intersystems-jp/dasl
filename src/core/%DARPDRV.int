@@ -1,0 +1,519 @@
+ROUTINE %DARPDRV [Type=INT,LanguageMode=6]
+%DARPDRV	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;   %RPQUE     Batch queue - defaults to value in DSM$DASL_BATCH 	
+BATCH	;
+	;**TM**; Cache,IRISでは$ZEに値を入れられない
+	;S ($ZE,%MSG)=""
+	S %MSG=""
+	N %ENTRY,%NAME
+	I '$D(%QUTL) S (%QUTL,%VAR("EXPD","TB"),%VAR("EXPD","QU"))=0,%VAR("TYPE")=""
+	I $D(%RPNAME),%RPNAME'="" S %ENTRY="R"
+	I $D(%QUNAME),%QUNAME'="" S %ENTRY="Q"
+	N %RPCOM,COM
+	I '$D(%RPDEV) S %RPDEV=""
+	I '$D(%RPFNC) S %RPFNC=$S(%RPDEV]"":"P",1:"D")
+	I '$D(%RPCOPY) S %RPCOPY=1
+	I '$D(%RPTIME) S %RPTIME=""
+	;**TM**; Pitchは2倍しない
+	;I '$D(%RPKPIT) S %RPKPIT=4 ;	;%%Z1-F
+	I '$D(%RPKPIT) S %RPKPIT=2 ;	;%%Z1-F
+	;**TM**; デフォルトはUTF8
+	;I '$D(%RPKTYP) S %RPKTYP="DEC" ;	;%%Z1-F
+	I '$D(%RPKTYP) S %RPKTYP="UTF8" ;	;%%Z1-F
+	I '$D(%RPKON) S %RPKON="" ;	;%%Z1-F
+	I '$D(%RPKOF) S %RPKOF="" ;	;%%Z1-F
+	I %ENTRY="R" D  
+	. I '$D(%RPDES) D
+	. . I $E(%RPNAME)'="%" S %RPDES=$P(^DARD(%RPNAME,"A"),";",2)
+	. . E  S %RPDES=$P(^%DARD($E(%RPNAME,2,$L(%RPNAME)),"A"),";",2)
+	. 
+	. I $E(%RPNAME)'="%" S %RPWIDTH=$P(^DARD(%RPNAME,"REP"),";",1)
+	. E  S %RPWIDTH=$P(^%DARD($E(%RPNAME,2,$L(%RPNAME)),"REP"),";",1)
+	. S %RPWIDTH=%RPWIDTH>80
+	I %ENTRY="Q" D  
+	. S %RPDES=$P(^DAQD(%QUNAME,"1A"),";"),%RPWIDTH=0
+	I %RPDEV]"",$D(%DEV),%RPDEV=%DEV G IMMED
+	D RPID
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" S %RPCOM="DSM$DASL_RD"_%RPID_".COM"
+	;I $ZV["DSM for ULTRIX" S %RPCOM="dsm_dasl_rd"_%RPID_".sh"
+	S %RPCOM="dsm_dasl_rd"_%RPID_".sh"
+	I '$D(%RPQUE) N %RPQUE S %RPQUE="" ;;;;????????%%%%%%%%TATSUMI
+	. S %MSG="レポートをキューに送れません。バッチキューが定義されていません。" D MSG ;	;%%Z1-T
+	C %RPCOM O %RPCOM:NEW:10
+	E  D  G KILL
+	. ;S %MSG="Can't open file for command procedure, report NOT queued."
+	. S %MSG="レポートをキューに送れません。コマンドファイルがオープンできません。"
+	. D MSG
+	U %RPCOM
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" W "$! Batch Procedure to run ",$P(^DASY("APPL"),";",1),!  ;;%%Z3-DASLV61_BUGS-13
+	;I $ZV["DSM for ULTRIX" W "# Batch Procedure to run ",$P(^DASY("APPL"),";",1),!
+	W "# Batch Procedure to run ",$P(^DASY("APPL"),";",1),!
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" W "$ SET DEFAULT ",$ZC(%TRNLOG,"SYS$DISK"),$ZC(%DIRECTORY),!
+	;I $ZV["DSM for ULTRIX" W " cd ",$ZC(%DIRECTORY),!
+	W " cd ",$ZC(%DIRECTORY),!
+	U 0 D BATCH^%DANAME S RTNM=%PROGRAM
+	U %RPCOM
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" N A S A=$$DSM^%DARPDRV W A_" ^"_RTNM
+	;I $ZV["DSM for ULTRIX" N A D
+	;. S A=$$DSM^%DARPDRV,A=A_"""^"_RTNM_""""
+	;. S TOT=$L(A) D
+	;. . F %NC=65:-1:1 Q:$E(A,%NC)=""  D:" "[$E(A,%NC)
+	;. . . S STR=$E(A,1,%NC)
+	;. . . I %NC<TOT S STR=STR_"\"
+	;. . . U %RPCOM W STR,! U 0 S A=$E(A,%NC+1,255),%NC=66
+	;. . U %RPCOM W A,!
+	;. W " rm ",%RPCOM,!
+	;. K STR,%NC,TOT
+	S A=$$DSM^%DARPDRV,A=A_"""^"_RTNM_""""
+	S TOT=$L(A) D
+	. F %NC=65:-1:1 Q:$E(A,%NC)=""  D:" "[$E(A,%NC)
+	. . S STR=$E(A,1,%NC)
+	. . I %NC<TOT S STR=STR_"\"
+	. . U %RPCOM W STR,! U 0 S A=$E(A,%NC+1,255),%NC=66
+	. U %RPCOM W A,!
+	W " del ",%RPCOM,!
+	K STR,%NC,TOT
+	;**TM**
+	U 0
+	;**TM** Cache,IRISのみ対応
+RFILE	S %FILE="DSM_DASL_UTL"_%RPID_".ROU"
+	;**TM** Cache,IRISのみ対応(Windowsの場合、大文字小文字を区別しない)
+	;I $ZV["DSM for ULTRIX" S %FILE=$ZC(%LOWCASE,%FILE)
+	C %FILE O %FILE:NEW:10
+	E  S %MSG="Unable to open batch file." ZT %MSG
+	D NOW^%DAUDTTM U %FILE
+	W RTNM," ;JDASL V3.0 ;",%DTX," ",%TMX,";Batch file",! ;	;%%Z3-B
+	U %FILE
+	W " S %ENTRY=",""""_%ENTRY_"""",!
+	W " S %QUTL=",%QUTL,!
+	W " S %USR=",""""_%USR_"""",!
+	W " S %PGMR=",%PGMR,!
+	I %ENTRY="R" W " S %RPNAME=",""""_%RPNAME_"""",!
+	I %ENTRY="Q" W " S %RPNAME=",""""_%QUNAME_"""",!
+	W " S %RPFNC=",""""_%RPFNC_"""",!
+	W " S %RPDEV=",""""_%RPDEV_"""",!  ;;%%Z3-DASLV61_BUGS-13
+	W " S %RPWIDTH=",%RPWIDTH,!
+	W " S %RPCOPY=",%RPCOPY,!
+	W " S %RPDES=",""""_%RPDES_"""",!  ;;%%Z3-DASLV61_BUGS-13
+	W " S %RPID=",%RPID,!
+	W " S %OPV=","""("_%OPV_")""",!
+	W " S %RPKPIT=",%RPKPIT,! ;	;%%Z1-F
+	W " S %RPKTYP=",""""_%RPKTYP_"""",! ;	;%%Z1-F;%%Z3-patch
+	W " S %RPKON=",""""_%RPKON_"""",! ;	;%%Z1-F;%%Z3-patch
+	W " S %RPKOF=",""""_%RPKOF_"""",! ;	;%%Z1-F;%%Z3-patch
+	I $D(%FPV) W " S %FPV=",""""_%FPV_"""",!
+	E  W "S %FPV=""""",!
+	I $D(%PARM)=10!($D(%PARM)=11) S VAR=$Q(%PARM("")) D
+	. F  Q:VAR=""  W " S ",VAR,"=",$$QUOTES(@VAR),! S VAR=$Q(@VAR)
+	I $D(%PARM)#2 W " S %PARM=",$$QUOTES(%PARM),!
+	I $D(%VAR("EXPD")) S VAR="" F  S VAR=$O(%VAR("EXPD",VAR)) Q:VAR=""  D
+	. W " S %VAR(""EXPD""",","_""""_VAR_"""",")=",%VAR("EXPD",VAR),!
+	I $D(%QUTL) S TYPE="" F  S TYPE=$O(^DATG($J,"U",TYPE)) Q:TYPE=""  D
+	. S NM="" F  S NM=$O(^DATG($J,"U",TYPE,NM)) Q:NM=""  W " S ^DATG($J,""U"",""",TYPE,""",""",NM,""")=",""""_^(NM)_"""",!
+	I $D(%VAR("EXPD")) D
+	. W " S %MSG="""" D CONTIN^%DAUDMP K %VAR(""EXPD"")"
+	. W " I %MSG]"""" W !,%MSG,! Q",!
+	W " D GO^%DARPDRV",!
+	W " X ""ZR  ZS ",RTNM,"""",!
+	W " H",!!
+	U %FILE:DISCON X ("ZR  ZL  ZS "_RTNM)
+	U 0 C %FILE:DEL
+	D TIMECVT
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" C %RPCOM D
+	;. I %RPQUE="" S %RPQUE=$ZC(%TRNLOG,"DSM$DASL_BATCH")  ;;%%Z3-DASLV61_BUGS-13
+	;. S COM="submit/nolog/noident/nonotify"_$S(%RPQUE'="":"/queue="_%RPQUE,1:"")
+	;. S:%RPTIME]"" COM=COM_"/after="_%RPTIME
+	;. S COM=COM_" "_%RPCOM_"/delete"
+	;. S %=$ZC(%SPAWN,COM,"NL:","NL:")
+	;I $ZV["DSM for ULTRIX" D
+	;. C %RPCOM:(SUBMIT:QUEUE="at "_%RPTIME:DELETE)
+	C %RPCOM:(SUBMIT:QUEUE="at "_%RPTIME:DELETE)
+	I %RPFNC["D" D
+	. D NOW^%DAUDTTM:%RPTIME="" S:'$D(%USR) %USR="" S:'$D(%OPV) %OPV=""
+	. ;**TM** Pitchは２倍しない
+	. ;S %="Queued;"_%RPDES_";"_%DTX_" "_%TMX_";;"_%OPV_";;"_%RPWIDTH_";"_%USR_";"_(%RPKPIT/2) ;	;%%Z1-F
+	. S %="Queued;"_%RPDES_";"_%DTX_" "_%TMX_";;"_%OPV_";;"_%RPWIDTH_";"_%USR_";"_(%RPKPIT) ;	;%%Z1-F
+	. S ^DADR("D",%RPID,"E")=%
+KILL	;
+	N VAR
+	K TYPE,NM
+	F VAR="%QUNAME","%RPNAME","%RPFNC","%RPDES","%RPWIDTH","%RPCOPY","%RPTIME","%RPQUE","%RPNOKL","%RPID" I '$D(%RPNOKL(VAR)) K @VAR
+	I '%QUTL K %VAR("EXPD"),%VAR("TYPE")
+	K VAR,X,%
+	Q
+BAERR	;
+	U 0 S %MSG="レポートをキューに送る際にエラーが発生しました。",%RPID="" D MSG ;	;%%Z1-T
+	D ERR^%DAERRT
+	G KILL
+IMMED	;
+	S $ZT="IMERR^%DARPDRV",$ZE=""
+	I '$D(%ENTRY) S %ENTRY="R"
+	I '$D(%QUTL) S %QUTL=0
+	N %RPPQ,%PORT,%RPFILE,%RPID,%RPKPIT,%RPKTYP,%RPKON,%RPKOF ;	;%%Z1-F
+	;	Or get the device port
+	;   	Or assume a file name.
+	S (%RPPQ,%PORT,%RPFILE,%MSG)="" S:'$D(%PDV) %PDV=""
+	S %RPKPIT=2,%RPKTYP="UTF8",%RPKON="",%RPKOF="" ;	;%%Z1-F DEFAULT SETUP
+	;%%Z1-C
+	;**TM**; ピッチの変更
+	;I $D(^DASYU("D","D",%RPDEV,"E")),$D(^DASY("DEV",$P($P(^("E"),";",2),","),"P")) S %RPKPIT=$P(^("P"),";")*2,%RPKTYP=$P(^("P"),";",2) S:%RPKTYP="JIS" %RPKON=$C(27)_$P(^("P"),";",3),%RPKOF=$C(27)_$P(^("P"),";",4)
+	I $D(^DASYU("D","D",%RPDEV,"E")),$D(^DASY("DEV",$P($P(^("E"),";",2),","),"P")) S %RPKPIT=$P(^("P"),";"),%RPKTYP=$P(^("P"),";",2) S:%RPKTYP="JIS" %RPKON=$C(27)_$P(^("P"),";",3),%RPKOF=$C(27)_$P(^("P"),";",4)
+	;%%Z1-C
+	S %=$G(^DASYU("D","D",%RPDEV,"E"))
+	S %RPPQ=$P(%,";",5)
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["DSM for ULTRIX",%RPPQ'="" S %RPPQ=$ZC(%LOWCASE,%RPPQ)
+	S %RPPQ=$ZCVT(%RPPQ,"U")
+	;**TM**
+	S:%RPPQ="" %PORT=$P(%,";",1)
+	I %RPPQ="",%PORT="" S %RPFILE=%RPDEV
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM",%RPPQ]"" D RPFILE
+	;I $ZV["DSM for ULTRIX",%RPPQ]"" D
+	;. S %=$$SPOOL^%DAZCALL(%RPPQ) I % D RPFILE
+	S %=$$SPOOL^%DAZCALL(%RPPQ) I % D RPFILE
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM",%PORT["::" D
+	;. S %=$ZC(%TRNLOG,"SYS$NODE")
+	;. I %'="",$E(%PORT,1,$L(%))=% S %PORT=$P(%PORT,"::",2)
+	;I $ZV["DSM for ULTRIX",%PORT["::" S %MSG="Unknown terminal."
+	I %PORT["::" S %MSG="Unknown terminal."
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM",%PORT["*" D
+	;. S %PORT=$ZC(%GETDVI,$I,"TT_PHYDEVNAM")
+	;. S:%PORT="" %PORT=$I
+	;. I $E(%PORT)="_" S %PORT=$E(%PORT,2,$L(%PORT))
+	;I $ZV["DSM for ULTRIX",%PORT["*" D
+	;. S %=$$DTYPE^%GETDVI($I)
+	;. I "TT"[% S %PORT=$I
+	;. E  S %MSG="端末がわかりません。" ;	;%%Z3-T
+	;**TM**;S %=$$GETDT^%DAIO(%RES)
+	S %=$$GETDT^%DAIO($I)
+	;**TM**; ターミナルのタイプ変更
+	;I "TT"[% S %PORT=$I
+	I "TRM"[% S %PORT=$I
+	E  S %MSG="端末がわかりません。" ;	;%%Z3-T
+	I %RPFILE]"" D  G:%MSG]"" KILL
+	. O %RPFILE:NEW:9
+	. E  S %MSG="出力ファイルにアクセスできません。" D MSG Q  ;	;%%Z1-T
+	. ;**TM**;
+	. ;U %RPFILE:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %RPFILE:(KON=%RPKON:KOFF=%RPKOF) ;  ;%%Z1-F
+	. U %RPFILE D SetPitch^%NLS(%RPKPIT),SetIO^%NLS(%RPKTYP):%PKTYP'="DEC" ;  ;%%Z1-F
+	I %PORT]"" D  G:%MSG]"" KILL
+	. ;**TM**; 端末はオープンしない
+	. ;O %PORT::9
+	. ;E  S %MSG="出力デバイスにアクセスできません。" D MSG Q  ;	;%%Z1-T
+	. ;**TM**; ピッチの設定（端末の場合、漢字コードは設定しない）
+	. ;U %PORT:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %PORT:(KON=%RPKON:KOFF=%RPKOF) ;  ;%%Z1-F
+	. U %PORT D SetPitch^%NLS(%RPKPIT) ;  ;%%Z1-F
+	I %PORT]"",$D(%PP),%PP W $C(27)_"[5i"_$C(27)_"[6i"_$C(27)_"[66t"
+	S %IOD=$S(%RPFILE]"":%RPFILE,1:%PORT)
+	I %QUTL D
+	. I $D(%VAR("EXPD")) D CONTIN^%DAUDMP 
+	I %ENTRY="R" S %NAME=%RPNAME D REPORT^%DARUN 
+	I %ENTRY="Q" S (%NAME,QUNM)=%QUNAME D ^%DAQC D:%MSG="" QUERY^%DARUN 
+	I %PORT]"",$D(%PP),%PP W #,$C(27)_"[0z"_$C(27)_"[1w"_$C(27)_"[4i"
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM",%RPPQ]"" C %RPFILE:(SPOOL:QUEUE=%RPPQ:DELETE)
+	;I $ZV["DSM for ULTRIX",%RPPQ]"" C %RPFILE:(SPOOL:QUEUE="-P"_%RPPQ:DELETE)
+	C %RPFILE:(SPOOL:QUEUE="-P"_%RPPQ:DELETE)
+	E  I %RPFILE]"" C %RPFILE
+	E  I %PORT]"",%PORT'=%PDV C %IOD
+	U 0
+	G KILL
+IMERR	;
+	U 0 I $ZE'["OPENERR" ZQuit 1 G @$ZT
+	S %MSG="出力デバイスにアクセスできません。" D MSG ;	;%%Z1-T
+	D ERR^%DAERRT
+	G KILL
+GO	I '$D(%ENTRY) S %ENTRY="R"
+	S $ZT="GOERR^%DARPDRV",($ZE,%MSG)=""
+	N %RPFILE,%IOD
+	;;I %RPDEV]"" S %RPDEV=$E(%RPDEV,2,$L(%RPDEV)-1);%%Z3-DASLV61_BUGS-13 append
+	S %RPDES=$E(%RPDES,2,$L(%RPDES)-1),%OPV=$E(%OPV,2,$L(%OPV)-1)
+	S ^DAJC($J)=$H_";;"_%RPDEV_";"_%RPDES
+	K ^DATG($J,"U")
+	I %QUTL D 
+	. I $D(%VAR("EXPD")) D CONTIN^%DAUDMP K %VAR("EXPD")
+	I %RPFNC["D",'$D(^DADR("D",%RPID)) G GOX
+	D RPFILE 
+	O %RPFILE:NEW:9 E  G GOERR
+	;**TM**;
+	;U %RPFILE:(KANJI:KPITCH=%RPKPIT) S %RPFILE=$ZIO ;	;%%Z1-F
+	U %RPFILE D SetPitch^%NLS(%RPKPIT) S %RPFILE=$ZIO ;	;%%Z1-F
+	S:'$D(%PP) %PP=0
+	S %IOD=%RPFILE,%NAME=%RPNAME 
+	I %ENTRY="R" D REPORT^%DARUN
+	I %ENTRY="Q" S QUNM=%NAME L +^DAQD(QUNM,$J) D ^%DAQC D:%MSG="" QUERY^%DARUN L -^DAQD(QUNM,$J)
+	C %RPFILE
+	I %RPFNC["D",$D(^DADR("D",%RPID,"E")) D
+	. D NOW^%DAUDTTM
+	. I '$D(%PC) S %PC=1 
+	. S %="Prepared;"_%RPDES_";"_%DTX_" "_%TMX_";"_%PC_";"_%OPV_";"
+	. S %=%_$P(%RPFILE,";",1)_";"_%RPWIDTH_";"_$P(^DADR("D",%RPID,"E"),";",8)
+	. S ^DADR("D",%RPID,"E")=%
+	I %RPFNC["P" S %RPPAGE=1,%RPDEL=%RPFNC="P" D PRINT
+GOX	K ^DAJC($J),^DATG($J,"U")
+	Q
+GOERR	;
+	U 0 D ERR^%DAERRT
+	I $D(^DADR("D",%RPID,"E")) S ^("E")="Error;"_$P(^("E"),";",2,99)
+	G GOX
+PRINT	;
+	S $ZE="",$ZT="PRERR^%DARPDRV"
+	I $ZSE(%RPFILE)="" S %MSG="レポートイメージファイルが削除されています。" D MSG Q
+	N %RPPQ,%IOD
+	I '$D(%RPDEL) S %RPDEL=0
+	I '$D(%RPID) S %RPID=""
+	I '$D(%RPCOPY) S %RPCOPY=1
+	I '$D(%RPPAGE) S %RPPAGE=1
+	I '$D(%PP) N %PP S %PP=0
+	I '$D(%RPWIDTH) D
+	.I %RPID]"",$D(^DADR("D",%RPID,"E")) S %RPWIDTH=+$P(^("E"),";",7)
+	.E  S %RPWIDTH=0
+	I '$D(^DASYU("D","D",%RPDEV,"E")) D  G PRKILL
+	.S %MSG="デバイス "_%RPDEV_" は存在しません。" ;	;%%Z1-T
+	.D MSG Q
+	S %=^DASYU("D","D",%RPDEV,"E")
+	S %IOD=$P(%,";",1),%RPPQ=$P(%,";",5)
+	;%%Z1-F
+	S:$D(%RPKPIT) %RPKPTSV=%RPKPIT ;	;save kanji pitch from Report Directory
+	;**TM**; Pitchの値を変更
+	;N %ZZ1 S %ZZ1=$GET(^DASY("DEV",$P($P(^("E"),";",2),","),"P")) I %ZZ1'="" S %RPKPIT=$P(%ZZ1,";")*2,%RPKTYP=$P(%ZZ1,";",2) S:%RPKTYP="JIS" %RPKON=$P(%ZZ1,";",3),%RPKOF=$P(%ZZ1,";",4)
+	N %ZZ1 S %ZZ1=$GET(^DASY("DEV",$P($P(^("E"),";",2),","),"P")) I %ZZ1'="" S %RPKPIT=$P(%ZZ1,";"),%RPKTYP=$P(%ZZ1,";",2) S:%RPKTYP="JIS" %RPKON=$P(%ZZ1,";",3),%RPKOF=$P(%ZZ1,";",4)
+	I $D(%RPKPTSV),%RPKPTSV'=%RPKPIT S (%MSG,MSG)="漢字ピッチが出力デバイスと合っていません。" D MSG G PRKILL
+	;%%Z1-F
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["DSM for ULTRIX",%RPPQ'="" S %RPPQ=$ZC(%LOWCASE,%RPPQ)
+	I %RPPQ'="" S %RPPQ=$ZCVT(%RPPQ,"U")
+	;**TM**
+	I %RPPQ]"" D PRSPOOL G PRKILL
+	I %IOD="" D  G PRKILL
+	. S %MSG="デバイス'"_%RPDEV_"'で指定されたポートまたはキューがありません。" ;	;%%Z3-T
+	. D MSG
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM",%IOD["::" D
+	;. S %=$ZC(%TRNLOG,"SYS$NODE")
+	;. I %'="",$E(%IOD,1,$L(%))=% S %IOD=$P(%IOD,"::",2)
+	;I $ZV["DSM for ULTRIX",%IOD["::" S %MSG="デバイスがわかりません。" ;	;%%Z3-T
+	I %IOD["::" S %MSG="デバイスがわかりません。" ;	;%%Z3-T
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM",%IOD["*" D
+	;. S %IOD=$ZC(%GETDVI,$I,"TT_PHYDEVNAM")
+	;. S:%IOD="" %IOD=$I
+	;. I $E(%IOD)="_" S %IOD=$E(%IOD,2,99)
+	;I $ZV["DSM for ULTRIX",%IOD["*" D
+	;. S %DTY=$$DTYPE^%GETDVI($I)
+	;. I "TT"[%DTY S %IOD=$I
+	;. E  S %MSG="デバイスエラー。" ;	;%%Z3-T
+	S %DTY=$$GETDT^%DAIO($I)
+	I "TRM"[%DTY S %IOD=$I
+	E  S %MSG="デバイスエラー。" ;	;%%Z3-T
+	;**TM**
+	S $ZE="",$ZT="SPLERR" 
+	I %RPPAGE=1 D
+	. ;I $ZV["VAX DSM",$ZC(%GETDVI,%IOD,"SPL") S %RPPQ=%IOD D PRSPOOL G PRKILL
+	. ;I $ZV["DSM for ULTRIX" S %IOD=$ZC(%LOWCASE,%IOD) D
+	. S %IOD=$ZCVT(%IOD,"U") D
+	. I $$SPOOL^%DAZCALL(%IOD) S %RPPQ=%IOD D PRSPOOL G PRKILL
+SPLERR	;
+	I $ZE]"",$ZE'["ZCWARN"!($ZE'["NONLOCAL") G PRERR
+	S $ZE="",$ZT="PRERR^%DARPDRV"
+	C %RPFILE
+	O %RPFILE:READ:9 E  G PRNOP
+	O %IOD:NEW:9 E  S %MSG="出力デバイスにアクセスできません。" D MSG G PRKILL ;	;%%Z1-T
+	I $D(%PP),%PP W $C(27)_"[5i"_$C(27)_"[6i"_$C(27)_"[66t"
+	S %NAME=$S(%RPWIDTH=0:"%SYSREP",1:"%SYSREP1") D REPORT^%DANAME
+	S %PARM=%RPFILE
+	;**TM**;
+	;U %RPFILE:KANJI ;	;%%Z1-A;%%Z1-F
+	U %RPFILE ;	;%%Z1-A;%%Z1-F
+	;**TM**; 漢字コードがDEC以外の場合、漢字コードを変更
+	;U %IOD:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %IOD:(KON=%RPKON:KOFF=%RPKOF) ;	;%%Z1-A;%%Z1-F
+	U %IOD D SetPitch^%NLS(%RPKPIT),SetIO^%NLS(%RPKTYP):%RPKTYP'="DEC" ;	;%%Z1-A;%%Z1-F
+	F %RPCOPY=1:1:%RPCOPY U %RPFILE:DISCON D SKIP U %IOD D @%PROGRAM
+	C %IOD
+	I %RPDEL C %RPFILE:DELETE
+	E  C %RPFILE
+	I $D(%PP),%PP W #,$C(27)_"[0z"_$C(27)_"[1w"_$C(27)_"[4i"
+	I %RPID]"",$D(^DADR("D",%RPID,"E")) S $P(^("E"),";",1)="Printed"
+	U 0
+PRKILL	;
+	K %RPFILE,%RPDEV,%RPDEL,%RPID,%RPCOPY,%RPPAGE,%RPWIDTH
+	K %RPKPIT,%RPKON,%RPKOF,%RPKTYP ;%%Z1-F
+	Q
+PRSPOOL	;
+	S $ZE="",$ZT="PRERR^%DARPDRV"
+	N %FILE S %FILE=""
+	I %RPPAGE>1 D  G:%MSG PRNOP
+	.N %SAVEID S %SAVEID=%RPID K %RPID
+	.S %FILE=%RPFILE D RPFILE S %RPID=%SAVEID
+	.O %FILE::9 E  S %RPFILE=%FILE,%MSG=1 Q
+	.O %RPFILE:NEW:9 E  C %FILE S %RPFILE=%FILE,%MSG=1 Q
+	.U %FILE D SKIP
+	.S $ZE="",$ZT="SPLEOF^%DARPDRV"
+	.F  U %FILE R % U %RPFILE W %,!
+PRSPL2	;
+	I $ZV["VAX DSM" F %=1:1:%RPCOPY D  Q:%MSG
+	.O %RPFILE:READ:9 E  S %MSG=1 Q
+	.I %=%RPCOPY,(%RPDEL!(%FILE]"")) C %RPFILE:(SPOOL:QUEUE=%RPPQ:DELETE)
+	.E  C %RPFILE:(SPOOL:QUEUE=%RPPQ)
+	I $ZV["DSM for ULTRIX" F %=1:1:%RPCOPY D  Q:%MSG
+	.O %RPFILE:READ:9 E  S %MSG=1 Q
+	. 
+	.I %=%RPCOPY,(%RPDEL!(%FILE]"")) C %RPFILE:(SPOOL:QUEUE="-P"_%RPPQ)
+	.E  C %RPFILE:(SPOOL:QUEUE="-P"_%RPPQ)
+	I %FILE]"" D 
+	.S %RPFILE=%FILE
+	.Q:'%RPDEL
+	.O %RPFILE::9 E  S %MSG=1 Q
+	.C %RPFILE:DELETE
+	I %MSG G PRNOP
+	I %RPID]"",$D(^DADR("D",%RPID,"E")) S $P(^("E"),";",1)="Printed"
+	Q
+SPLEOF	;
+	;**TM**; ZQ動作の変更、ENDOFFILEエラーの変更; I $ZE]"",$ZE'["ENDOFILE" ZQuit 1 G @$ZT
+	I $ZE]"",$ZE'["ENDOFFILE" ZQuit 1 G @$ZT
+	C %FILE,%RPFILE S $ZE="",$ZT="PRERR^%DARPDRV"
+	Q
+PRERR	;
+	U 0 I $ZE'["OPNERR" ZQuit 1 G @$ZT
+	D ERR^%DAERRT
+PRNOP	S %MSG="レポートイメージファイルにアクセスできません。" D MSG ;	;%%Z1-T
+	G PRKILL
+SKIP	;
+	Q:%RPPAGE=1!(%RPPAGE=0)
+	N CNT
+	F CNT=1:1:%RPPAGE S %Y="" R %X F  R %Y Q:%X[$C(12)&(%Y[$C(0))  S %X=%Y
+	Q
+RPID	;
+	ZA ^DADR("CNT") 
+	I '$D(^DADR("CNT")) S ^("CNT")=0
+	S (^("CNT"),%RPID)=^("CNT")+1#1E6
+	ZD ^DADR("CNT")
+	Q
+RPFILE	;
+	N DIR
+	I '$D(%RPID) N RPID D RPID 
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. S DIR=$ZC(%TRNLOG,"DSM$DASL_REPORTS") 
+	;. S %RPFILE=DIR_"DSM$DASL_RPI"_%RPID_".LIS"
+	;I $ZV["DSM for ULTRIX" D
+	;. S DIR=$ZC(%DIRECTORY)
+	;. S %RPFILE=DIR_"/dsm_dasl_rpi"_%RPID_".lis"
+	S %RPFILE="dsm_dasl_rpi"_%RPID_".lis"
+	Q
+TIMECVT	;
+	I %RPTIME'="" D @($S(%RPTIME?5N1","1N.4N:"I",1:"E")_"CONV") S %RPTIME=""
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. I %DTI]"" S %RPTIME=$ZC(%CDATASC,%DTI,3) S:%TMI]"" %RPTIME=%RPTIME_":"
+	;. I %TMI]"" S %RPTIME=%RPTIME_$ZC(%CTIMASC,%TMI,3)
+	;I $ZV["DSM for ULTRIX" D
+	;. I %TMI]"" D
+	;. . S %RPTIME=$$CTIMASC^%DAZCALL(%TMI,2)
+	;. . S %RPTIME=$P(%RPTIME,":",1,2)
+	;. . S:%DTI]"" %RPTIME=%RPTIME_" "
+	;. I %DTI]"" S TIME1="" D
+	;. . S TIME1=$$CDATASC^%DAZCALL(%DTI,5)
+	;. . S %RPTIME=%RPTIME_$ZC(%LOWCASE,$P(TIME1," ",2))_" "_+$P(TIME1," ")
+	I %TMI]"" D
+	. S %RPTIME=$ZTIME(%TMI,1)
+	. S %RPTIME=$P(%RPTIME,":",1,2)
+	. S:%DTI]"" %RPTIME=%RPTIME_" "
+	I %DTI]"" S TIME1="" D
+	. S TIME1=$ZDATE(%DTI,2)
+	. S %RPTIME=%RPTIME_$ZCVT($P(TIME1," ",2),"L")_" "_+$P(TIME1," ")
+	;**TM**
+	K TIME1
+	Q
+ICONV	;
+	S %DTI=$P(%RPTIME,",",1),%TMI=$P(%RPTIME,",",2)
+	D DTIX^%DAUDTTM,TMIX^%DAUDTTM
+	Q
+ECONV	;
+	S %DTX=$P(%RPTIME,",",1),%TMX=$P(%RPTIME,",",2)
+	D DTXI^%DAUDTTM,TMXI^%DAUDTTM
+	Q
+MSG	;
+	U 0 S %E=$C(27) W %E,"[24;1H",$J(%MSG,80)
+	H 3
+	Q
+TEST	;
+	R !,"Report Name: ",%RPNAME Q:%RPNAME=""
+	I '$D(^DARD(%RPNAME)) W "  ? no such report" G TEST
+	S %RPWIDTH=$S($P(^DARD(%RPNAME,"REP"),";",1)'<80:0,1:1)
+AFNC	R !,"Function: ",%RPFNC I %RPFNC=""!("DPD"'[%RPFNC) W "  ?" G AFNC
+ADEV	R !,"Output Device: ",%RES S:%RES]"" %MSG=""
+	D ^%DADEV I %MSG]"" W "  ",%MSG G ADEV
+	I %RES="",%RPFNC["P" W " Input required for Print" G ADEV
+	S %RPDEV=%RES
+ACOP	R !,"Copies: ",%RPCOPY I %RPCOPY'?.N W "  ?" G ACOP
+ATIM	R !,"Start Time: ",%RPTIME
+ASKQ	I %RPTIME]"" R !,"BATCH QUEUE: ",%RPQUE
+	I '$D(%OPV) S %OPV="@"
+	W ! K %RES,%ATR
+	Q
+DSM()	;
+	;**TM**; Namespace対応
+	;S %=$ZC(%UCI),GUCI=$P(%,","),GVOL=$P(%,",",4),RUCI=$P(%,",",6),RVOL=$P(%,",",7)  ;;%%Z3-PATCH-1992-09-16
+	S NS=$Znspace
+	;I $ZV["VAX DSM" N X S X="$ DSM" D
+	;. 
+	;. S LIST="DPRECISION,ENVIRONMENT,NOUNDEFINED,MAPPED,SETFUNCTION,SOURCE,SYMBOL,TRANSACTION"
+	;. N I F I=1:1:$L(LIST) S KEY=$P(LIST,",",I) Q:KEY=""  S KEY(KEY)=$$OPTION^%SYSUTL(KEY)
+	;. I $V($ZK(JSTAT_L_OPTION))\$ZK(JSO_M_DASL)#2 S X=X_"/DASL=HIRAKEGOMA_JDASL" ;	;%%Z3-Z1
+	;. S PAR="" F  S PAR=$O(KEY(PAR)) Q:PAR=""  S @PAR=KEY(PAR)
+	;. S TMP=""
+	;. I DPRECISION=1 S TMP="DPREC"
+	;. I NOUNDEFINED=1 S:TMP'="" TMP=TMP_",NOUN" S:TMP="" TMP="NOUN"
+	;. I SETFUNCTION=1 S:TMP'="" TMP=TMP_",SETF" S:TMP="" TMP="SETF"
+	;. I $L(TMP)>1 S TMP="("_TMP_")"
+	;. I TMP'="" S X=X_"/EXTEN="_TMP
+	;. 
+	;. S:MAPPED=1 X=X_"/MAPP" S:MAPPED=0 X=X_"/NOMAP" 
+	;. 
+	;. I TRANSACTION=1 S X=X_"/TRAN"
+	;. 
+	;. S X=X_"/ENVI="_ENVIRONMENT,X=X_"/VOL="_GVOL_"/UCI="_GUCI ;	;%%Z3-PATCH-1992-09-16
+	;. 
+	;. I GUCI'=RUCI,GVOL'=RVOL S X=X_"/ROUTINE=["_RUCI_","_RVOL_"]"  ;;%%Z3-PATCH-1992-09-16
+	;. S X=X_"/SOUR="_SOURCE,X=X_"/SYMB="_SYMBOL,X=X_"/KANJI" ;	;%%Z1-A
+	;. F I=1:1:$L(LIST) S KEY=$P(LIST,",",I) Q:KEY=""  S VAR=$E(KEY,1,8) K @VAR
+	;. K TMP,KEY,PAR,GUCI,GVOL,RUCI,RVOL,RTN,LIST,VAR  ;;%%Z3-PATCH-1992-09-16
+	I $ZV["DSM for ULTRIX" N X S X=" dsm" D
+	. N %I S TMP=""
+	. F %I="APPLICATION","BASELINE","BREAK","CENABLE","DASL_CUSTOMIZE","ENVIRONMENT","NOUNDEFINED","MANAGER","SOURCE","STACK","SYMBOL","TYPEAHEAD" S %I(%I)=$$OPTION^%SYSUTL(%I)
+	. I %I("TYPEAHEAD")=1 S TMP=TMP_" -e typeahead"
+	. S SOU=" -b "_%I("SOURCE"),SYM=" -t "_%I("SYMBOL")
+	. S STK=" -s "_%I("STACK")
+	. S TMP=TMP_SOU_SYM_STK
+	. I %I("CENABLE")=1 S TMP=TMP_" -e cen"
+	. I %I("DASL_CUSTOMIZE")=1 S TMP=TMP_" -e oyaoya" ;	;%%Z3-Z1
+	. S TMP=TMP_" -E "_%I("ENVIRONMENT")
+	. I %I("NOUNDEFINED")=1 S TMP=TMP_" -e nou"
+	. S TMP=TMP_" -e kanji" ;	;%%Z3-A
+	. 
+	. S X=X_TMP_" -g "_GUCI_","_GVOL  ;;%%Z3-PATCH-1992-09-16
+	. I GUCI'=RUCI,GVOL'=RVOL S X=X_" -r "_RUCI_","_RVOL  ;;%%Z3-PATCH-1992-09-16
+	. 
+	. S X=X_" -a "
+	. K TMP,GUCI,GVOL,RUCI,RVOL,%I,RTN  ;;%%Z3-PATCH-1992-09-16
+	;**TM** Cache,IRIS対応
+	I $ZV["IRIS" N X S X="iris session "_ENV_" -U "_NS
+	I $ZV["Cache" N X S X="csession "_ENV_" -U "_NS
+	Q X
+QUOTES(X)	;
+	N P
+	I X?.N Q X
+	F P=1:1 S P=$F(X,"""",P) Q:'P  S X=$E(X,1,P-1)_$E(X,P-1,999)
+	S X=""""_X_""""
+	Q X

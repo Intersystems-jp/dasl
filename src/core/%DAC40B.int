@@ -1,0 +1,18 @@
+ROUTINE %DAC40B [Type=INT,LanguageMode=6]
+%DAC40B	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+PSWCON	;
+	NEW I
+	S SEED=$P(^DASY("PARM","MISC"),";",2),USR=""
+	W !,"	Converting user file . . . "
+	F  S USR=$O(^DASYU("U","D",USR)) Q:USR=""  S %INT=$P(^(USR,"E"),";",2) D PSWCO S $P(^DASYU("U","D",USR,"E"),";",2)=%INT
+	K %EXT,%INT,I,SEED,USR
+	Q
+PSWCO	;
+	I %INT?10N Q
+	S %EXT=""
+	S %INT=$TR(%INT,$C(7),";")
+	F I=1:1:$L(%INT) S %EXT=%EXT_$C($A($E(%INT,I))+64-$A(SEED,I-1#$L(SEED)+1)+32)
+ENCODE	D ENCODE^%DALOGIN
+	Q

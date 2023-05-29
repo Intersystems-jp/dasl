@@ -1,0 +1,242 @@
+ROUTINE %DALOGIN [Type=INT,LanguageMode=6]
+%DALOGIN	;JEB/DBS/DAH,LOGIN,SECURITY,DASL;4-Mar-92;V6.1 Login routine
+	;DASL;N;SECURITY
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;********************************************************************
+	;*                     !WARNING to Developers!                      *
+	;*   The master copy of this routine is stored under the %DM####    *
+	;*   name.  If any edits are made to this routine the edits MUST    *
+	;*   be made to the %DM routine as well.  Failure to do this will   *
+	;*   lead to errors in Portable Run-time DASL!                      *
+	;*                                                                  *
+	;********************************************************************
+	;   Variables:
+	;      %PPV - process privs (intersection of device and user)
+	;      %OPV - option privs (ie - privs required to run the option.)
+	;
+	; Do not change the next line of comments, used for runtime gen.
+	;; Run-time
+	;
+LOGIN	D WRITE
+	; Check data base rev level run ^%DACVRT to update
+	;**TM**;I $P($ZC(%UCI),",",1,2)="MGR,MGR" W !,"DASL は、マネージャ UCI では実行してはいけません。" Q  ;	;%%Z1-T
+	I $Znspace="%SYS" W !,"DASL は、%SYS では実行してはいけません。" Q  ;	;%%Z1-T
+	I $GET(^DASYU("CONVERT"))'="61AJ" S %MSG="データベースが正しいリビジョンではありません:'DO ^%DACVRT'を実行して下さい" G ERR
+	S $ZT="^%DAERRT"  ;;%%Z3-DASLV61_BUGS-7
+	; Cache,IRIS対応 ;**TM**;
+	;I $ZV["VAX DSM" D
+	;. S %PDV=$ZC(%GETDVI,$I,"TT_PHYDEVNAM")  ;;%%Z3-DASLV61_BUGS-7
+	;. I $E(%PDV)="_" S %PDV=$E(%PDV,2,99)
+	;I $ZV["DSM for ULTRIX" s %PDV=$I,%DULT=$ZC(%UPCASE,%PDV)
+	I $ZV["IRIS" S %PDV=$I,%DULT=$piece($zcvt(%PDV,"U"),"|",2)
+	I $ZV["Cache" S %PDV=$I,%DULT=$piece($zcvt(%PDV,"U"),"|",2)
+FAST	; Login/Fast Login
+	; Cche,IRIS対応 :**TM**;
+	;I $ZV["VAX DSM",$D(^DASYU("D","X",%PDV)) S %DEV=$O(^DASYU("D","X",%PDV,"")) G FAS
+	;I $ZV["VAX DSM",$D(^DASYU("D","X",$E(%PDV,1,2)_"*")) S %DEV=$O(^DASYU("D","X",$E(%PDV,1,2)_"*","")) G FAS
+	;I $ZV["DSM for ULTRIX" $D(^DASYU("D","X",%DULT)) S %DEV=$O(^DASYU("D","X",%DULT,"")) G FAS
+	;I $ZV["DSM for ULTRIX",$D(^DASYU("D","X",%DULT)) S %DEV=$O(^DASYU("D","X",%DULT,"")) G FAS ;	;%%Z3-Y
+	;I $ZV["DSM for ULTRIX",$D(^DASYU("D","X",$E(%DULT,1,$L(%DULT)-2)_"*")) S %DEV=$O(^DASYU("D","X",$E(%DULT,1,$L(%DULT)-2)_"*","")) G FAS
+	I $ZV["IRIS",$D(^DASYU("D","X",%DULT)) S %DEV=$O(^DASYU("D","X",%DULT,"")) G FAS ;	;%%Z3-Y
+	I $ZV["IRIS",$D(^DASYU("D","X",$E(%DULT,1,$L(%DULT)-2)_"*")) S %DEV=$O(^DASYU("D","X",$E(%DULT,1,$L(%DULT)-2)_"*","")) G FAS
+	I $ZV["Cache",$D(^DASYU("D","X",%DULT)) S %DEV=$O(^DASYU("D","X",%DULT,"")) G FAS ;	;%%Z3-Y
+	I $ZV["Cache",$D(^DASYU("D","X",$E(%DULT,1,$L(%DULT)-2)_"*")) S %DEV=$O(^DASYU("D","X",$E(%DULT,1,$L(%DULT)-2)_"*","")) G FAS
+	S %MSG=^%DAMSG(%FLANG,"UNDEV") G ERR
+FAS	S %X=^DASYU("D","D",%DEV,"E")
+	; Device attributes, must be one of: ,VT100,VT200,VT80,	;	;%%Z1-C
+	S %=","_$P(%X,";",2)_","
+	I %'[",VT100,",%'[",VT200,",%'[",VT80," S %MSG=^%DAMSG(%FLANG,"VT") G ERR ;	;%%Z1-C
+	S %PPV="" ; Get device privilege(s). Since we don't know the user yet,
+	;             process privs will just be the device privs
+	F %=0:0 S %=$O(^DASYU("D","D",%DEV,"S",%)) Q:%=""  S %PPV=%PPV_^(%)
+	; Update current job global, kill temp global
+	K ^DATG($J) S ^DAJC($J)=$H_";;"_%PDV_";%LOGIN"
+	U 0:PACK D INIT ; Initialize screen driver variables
+	; %OPV = "+" in order to let System Manager login to a CLOSED system
+	S:'$D(%OP) %OP=0
+	S %USR="",%FLGN=1,%OP(0)="",%OPV="+",%OPN="Login"
+	S %NAME="%LOGIN" D SCREEN^%DARUN ; Call DASL Login Screen
+	S %EX=0 ; A super exit from the mail routine does not count
+	S %NAME=$P(^DASY("PARM","SCN"),";",1) 
+	I %NAME="" D  S %FLGN=0 G LOGOUT ;	;%%Z3-T
+	. W !,$C(7),"スクリーンは呼び出されません。アプリケーションパラメータ・スクリーン",!
+	. W !,"で呼び出すスクリーンを定義して下さい。",!
+	I %USR="" S %FLGN=0
+	; %USR non-null if login successful - Init variables, call first screen
+	E  D PRIV,CHKPT I %FLGN S:'$D(%OP) %OP=0 S %OP(0)="メイン メニュー",%OPV="",%OPN=$P(^DASY("APPL"),";",1) D SCREEN^%DARUN ;	;%%Z1-T
+LOGOUT	; Entry point from error handler ^%DAERRT
+	S %X=+$P(^DAJC($J),",",2),%Y=$P($H,",",2)
+	S %X=$S(%Y>%X:%Y-%X,1:%Y+86400-%X)\60
+	; For 'Fast Login' - loop back to FAST after updating ^DAJC and ^DAJH
+	K ^DAJC($J)
+	I '%PGMR,%USR]"" S ^%JOURNAL=1,%Y=$S('$D(^DAJH(+$H,%USR,"E")):"0;0",1:^DAJH(+$H,%USR,"E")) S ^DAJH(+$H,%USR,"E")=%Y+1_";"_($P(%Y,";",2)+%X),^%JOURNAL=0
+	I $$TRNLOG^%DAZCALL("DSM$DASL_SPECIAL_USER_ENTRY")'="" S %FLGN="" ;	;%%Z1-H
+	; Quit if system is closed, EXIT, Main Menu, or time-out in LOGIN screen
+	;  Field EXIT in LOGIN sets %FLGN=0
+	I %FLGN,^DASY("STATUS") D CHKPT I %FLGN G FAST
+	; Get name of application logout screen
+	S %NAME=$P(^DASY("PARM","SCN"),";",2)
+	D @($S(%NAME]"":"SCREEN",1:"EXIT"))
+	K %DEV,%FLGN,%PPV,%PDV,%USR,%PGMR,%SPV
+	; Do not change the next line of comments, used for runtime gen.
+	;; Run-time
+	Q
+SCREEN	; Entry point to run a screen without entering through %DALOGIN
+	;  Input screen name in %NAME
+	D INIT,SCREEN^%DARUN
+	W:$E(%SCN)'="l" %E,"[2J",%E,"[?3l" W:%SCN[";" %E,"[r"
+	G EXIT
+INIT	; Entry point to define screen driver variables
+	D WRITE
+	I '$D(%USR) S %USR=""
+	I '$D(%OP)  S %OP=0,%OP(%OP)="メイン メニュー" ;	;%%Z1-T
+	I '$D(%PPV) S %PPV="@"
+	I '$D(%FPV) S %FPV="@"
+	I '$D(%OPV) S %OPV="@"
+	I '$D(%OPN) S %OPN=""
+	F %Z=0:1:24 S %L(%Z)="",%O(%Z)=1
+	; Default system timeout
+	S (%TM,%TMO)=$P(^DASY("PARM","DTTM"),";") I %TM'?1N.N S (%TM,%TMO)=300
+	I '$D(%PGMR) S %PGMR=0 ; User Mode
+	S %TRM=$C(5,8,10,23,127) ; Read terminaters (TERM) - Control E = 5,
+	;   Backspace = 8, Linefeed = 10, Control W = 23, Delete = 127
+	S %ESC=$C(3) ;	;%%%ESC=0 %%Z2-X6
+	S %ZB=""
+	;+%%Z1-E
+	;;**TM**; U 0:(ESC:ECHO:CON:WIDTH=0:TERM=%TRM:EXINPUT=(NAME="ZIN":PARAM="DASL":NOENABLE)) 
+	;;**TM**; U 0:(EXINP=(NAME="ZIN":PARAM="KEY=(HEAD_CURSOR=(NOKEY,NOKEY))")) 
+	;;**TM**; Cache,IRISで使用できないパラメータを削除
+	U 0:(ESC:ECHO:CON:WIDTH=0:TERM=%TRM) 
+	; U 0:(EXINP=(NAME="ZIN":PARAM="KEY=(DEL_WORD=(NOKEY,NOKEY))")) 
+	;-%%Z1-E
+	S %SCN="l",%E=$C(27),%LL=80
+	S %U=2,%U(0)="",%U(1)=$J("",132),%U(2)="",$P(%U(2),"_",133)=""
+	S (%F,%EX)=0,(%HF,%MSG,%RES,%ERROR,%FND)=""
+	; Set terminal parameters:
+	;	 "[?25h" - display cursor
+	;        ">"    - numeric keypad
+	;        "(B"   - turn off graphics mode
+	;        "[r"   - scroll 1-24
+	;        "[?3l" - 80 columns
+	;        "[?7l" - no auto wrap
+	;        "[m"   - normal display attributes
+	W %E,"[?25h",%E,"(B",%E,">",%E,"[?7l",%E,"[r",%E,"[?3l",%E,"[m"
+	;+%%Z1-E;%%Z1-D
+	;**TM**; 使用できないパラメータは消す; U 0:EXINPUT=(PARAM="WIDTH=80")
+	;D KEYASS^%DASJUTL I %MSG["STANDARD" D
+	;.  U 0:NOPACK
+	;. W !!,*7,*7,%MSG,!! H 10
+	;.  U 0:PACK
+	;-%%Z1-E;%%Z1-D
+	;+%%Z3-COLOR
+	;**TM**; ColorDASLはサポート外
+	;I $ZV["ULTRIX" D
+	;. S %GCCF=0 I $&%GETENV("DSM_DASL_GRAPHIC_COMPILE")="ON" S %GCCF=1
+	;. I $&%GETENV("DSM_DASL_GRAPHIC_RUNNING")="ON" D ^%DAUGRA
+	;E  D
+	;. S %GCCF=0 I $$TRNLOG^%DAZCALL("DSM$DASL_GRAPHIC_COMPILE")="ON" S %GCCF=1
+	;. I $$TRNLOG^%DAZCALL("DSM$DASL_GRAPHIC_RUNNING")="ON" D ^%DAUGRA
+	;-%%Z3-COLOR
+	Q
+EXIT	; Entry to clean up DASL variables and Use parameters
+	;+%%Z1-E
+	;**TM**;U 0:(NOPACK:NOESC:NOCON:WIDTH=80:CTRAP="":TERM=$C(13):NOEXINPUT)
+	U 0:(NOPACK:NOCONVERT:TERM=$C(13))
+	;-%%Z1-E
+	W $C(27)_"[?25h"
+	K %,%D,%E,%F,%I,%L,%O,%P,%Q,%R,%S,%T,%U,%V,%W,%X,%Y,%Z
+	K %DTI,%DTX,%ERR,%ERROR,%ESC,%EX,%EXT,%FLANG,%FND,%FPV,%GR,%HF
+	K %INP,%INT,%LL,%MSG,%NAME,%OLD,%OP,%OPN,%OPV,%PROGRAM,%RES,%REST
+	K %RPNAME,%SCN,%SCX,%SL,%SN,%SP,%SPS,%TM,%TMI,%TMO,%TMX,%TRM
+	K %WRITE,%XREST,%ZB,%FKV,%FKN,%POPD,%POPK
+	K %LE ; new variable 6.1 contains last error for redisplay
+	K %kj,%kjx,%KJ,%KJSTS,%KJVMS,%RPKPIT,%RPKTYP,%RPKON,%RPKOF,%INPP,%ZT,%KJLWC,%KJUPC ;	;%%Z1-A %%Z2-P;%%Z2-Y
+	K %GC,%GCCF,%KD ;	;%%Z3-COLOR;%%Z3-TERM
+	Q
+WRITE	; %WRITE=0 - System Status is in Inquiry mode
+	S %WRITE=1 S:$P(^DASY("STATUS"),";",4)="=" %WRITE=0
+	; Set forgien language flag
+	S %FLANG=^%DAMSG
+	Q
+CHKPT	; Checkpoint logic - Test system mask before fast login
+	;  %SPV - system mask privs.
+	;          @ means all privs have access to the system - OPEN
+	;          + means only the system manager has access  - CLOSED
+	;  Note - @ is really a wildcard meaning all the privs in your
+	;         privilege dictionary
+	;  Return %FPV as intersection of process privs and system mask
+	S %SPV=$P(^DASY("STATUS"),";",4)_"+"
+	S %FPV=$S(%SPV["@":%PPV,%PPV["@":%SPV,1:"") ; Same as PRIV subroutine
+	I %FPV="" F %I=1:1:$L(%SPV) I %PPV[$E(%SPV,%I) S %FPV=%FPV_$E(%SPV,%I)
+	I %FPV="" S %FLGN=0,%MSG=^%DAMSG(%FLANG,"S")_$P(^DASY("STATUS"),";",2)_" "_$P(^DASY("STATUS"),";",3) W *7,%E,"[24;1H",%MSG H 1
+	Q
+ERR	W *7,!,%MSG,! K %,%X,%DEV,%MSG,%PDV,%WRITE
+	Q
+FAIL	; Login unsuccessful, send message to log - Prevent additional login
+	;  attempts by returning %FLGN=0
+	S %ERR="110\User ID: "_USRID,%FLGN=0 S %USR="" D LOG^%DAERRT
+	Q
+PRIV	; Login successful, initialize variables - Get user privs
+	;  Enter with %PPV = device privs
+	S %DPV=%PPV
+	; Get user privs from the user classification(s)
+	S %UPV="" F %X=0:0 S %X=$O(^DASYU("U","D",%USR,"S",%X)) Q:%X=""  S %USRCLL=^(%X) D PRIVC
+	; @ is a system privilege for access to all functions, except when
+	;  system is "CLOSED", in which case you need + priv to login
+	I %UPV["@" S %PPV=%DPV
+	E  I %DPV["@" S %PPV=%UPV
+	; Total privileges are the intersection of device and user
+	E  S %PPV="" F %=1:1:$L(%DPV) S %X=$E(%DPV,%) I %UPV[%X,%PPV'[%X S %PPV=%PPV_%X
+	; Store user in current jobs global (System Monitor Report)
+	S $P(^DAJC($J),";",2)=%USR
+	K %DPV,%UPV,%USRCLL
+	Q
+PRIVC	; Classification privilege(s)
+	F %=0:0 S %=$O(^DASYU("C","D",%USRCLL,"S",%)) Q:%=""  S %UPV=%UPV_^(%)
+	Q
+PRIVS	S %X="" ; System privilege string for status in USRSTN to %X for USRCTRL
+	F %=0:0 S %=$O(^DASYU("S","D",USRSTN,"S",%)) Q:%=""  S %X=%X_^(%)
+	Q
+ENCODE	; Encrypt password pass in %EXT pass out %INT
+	; Due to the DSM division calculation change
+	; %ARG takes always 13 characters from %INT. 
+	;S %INT="" S:%EXT=""  %EXT=0
+	S %INT="" S:%EXT="" %EXT=0 ;	;%%Z3-T
+	NEW I,P
+	F I=1:1:$L(%EXT) S %INT=%INT_$A($E(%EXT,I)) ;     Get ASCII value
+	S %INT=$E(%INT,1,15)                        ;     Truncate (number)
+	S %EXT=""                                   ;     We don't need it now
+	S %ARG=%INT/180*3.1415926536,%ARG=$E(%ARG,1,13)
+	S %INT=$$SIN^%DAZCALL(%ARG)
+	S %INT=$P(%INT,".",1)_$P(%INT,".",2)        ;     Remove decimal
+	I $E(%INT)="-" S %INT=$E(%INT,2,$L(%INT))   ;     Remove negative
+	S %INT=$E(%INT_"0000000000000000",1,16)     ;     Replace missing 0's
+	S P=$E(%INT,16),%INT=$E(%INT,1,15)          ;     Save last digit
+	S %INT=$E(%INT,P+1,P+10)_$E(%INT,0,P-5)     ;     Wrap number
+	K %ARG
+	Q
+NSTAT	; Log an update to system status - from USRCTRL
+	; Update to ^DASY("STATUS") has already been made
+	S %MSG=^%DAMSG(%FLANG,"S")_$P(^DASY("STATUS"),";",2)_" "_$P(^DASY("STATUS"),";",3)
+	S %ERR="104\"_%MSG S %MSG="" D LOG^%DAERRT
+	Q
+START	; Application start-up entry point - Clean up temp globals before
+	;  calling OPEN - Kill globals one node at a time to maintain global
+	;  placement in DSM global header block
+	S %="" F %I=1:1 S %=$O(^DAJC(%)) Q:%=""  K ^(%)
+	S %="" F %I=1:1 S %=$O(^DATG(%)) Q:%=""  K ^(%)
+	K %,%I
+	D OPEN S %ERR=100 D LOG^%DAERRT
+	Q
+STOP	; Application shut-down entry point
+	D CLOSE S %ERR=102 D LOG^%DAERRT
+	Q
+OPEN	; Application entry point to open system
+	S ^DASY("STATUS")="1;OPEN;Open;@",%ERR=101 D LOG^%DAERRT
+	Q
+CLOSE	; Application entry point to close system
+	S ^DASY("STATUS")="0;CLOSED;Closed;",%ERR=103 D LOG^%DAERRT
+	Q

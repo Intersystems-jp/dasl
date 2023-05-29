@@ -1,0 +1,61 @@
+ROUTINE %DADEVC [Type=INT,LanguageMode=6]
+%DADEVC	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;**TM**; ルーチン使用チェック; おそらくVMSしか対応していない模様
+	set ^mina($I(^mina))="%DADEVC"
+	ZT "FORCE ERROR - This routine is a stub."
+	S KEYSIZ=63,DEVF=$$TRNLOG^%DAZCALL("DEVICES") S:DEVF="" DEVF="DEVICES.COM"
+	S ALF="SYSALF.DAT",SALF="SYS$SYSTEM:"_ALF
+	;**TM**;ユーザ名の変更; S UNAME=$ZC(%GETJPI,$I,"USERNAME")_$J("",KEYSIZ) 
+	S $ZT="OPERR^%DADEVC" O DEVF::10 E  G NOOPEN
+	C DEVF:DEL O DEVF:NEW:10 E  G NOOPEN
+	U DEVF W "! Initialize devices for ",^DASY("APPL"),!,"$ set noon",!
+	U 0 O ALF:(INDEX:KEY=KEYSIZ):10 E  G NOOPEN
+	C ALF:DEL O ALF:(INDEX:KEY=KEYSIZ:NEW):10 E  G NOOPEN
+	S KEY="X"_$J("",KEYSIZ-1) U ALF W KEY,KEY,! U ALF:(KEY=KEY:DEL)
+	S $ZT="NOALF^%DADEVC" O SALF:(INDEX:KEY=KEYSIZ:READ):10 E  G NOOPEN
+	S $ZT="COPEND^%DADEVC" F I=1:1 U SALF R X U ALF W X,!
+	;**TM**; ZQの変更;ENDOFFILEエラーの変更; COPEND	I $ZE'["ENDOFILE" ZQ
+COPEND	I $ZE'["ENDOFFILE" ZQ 1 G @$ZT
+COPCLS	U 0 S $ZT="ERROR^%DADEVC" C SALF
+	;**TM**; ルーチン使用チェック; おそらくVMSしか対応していない模様
+	set ^mina($I(^mina))="COPCLS^%DADEVC"
+	S DEV="" F I=0:0 S DEV=$O(^DASYU("D","D",DEV)) Q:DEV=""  D DEV
+	S PORT="" 
+	F I=0:0 S PORT=$O(MOD(PORT)) Q:PORT=""  S ATR="" D TIED K MOD(PORT)
+	;**TM**; C DEVF S $ZT="DEVERR^%DADEVC" S X="@"_DEVF,I=$ZC(%SPAWN,X)
+	C DEVF ; S $ZT="DEVERR^%DADEVC" S X="@"_DEVF,I=$ZC(%SPAWN,X)
+KILL	C DEVF,ALF K ALF,SALF,DEVF,KEY,KEYSIZ,UNAME,DEV,ATR,X,I,PORT
+	Q
+	;**TM**; ZQの変更; PERR	I $ZE'["OPENERR" ZQ
+OPERR	I $ZE'["OPENERR" ZQ 1 G @$ZT
+NOOPEN	S %MSG="システムデバイスファイルをオープンできません。" G KILL ;	;%%Z1-T
+NOALF	I $ZE["OPENERR" G COPCLS
+	;ERROR	ZQ
+ERROR	ZQ 1 G @$ZT
+DEVERR	S %MSG="デバイス処理中にエラーが発生しました。" ;	;%%Z1-T
+	G KILL
+DEV	;
+	S X=^DASYU("D","D",DEV,"E"),PORT=$P(X,";",1),ATR=$P(X,";",2)
+	Q:PORT=""  K MOD(PORT) Q:PORT["*"  D TIED,SPOOL U 0
+	Q
+TIED	;
+	S KEY=$E("_"_PORT_$J("",KEYSIZ),1,KEYSIZ)
+	I ATR'["TIED" U ALF:KEY=KEY R X U:X]"" ALF:(KEY=KEY:DEL)
+	E  U ALF W KEY,UNAME,!
+	Q
+SPOOL	;
+	U DEVF I ATR["NOQCONTROL" Q
+	I ATR'["SPOOL" G NOSPL
+	W "$ if f$getdvi(""",PORT,""",""spl"") then goto ",DEV,"_done",!
+	W "$ set device/spooled=(",$P(PORT,":"),",'f$getdvi(""sys$system"",""devnam"")) ",PORT,!
+	W "$ start/queue ",$P(PORT,":"),!
+	W "$ if $status then goto ",DEV,"_done",!
+	W "$ initialize/queue/noenable_generic",$S(ATR["NOSIZE":"/schedule=nosize",1:"")," ",$P(PORT,":"),!
+	W "$ start/queue ",$P(PORT,":"),!,"$ ",DEV,"_done:",!
+	Q
+NOSPL	W "$ if .not. f$getdvi(""",PORT,""",""spl"") then goto ",DEV,"_done",!
+	W "$ stop/queue/next ",$P(PORT,":"),!,"$ delete/queue ",$P(PORT,":"),!
+	W "$ set device/nospooled ",PORT,!,"$ ",DEV,"_done:",!
+	Q

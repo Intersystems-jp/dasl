@@ -1,0 +1,211 @@
+ROUTINE %DAQPAR1 [Type=INT,LanguageMode=6]
+%DAQPAR1	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	W:DB=1 !,"**DAQPAR1**",! 
+	D:%ALLFG=1 ALLFG 
+	I $D(%QH) D
+	. F %N=1:1 S %C=$P(%QGB,";",%N) Q:%C=""  S %QGB(%QC(%C))=""
+	. F %N=1:1 I '$D(%QE(%N)) S %QECNT=%N Q
+	. F %N=1:1 Q:'$D(%QH(%N))  F %I=1:1 Q:'$D(%QH(%N,%I))  D CK4 Q:%MSG'=""
+	I %MSG'="" G END
+	; 	%RUN  - Quit if not set, we are not running this
+	;	        query.
+	S %NX="" F  S %NX=$O(%QT(%NX)) Q:%NX=""  D CK Q:%MSG'=""
+	I %MSG'="" G END
+	F  S %NX=$O(%QC(%NX)) Q:%NX=""  D CK1 Q:%MSG'=""
+	I %MSG'="" G END
+	S %N="" 
+	F  S %N=$O(PK(%N)) Q:%N=""  I '$D(FLAG("DEP",%N)) S $P(PK(%N),";",4)=""
+	F %N=1:1:%QACNT-1 D:$D(%QA(%N)) CK2 Q:%MSG'=""
+END	;
+	G:%MSG'="" END^%DAQPAR
+	K %ALLFG D KILLVAR^%DAQPAR
+	Q
+CK	;
+	S %TB=%QT(%NX),%D=$P(^DATD(%TB,"REF"),";",2),%OK=""
+	F %N=1:1 S %KY=$P(%D,",",%N) Q:%KY=""  D  
+	. S (%NK,%C)="" F  S %NK=$O(^DATD(%TB,"C",%NK)) Q:%NK=""  D
+	. . I $P(^(%NK),";",3)=%KY S %C=$P(^(%NK),";",1)
+	. S SUB="C",NAME=%NX_"."_$S(%C'="":%C,1:%KY) S VAR=$$VARGEN(SUB,NAME) 
+	. I $D(%QT(%NX,%KY)) Q
+	. S %QT(%NX,%KY)=VAR,XDEP(VAR)=""
+	. S REF=$P(^DADD(%KY,"REF"),";") D REF
+	. S LN=VAR_".EV" D LB
+	. S TYPE=$P(^DADD(%KY,"B"),";",2)
+	. S PK(VAR)=VAR_";"_REF_";"_TYPE_";"_LB
+	. I %OK="" S %OK=VAR Q
+	. S DEP(%OK_","_VAR)="",%OK=VAR
+	Q
+REF	;
+	S %=$P($P(REF,")",1),"(",2) 
+	F %I=1:1 S X=$P(%,",",%I) Q:X=""  I X'["""" D  
+	. I X?1A.E S $P(%,",",%I)=%QT(%NX,X) Q
+	. I "*#"[X S $P(%,",",%I)=VAR Q
+	S REF=$P(REF,"(",1)_"("_%_")"
+	Q
+CK1	;
+	S %X=%QC(%NX),%TB=$P(%X,".",1),%C=$P(%X,".",2),%TE=%QC(%NX,"TE")
+	I %TB="" S %MSG="QP3;"_%C Q
+	I '$D(^DATDX("CT",%C,%TB)) S %MSG="QP5;"_%C_","_%TB Q
+	I '$D(^DATD(%TB,"C",^DATDX("CT",%C,%TB))) S %MSG="QP5;"_%C_","_%TB Q
+	S %X=^DATD(%TB,"C",^DATDX("CT",%C,%TB)),%DDNM=$P(%X,";",3)
+	I %DDNM["<" S %PNTT=$P(%DDNM,"<",1),%PNTF=$P(%DDNM,"<",2) D  Q
+	. I '$D(^DADD(%PNTT)) S %MSG="QP5;"_%C_","_%TB Q
+	. I '$D(^DADD(%PNTF)) S %MSG="QP5;"_%C_","_%TB Q
+	. 
+	. S %TC=%C,FGKEY=0,%TCNM=%TB_"."_%TC S %DDNM=%PNTF D LOAD Q:%MSG]""
+	. S %DDREF=$P(REF,";",1)
+	. 
+	. S SUB="C",NAME=%TE_"."_%C S VAR=$$VARGEN(SUB,NAME),%QC(%NX,"VAR")=VAR
+	. I FGKEY'=1  D NOD
+	. 
+	. S %QT(%TE,$P(REF,";",7))=VAR
+	. S LN=VAR_".EV" D LB S PK(%KEY)=PK(%KEY)_","_LB
+	. 
+	. S %DDNM=%PNTT D DDN Q:%MSG]"" 
+	. 
+	. S %QD(%TCNM,"R")=""
+	. 
+	. S %QV(VAR,"%QD")=%QC(%NX),%QV(VAR,"%QC")=%NX,%QV(VAR,"DDN")=%DDNM
+	. S:OT'="" FLAG("EX",VAR)="OT"
+	. S:%QD(%QC(%NX),"T")="DATE" FLAG("EX",VAR)="DATE"
+	. S:%QD(%QC(%NX),"T")="TIME" FLAG("EX",VAR)="TIME"
+	. S REF=^DADD(%PNTT,"REF") D REFPT
+	. S %DDREF=$P(REF,";",1),%DDP=$P(REF,";",2),%QC(%NX,"REF")=%DDREF
+	. S %KEY=VAR,%PNT("DP",VAR)=VAR D NOD 
+	. Q
+	I '$D(^DADD(%DDNM)) S %MSG="QP5;"_%C_","_%TB Q
+	S %TC=%C,FGKEY=0
+	D COL Q:%MSG]""  S X=REF,%DDREF=$P(X,";",1)
+	S %QC(%NX,"REF")=%DDREF 
+	S SUB="C",NAME=%TE_"."_%C S VAR=$$VARGEN(SUB,NAME) 
+	S %QC(%NX,"VAR")=VAR
+	S %QV(VAR,"%QD")=%QC(%NX),%QV(VAR,"%QC")=%NX,%QV(VAR,"DDN")=%DDNM
+	S:OT'="" FLAG("EX",VAR)="OT"
+	S:%QD(%QC(%NX),"T")="DATE" FLAG("EX",VAR)="DATE"
+	S:%QD(%QC(%NX),"T")="TIME" FLAG("EX",VAR)="TIME"
+	Q:FGKEY=1  D NOD Q
+NOD	;
+	S NOD(%DDREF)=%KEY
+	S %DDP=%QD(%TCNM,"PI") I %DDP?.N,%DDP'="" S %DDP=%DDP_FLAG("DELIM")
+	I %DDP="" S %DDP=0
+	S NOD(%DDREF,%DDP)=""
+	S NOD(%DDREF,%DDP,+$P(X,";",3),VAR)=$P(X,";",3)
+	Q
+REFPT	;
+	S %=$P($P(REF,")",1),"(",2)
+	F %N=1:1 S X=$P(%,",",%N) Q:X=""  I X'["""" D  
+	. I X?1A.E S $P(%,",",%N)=%QT(%TE,X) Q
+	. I "*#"[X S $P(%,",",%N)=%QT(%TE,%DDNM) Q
+	S REF=$P(REF,"(",1)_"("_%_");"_$P(REF,";",2,255)
+	q
+CK2	;
+	S %NUMFG=$P(%QA(%N),";",1),(%DT,%TYPE)=""
+	S %COL=$P(%QA(%N),";",2,99),%COUNT=1
+	D CK3 I %MSG'=""!(%DT="") Q
+	I ",STRING,NAME,"[(","_%DT_",")&($D(%QA(%N,"OP"))) D ST2
+	Q:%NUMFG'=1
+	I ",DATE,TIME,NUMERIC,"'[(","_%DT_",") S %MSG="QP6;"_%COL
+	Q
+CK3	S %C=$P(%COL,";",%COUNT)  
+	I %C="" Q:$P(%COL,";",%COUNT,99)=""  S %COUNT=%COUNT+1 G CK3
+	S %DT=%QD(%QC(%C),"T") I %TYPE="" S %TYPE=%DT
+	I %DT'=%TYPE S %X=$E(%QA(%N,"VE")),%MSG="QP7;"_$S(%X="W":"WHERE",%X="H":"HAVING",%X="S":"SELECT",1:"A VALUE EXPRESSION") Q
+	S %COUNT=%COUNT+1 G CK3
+ST2	;
+	S %X=%QA(%N,"OP"),%Y="%Q"_$E(%QA(%N,"VE"))_"("_$E(%QA(%N,"VE"),2,99)_")"
+	S @%Y=$P(@%Y,$C(0)_%X_$C(0),1)_$S(%X=">"!(%X="'<"):$C(0)_"]"_$C(0),1:$C(0)_"']"_$C(0))_$P(@%Y,$C(0)_%X_$C(0),2)
+	Q
+CK4	;
+	S %F=$P(%QH(%N,%I,"FLAG"),";",1),%COL=%QH(%N,%I,"COL"),%COUNT=1,%TYPE=""
+	Q:"NS"[%F
+CK5	S %C=$P(%COL,";",%COUNT) 
+	I %C="" Q:$P(%COL,";",%COUNT+1,99)=""  S %COUNT=%COUNT+1 G CK5
+	S %C=$P(%QC(%C),";",1) 
+	I %F="F",$D(%QGB(%C)) S %MSG="QP8;"_%C Q
+	I %F'="F",'$D(%QGB(%C)) S %MSG="QP9;"_%C
+	Q:%MSG'=""  S %FG=0
+	F %J=1:1 Q:'$D(%QE(%J))  I $P(%QE(%J,"FLAG"),";",1)="C" D  
+	. S %=%QE(%J) S:$P(%QC(%),";",1)=%C %FG=1 Q
+	I %FG=0 S %QE(%QECNT)=$P(%COL,";",%COUNT),%QE(%QECNT,"FLAG")="C;;;NOPRINT",%QECNT=%QECNT+1
+	S %COUNT=%COUNT+1 G CK5
+ALLFG	;
+	K %TEMP S CNT=1,%="",%T=""
+	F %J=1:1 Q:'$D(%QE(%J))  S %X=%QE(%J) D ALL
+	K %QE S %N="" 
+	F  S %N=$O(%TEMP(%N)) Q:%N=""  S %QE(%N)=%TEMP(%N),%QE(%N,"HEAD")=%TEMP(%N,"HEAD"),%QE(%N,"FLAG")=%TEMP(%N,"FLAG") 
+	K %TEMP,CNT
+	Q
+ALL	;
+	I %X'["*" S %TEMP(CNT)=%X,%TEMP(CNT,"HEAD")=%QE(%J,"HEAD"),%TEMP(CNT,"FLAG")=%QE(CNT,"FLAG") S:$D(%QE(%J,"FUNC")) %TEMP(CNT,"FUNC")=%QE(%J,"FUNC") S CNT=CNT+1 Q
+ALL1	;
+	I %X="*" S %=$O(%QT(%)) Q:%=""  S %TB=%QT(%) G:%T[(","_%TB_",") ALL1 S %T=%T_%TB_"," D ALL2 G ALL1 
+	S %TB=$P(%X,".",1) I %TB="" S %MSG="QP10" Q
+	S %TB=%QT(%TB)
+ALL2	S %N="" I %TB="" S %MSG="QP11" Q
+	F  S %N=$O(^DATD(%TB,"C",%N)) Q:%N=""  D  
+	. S %C=$P(^(%N),";",1)
+	. S %TEMP(CNT)=%_"."_%C,%TEMP(CNT,"HEAD")=%TEMP(CNT)
+	. S %TEMP(CNT,"FLAG")="C",CNT=CNT+1
+	. S:'$D(%QC(%_"."_%C)) %QC(%_"."_%C)=%TB_"."_%C,%QC(%_"."_%C,"TE")=%
+	Q
+LB	;
+	I LN=""!(%LBCNT>701) S %MSG="ERROR IN TAG SUBROUTINE" Q
+	I $D(LB(LN)) S LB=LB(LN) Q
+	S %LBCNT=%LBCNT+1,LB=$C(%LBCNT\26+64)_$C(%LBCNT#26+65)
+	S LB(LN)=LB
+	Q
+VARGEN(SUB,NAME)	
+	N V1,V2,SCNV
+	S SUB=SUB_"."_NAME
+	I $D(%VAR(SUB)) Q %VAR(SUB)
+	S SCNV=$P(%VAR,";"),V1=$P(%VAR,";",2),V2=$P(%VAR,";",3)
+	G:V2 SG2 S V1=V1+1 I V1>26 S V1=0,V2=1 G SG2
+	S VAR=SCNV_$C(V1+64),%VAR(SUB)=VAR
+	S %VAR=SCNV_";"_V1_";"_V2
+	Q VAR
+SG2	S V1=V1+1 I V1>26 S V1=1,V2=V2+1
+	S VAR=SCNV_$C(V2+64)_$C(V1+64),%VAR(SUB)=VAR
+	S %VAR=SCNV_";"_V1_";"_V2
+	Q VAR
+	;	REF   - Global ref with variable in place of ddn's
+	;	TYPE  - Data type
+COL	;
+	S %LOAD="",%TCNM=%TB_"."_%TC
+LOAD	;
+	S REF=^DADD(%DDNM,"REF")
+	S %=$P(REF,";",1),%=$P($P(%,")",1,$L(%,")")-1),"(",2,99),%KEY=""
+	F %N=1:1 S X=$P(%,",",%N) Q:X=""  I X'["""" D  Q:%MSG]"" 
+	. 
+	. I X?1A.E S $P(%,",",%N)=%QT(%TE,X),%KEY=%QT(%TE,X) Q
+	. I "*#"[X S $P(%,",",%N)=%QT(%TE,%DDNM),%KEY=%QT(%TE,%DDNM),FGKEY=1 Q
+	. Q
+	Q:%MSG]""  S REF=$P(REF,"(",1)_"("_%_");"_$P(REF,";",2,255)
+	S:FGKEY'=1 FLAG("DEP",%KEY)=""
+DDN	;
+	S TYPE=$P(^DADD(%DDNM,"B"),";",2)
+	S %QD(%TCNM,"T")=TYPE
+	S %QD(%TCNM,"R")=^DADD(%DDNM,"REF")
+	S %QD(%TCNM,"PI")=^DADD(%DDNM,"PIECE")
+	S (%QD(%TCNM,"OT"),OT)=^DADD(%DDNM,"TR","O")
+	S %QD(%TCNM,"XT")=^DADD(%DDNM,"TR","X")
+	S %QD(%TCNM,"IT")=^DADD(%DDNM,"TR","I")
+	S %QD(%TCNM,"AT")=^DADD(%DDNM,"DF","AT",1)
+	S %QD(%TCNM,"L")=$P(^DADD(%DDNM,"DF","E"),";")
+	S %TMNM=$P(^DADD(%DDNM,"B"),";",3) G:%TMNM="" TABLE
+TEMPL	;
+	I %QD(%TCNM,"OT")="" S (%QD(%TCNM,"OT"),OT)=^DADDT(%TMNM,"TR","O")
+	I %QD(%TCNM,"AT")="" S %QD(%TCNM,"AT")=^DADDT(%TMNM,"DF","AT")
+	I %QD(%TCNM,"IT")="" S %QD(%TCNM,"IT")=^DADDT(%TMNM,"TR","I")
+	I %QD(%TCNM,"L")="" S %QD(%TCNM,"L")=$P(^DADDT(%TMNM,"DF","E"),";")
+	I %QD(%TCNM,"T")="" S %QD(%TCNM,"T")=$P(^DADDT(%TMNM,"B"),";",2)
+TABLE	;
+	I '$D(^DATDX("TC",%TB,%TC)) S %MSG="QP3;"_%TC Q
+	S %CN=$O(^DATDX("TC",%TB,%TC,""))
+	I '$D(^DATD(%TB,"C",%CN)) S %MSG="QP3;"_%TC Q
+	S %CN=^DATD(%TB,"C",%CN)
+	I $P(%CN,";",4)'="" S %QD(%TCNM,"L")=$P(%CN,";",4)
+	I $P(%CN,";",5)'="" S %QD(%TCNM,"AT")=$P(%CN,";",5)
+	I $P(%CN,";",6)'="" S %QD(%TCNM,"T")=$P(%CN,";",6)
+	Q

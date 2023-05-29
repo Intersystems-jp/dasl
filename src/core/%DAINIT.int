@@ -1,0 +1,164 @@
+ROUTINE %DAINIT [Type=INT,LanguageMode=6]
+%DAINIT	;DBS/DAH,INIT,UTILITIES,DASL;4-Mar-92;V6.1 DASL initalization routine
+	;DASL;N;UTILITY
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	I $ZNSPACE="%SYS" W !,"DAINIT は、%SYSネームスペースでは実行してはいけません。" Q  ;	;%%Z1-T
+	;;**TM**; ネームスペース対応 ; I $P($ZC(%UCI),",",1,2)="MGR,MGR" W !,"DAINIT は、マネージャ UCI では実行してはいけません。" Q  ;	;%%Z1-T
+	W !!,"DASL を初期化します。",! ;	;%%Z2-T
+	I '$D(^DADD) S ^DADD="Data Dictionary"
+	I '$D(^DADDX) S ^DADD="Data Dictionary X-Reference"
+	I '$D(^DASD) S ^DASD="Screen Definitions"
+	I '$D(^DASDH) S ^DASDH="Screen Driver Help Text and Help Screens"
+	I '$D(^DARD) S ^DARD="Report Definitions"
+	I '$D(^DANX) S ^DANX="Generated Routine Cross Reference"
+	I '$D(^DADDT) S ^DADDT="Template Dictionary"
+	I '$D(^DADR) S ^DADR="Report Directory"
+	I '$D(^DAGR) S ^DAGR="Group Dictionary"
+	I '$D(^DAJC) S ^DAJH="Current Jobs"
+	I '$D(^DAJH) S ^DAJH="Job History"
+	I '$D(^DAMC) S ^DAMC="Message Center"
+	I '$D(^DASDC) S ^DASDC="%Command Definitions"
+	I '$D(^DAER) S ^DAER="Error Log"
+	I '$D(^DATD) S ^DATD="Table Definitions"
+	I '$D(^DATDX) S ^DATDX="Table cross-reference"
+	I '$D(^DAQD) S ^DAQD="Query Definitions"
+	I '$D(^DATG) S ^DATG="Scratch Global"
+	D NOW^%DAUDTTM
+	I $D(^DASY)'=11 D SYS
+	I $D(^DASYU)'=11 D USR
+	I $D(^DAGR)'=11 S ^DAGR("TEST","E")="Default Test group;Y"
+	D APPARM
+	W !!,"DASL の初期化が終了しました。",!! ;	;%%Z2-T
+	Q
+	;
+SYS	;
+	S ^DASY="System Information"
+	S ^DASY("APPL")=""
+	S ^DASY("MASK")="@"
+	S ^DASY("STATUS")="1;OPEN;Open;@"
+	; *** CHANGE THIS TO CURRRENT VERSION !
+	S ^DASY("CONVERT")="61AJ" ;	;%%Z3-B
+	S ^DASY("CONVERT","61AJ")="Created on "_%DTX_" at "_%TMX ;	;%%Z3-B
+	;
+	;  Error/Event Log Device
+	S ^DASY("ERR","DEV")=""
+	;  Error/Event Codes
+	S ^DASY("ERR","CD",0)="Unknown error"
+	S ^DASY("ERR","CD",5)="Program Error"
+	S ^DASY("ERR","CD",100)="System Startup"
+	S ^DASY("ERR","CD",101)="System Open"
+	S ^DASY("ERR","CD",102)="System Shutdown"
+	S ^DASY("ERR","CD",103)="System Closed"
+	S ^DASY("ERR","CD",104)="System Status Update"
+	S ^DASY("ERR","CD",105)="Dejournal Started"
+	S ^DASY("ERR","CD",106)="Dejournal Completed"
+	S ^DASY("ERR","CD",107)="Dejournal Error"
+	S ^DASY("ERR","CD",110)="Unauthorized access attempt"
+	;
+	;  Device type dictionary
+	S ^DASY("DEV","PRINTER","E")="80 Column Printer"
+	S ^DASY("DEV","VT80","E")="VT80 CRT terminal" ;	;%%Z1-C
+	S ^DASY("DEV","VT100","E")="VT100 CRT terminal"
+	S ^DASY("DEV","VT200","E")="VT200 CRT terminal"
+	S ^DASY("DEV","VT200P","E")="VT200 with Printer Attached"
+	S ^DASY("DEV","WIDE","E")="132 Column Printer"
+	;%%Z1-C Kanji Pitch and Type
+	S ^DASY("DEV","PRINTER","P")="2;DEC;;" ;	;%%Z1-C
+	S ^DASY("DEV","VT80","P")="2;DEC;;" ;	;%%Z1-C
+	S ^DASY("DEV","VT100","P")="2;DEC;;" ;	;%%Z1-C
+	S ^DASY("DEV","VT200","P")="2;DEC;;" ;	;%%Z1-C
+	S ^DASY("DEV","VT200P","P")="2;DEC;;" ;	;%%Z1-C
+	S ^DASY("DEV","WIDE","P")="2;DEC;;" ;	;%%Z1-C
+	;%%Z1-C
+	;
+	;  Application and Site Parameters
+	S ^DASY("PARM","DELIM")=""
+	S ^DASY("PARM","RTN")=""
+	S ^DASY("PARM","SCN")=""
+	S ^DASY("PARM","DTTM")="300;H:M A;D-M-Y;MDY;N;T"
+	S ^DASY("PARM","DAY")="Sunday;Monday;Tuesday;Wednesday;Thursday;Friday;Saturday"
+	S ^DASY("PARM","MON")="Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec"
+	S ^DASY("PARM","STOP")="AN,AND,AT,BY,FOR,IN,IT,OF,OR,ON,THE,TO,WITH"
+	S ^DASY("PARM","MISC")="SU;"
+	S ^DASY("PARM","RTN")=""
+	S ^DASY("PARM","SCN")=""
+	S ^DASY("PARM","KD")="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33"
+	S ^DASY("PARM","KDJ")=";;;;;;;;;;;;;" ;	;%%Z1-D
+	S ^DASY("PARM","FKEY")="RETURN;;;;;;;;;;;;;;;;;UP;DOWN;RIGHT;LEFT;FIND;INSERT;REMOVE;SELECT;PREV;NEXT;;;;;;PF1;PF2;PF3;PF4;;;F7;F8;F9;F10;;F11;F12;F13;F14;;HELP;DO;;F17;F18;F19;F20;;;;;;;;;"
+	S ^DASY("PARM","CS")=";"
+	;
+	;  Application Copyright Text
+	S ^DASY("ACT","E")="N"
+	;+%%Z1-A Modified for Japanese
+	S ^DASY("ACT","S",1)="Copyright (c) 1992"
+	S ^DASY("ACT","S",2)="All rights reserved."
+	S ^DASY("ACT","S",3)=""
+	S ^DASY("ACT","S",4)="このソフトウェアは、ライセンス契約のもとに提供され、"
+	S ^DASY("ACT","S",5)="このライセンス契約の条項に従ってのみ、その使用と複写"
+	S ^DASY("ACT","S",6)="が認められています。これにより、本ソフトウェアの名称"
+	S ^DASY("ACT","S",7)="及び所有権は譲渡を禁じられています。"
+	S ^DASY("ACT","S",8)=""
+	S ^DASY("ACT","S",9)="本ソフトウェアに関する情報は、予告なく変更される場合"
+	S ^DASY("ACT","S",10)="があります。"
+	;-%%Z1-A Modified for Japanese
+	;
+	;  Priv. Dict.
+	;+%%Z2-A
+	S ^DASY("P","D","@","E")="フル特権"
+	S ^DASY("P","D","+","E")="システム管理者特権"
+	S ^DASY("P","D","-","E")="最小特権"
+	S ^DASY("P","D","=","E")="照会モード特権"
+	;+%%Z2-A
+	S ^DASY("RESET")="W $C(27),""[2J"",$C(27),""[r"",$C(27),""[m"",$C(27),""[?3l"",$C(27),"">"" U 0:(WID=80:NOPACK:NOESCAPE:NOCONVERT:ECHO:CTRAP="""",TERM="""":NOEXINPUT:KPITCH=4)" ;	;%%Z1-E
+	;
+	;  Query Operators
+	S (^DASY("OP","="),^("'<>"),^("' <>"),^("NOT<>"),^("NOT <>"))="="
+	S (^DASY("OP","<>"),^("'="),^("' ="),^("NOT="),^("NOT ="))="'="
+	S (^DASY("OP",">"),^("'<="),^("' <="),^("NOT<="),^("NOT <="))=">"
+	S (^DASY("OP","<"),^("'=>"),^("' =>"),^("NOT=>"),^("NOT =>"))="<"
+	S (^DASY("OP","=>"),^("'<"),^("' <"),^("NOT<"),^("NOT <"))="'<"
+	S (^DASY("OP","<="),^("'>"),^("' >"),^("NOT>"),^("NOT >"))="'>"
+	;
+	Q
+USR	;  User Dictionaries
+	S ^DASYU="Site Specific System Information"
+	; *** CHANGE THIS TO CURRENT VERSION!
+	S ^DASYU("CONVERT")="61AJ" ;	;%%Z3-B
+	S ^DASYU("CONVERT","61AJ")="Created on "_%DTX_" at "_%TMX ;	;%%Z3-B
+	S ^DASYU("I","NAME")="インストレーション ネーム １行目;インストレーション ネーム ２行目" ;	;%%Z2-A
+	;
+	;  Classification Dict.
+	S ^DASYU("C","D","SYSMGR","E")="システム管理者" ;	;%%Z1-A
+	S ^DASYU("C","D","SYSMGR","S",1)="+"
+	S ^DASYU("C","D","ALL","E")="全特権" ;	;%%Z1-A
+	S ^DASYU("C","D","ALL","S",1)="@"
+	;
+	S ^DASYU("U","D","AAA","E")="SYSTEM;;System Manager;SYSTEM, MANAGER;Y"
+	S ^DASYU("U","D","AAA","S",1)="SYSMGR"
+	S ^DASYU("U","X","N","SYSTEM","MANAGER","AAA")=""
+	;
+	;  User Dictionary
+	;  Integer used to generate the last user primary id code.
+	S ^DASYU("U","CNT")=0
+	;
+	; System Status Dictionary
+	S ^DASYU("S","D","CLOSED","E")="使用禁止" ;	;%%Z1-A
+	S ^DASYU("S","D","CLOSED","S",1)="+"
+	S ^DASYU("S","D","OPEN","E")="使用可能" ;	;%%Z1-A
+	S ^DASYU("S","D","OPEN","S",1)="@"
+	S ^DASYU("S","D","INQUIRY","E")="照会のみ可能" ;	;%%Z1-A
+	S ^DASYU("S","D","INQUIRY","S",1)="="
+	Q
+	;
+APPARM	; Interactivly set up application parameters
+	S %NAME="%APPARM",%OPN="^%DAINIT" D SCREEN^%DALOGIN
+	K %NAME
+	Q
+	;
+INSTALL	;  DASL Installation entry point. Compile all DASL screens and reports.
+	D ALL^%DASDCMP,ALL^%DARPCMP
+	Q
+	;

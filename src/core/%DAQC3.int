@@ -1,0 +1,72 @@
+ROUTINE %DAQC3 [Type=INT,LanguageMode=6]
+%DAQC3	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+WRITE	D NOW^%DAUDTTM S X=$S(%CALL="":^DAQD(QUNM,"1A"),1:%QDES)
+	U FILE
+	S %SW=$S(POS<80:80,1:132),COM="" 
+	S %GLOBAL=$S('$D(%GLOBAL):"^DATG($J,""Q""",%GLOBAL="":"^DATG($J,""Q""",1:%GLOBAL)
+	S FLAG("GLOBAL")=$S(%GLOBAL="^DATG($J,""Q""":0,1:1) 
+	I FLAG("GLOBAL")=1 S:'$D(%QG) %QG=0
+	W %RTNM," ;V3.0J;",%DTX," ",%TMX,";",QUNM," ",$P(X,";"),! ;	;%%Z3-B
+	W " ;DASL;QUERY",!
+	I $D(^DASY("ACT","E")),^("E")="Y" D
+	. S I="" F  S I=$O(^DASY("ACT","S",I)) Q:I=""  W " ;     ",^(I),!
+	I DB S COMMENT="Initalization - ^%DAQC3" D COMMENT
+	W " ;",XX,!," ;",?25,"Query Statement",!," ;",XX,!
+	F I="SELECT","FROM","WHERE","GROUP","HAVING" D  
+	. S X=$$BASEDIT^%DAZCALL(%QUERY(I),264) Q:X=""  
+	. W " ;",?6,I W:I="GROUP" " BY" 
+LINE	. W ?16,$E(X,1,53),! S X=$E(X,53,512) Q:X=""  W " ;" G LINE  
+	W " ;",XX
+	W !," ; Column Name",?35,"Data Name",?50,"Generated Variable"
+	W !," ;",XX
+	S %QV=""
+	F  S %QV=$O(%QV(%QV)) Q:%QV=""  W !," ; ",%QV(%QV,"%QD"),?35,%QV(%QV,"DDN"),?50,%QV
+	W !," ;",XX
+	W:$X !
+	S CM="N",ARG="%DTI,%DTX,%TMI,%TMX,%L,%VT" D COM 
+	S CM="D",ARG="^%DAUDTTM" D COM,ENDL 
+	S CM="S",ARG="$ZT=""ERR^"_%RTNM_"""" D COM,ENDL 
+	I FLAG("GLOBAL") G WRITE1 
+	S COM="",CM="S",ARG="(%EX,%LC,%VT)=0" D COM 
+	S ARG="%RPWIDTH="_%SW D COM 
+	S ARG="%E=$C(27)" D COM 
+	S ARG="$P(%L,""q"","_%SW_"+1)=""""" D COM,ENDL 
+	S CM="S:'$D(%PP)",ARG="%PP=0" D COM,ENDL 
+	I $ZV["VAX" D  
+	.
+	.
+	.
+	.
+	.S CM="I",ARG="$ZC(%GETDVI,$I,""DEVCLASS"")=""DISK""" D COM
+	.S CM="S",ARG="%VT=0" D COM,ENDL
+	.S CM="E  S",ARG="%VT=1" D COM,ENDL
+	I $ZV["ULTRIX" D  
+	. 
+	.S CM="I",ARG="$$DTYPE^%GETDVI($I)=""TT""" D COM
+	.S CM="S",ARG="%VT=1" D COM,ENDL
+	.S CM="E  S",ARG="%VT=0" D COM,ENDL
+	S CM="I",ARG="%PP" D COM 
+	S CM="S",ARG="%VT=0" D COM,ENDL 
+	S CM="U",ARG="%IOD:CTRAP=$C(3,26)" D COM 
+	S CM="D",ARG="H" D COM D ENDL 
+WRITE1	;
+	S XP=1,CM="S",ARG="%CNT=0" D COM
+	S CM="K",ARG=%GLOBAL_")" D COM
+	I 'FLAG("GLOBAL") S CM="S",ARG=%GLOBAL_")="""_QUNM_",""_%DTX_"",""_%TMX" D COM
+	D ENDL
+	Q
+COM	;
+	S %KJ=$ZC(KJOFF) ;	;%%Z3-A
+	I $X+$L(ARG)>200 W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	S %KJ=$ZC(KJON) ;	;%%Z3-A
+	Q
+ENDL	;
+	I COM]"" W:$X ! S COM=""
+	Q
+COMMENT	;
+	W:$X !
+	W " ;",XX,!," ;",?72-$ZL(COMMENT)/2,COMMENT,!," ;",XX,! ;	;%%Z3-G
+	Q

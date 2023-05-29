@@ -1,0 +1,382 @@
+ROUTINE %DAQC2 [Type=INT,LanguageMode=6]
+%DAQC2	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I DB W !,"**^%DAQC2**",!
+	S OPT("LAST")=""
+	S STR=%QO(0)
+	F I=$L(STR):-1:1 D 
+	. I "()&!"_$C(0)[$E(STR,I) Q
+	. 
+	. 
+	. S N=$E(STR,I) F  Q:$E(STR,I-1)'?1N  S I=I-1 S N=$E(STR,I)_N
+	. 
+	. S LP=$S(I=1:"",1:"("),RP=$S(I=1:"",1:")")
+	. 
+	. 
+	. S QW=%QW(N) F J=1:1:$L(QW,$C(0)) D  
+	. . I $D(%QC($P(QW,$C(0),J))) D  Q
+	. . . S (UP1,UP2,OUT)="" 
+	. . . S QWJ=$P(QW,$C(0),J) 
+	. . . I %QD(%QC(QWJ),"AT")["LC" S UP1="$$UPCASE^%DAZCALL(",UP2=")"
+	. . . S QWJ=%QC(QWJ,"VAR") 
+	. . . I $D(FLAG("EX",QWJ)),"DATETIME"'[FLAG("EX",QWJ) S OUT="x"
+	. . . S QWJ=UP1_QWJ_OUT_UP2
+	. . . S $P(QW,$C(0),J)=QWJ
+	. . S $P(QW,$C(0),J)=$$UPCASE^%DAZCALL($P(QW,$C(0),J))
+	. S STR=$E(STR,0,I-1)_$C(0)_LP_QW_RP_$C(0)_$E(STR,I+$L(N),511)
+	S OPT("LAST")=$TR(STR,$C(0),"")
+	S O="" F  S O=$O(PK(O)) Q:O=""  S T(O)=PK(O) 
+	S OPT=0 
+	S O="" 
+BREAK	I '$D(%QO(1)) S OPT=1 F  S O=$O(%QW(O)) Q:O=""  S GEN="X",(STR,STRX)="" D  S:'($T(@GEN)'=""&(K(1)'=K(3))) OPT=0 I $T(@GEN)'="",K(1)'=K(3) D @GEN 
+	. 
+	. 
+	. S (K(1),K(3))="" 
+	. I $D(%QW(O,"IN")) D  Q
+	. . 
+	. . S GEN=GEN_"IN"
+	. . S K(1)="*"
+	. . S %QI=%QW(O,"IN")
+	. . S IN="",QW=%QW(O) F J=1:1:$L(QW,$C(0)) D  
+	. .  . I $D(%QC($P(QW,$C(0),J))) D  
+	. . . . S (UP1,UP2,OUT)="" 
+	. . . . S QWJ=$P(QW,$C(0),J) 
+	. . . . I %QD(%QC(QWJ),"AT")["LC" S UP1="$$UPCASE^%DAZCALL(",UP2=")"
+	. . . . S QWJ=%QC(QWJ,"VAR") 
+	. . . . I $D(FLAG("EX",QWJ)),"DATETIME"'[FLAG("EX",QWJ) S OUT="x"
+	. . . . S QWJ=UP1_QWJ_OUT_UP2
+	. . . . S $P(QW,$C(0),J)=QWJ
+	. . S IN=$TR(QW,$C(0),"")
+	. . S (UP1,UP2,OUT)="" 
+	. . S PIECE=$P(%QI(%QI),";",2)
+	. . I $D(%QC(PIECE)) S:%QD(%QC(PIECE),"AT")["LC" UP1="$$UPCASE^%DAZCALL(",UP2=")" S PIECE=%QC(PIECE,"VAR")
+	. . 
+	. . I $D(PK(PIECE)) S GEN=GEN_"K",STR=STR_PIECE,STRX=STRX_UP1_PIECE_OUT_UP2 Q 
+	. . 
+	. . I $D(%QV(PIECE,"%QD")),$D(%QD(%QV(PIECE,"%QD"),"R")),$P(%QD(%QV(PIECE,"%QD"),"R"),";",4)'="",$P(%QD(%QV(PIECE,"%QD"),"R"),";",5)'="KWIC" D  Q
+	. . . S GEN=GEN_"X",STR=STR_PIECE,STRX=STRX_UP1_PIECE_OUT_UP2 Q  
+	. . 
+	. . I $D(%QV(PIECE)) S GEN=GEN_"D",STR=STR_PIECE,STRX=STRX_UP1_PIECE_OUT_UP2 Q  
+	. . Q 
+	. F I=1:1:$L(%QW(O),$C(0)) S PIECE=$P(%QW(O),$C(0),I) D  
+	.. 
+	.. 
+	.. ; If its an operator	
+	.. I ",=,],>,'=,'],'>,"[(","_PIECE_",") S GEN=GEN_$S(PIECE="=":"E",PIECE="]":"F",PIECE=">":"G",PIECE="'=":"NE",PIECE="']":"NF",PIECE="'>":"NG"),STR=STR_PIECE,STRX=STRX_PIECE,DELM=PIECE Q
+	.. 
+	.. S (UP1,UP2,OUT)="" 
+	.. 
+	.. I $D(%QC(PIECE)) S:%QD(%QC(PIECE),"AT")["LC" UP1="$$UPCASE^%DAZCALL(",UP2=")" S PIECE=%QC(PIECE,"VAR")
+	.. 
+	.. I $D(FLAG("EX",PIECE)),"DATETIME"'[FLAG("EX",PIECE) S OUT="x"
+	.. I $D(PK(PIECE)) S GEN=GEN_"K",STR=STR_PIECE,STRX=STRX_UP1_PIECE_OUT_UP2,K(I)=PIECE  Q 
+	.. 
+	.. I $D(%QV(PIECE,"%QD")),$D(%QD(%QV(PIECE,"%QD"),"R")),$P(%QD(%QV(PIECE,"%QD"),"R"),";",4)'="",$P(%QD(%QV(PIECE,"%QD"),"R"),";",5)'="KWIC" D  Q
+	... S GEN=GEN_"X",STR=STR_PIECE,STRX=STRX_UP1_PIECE_OUT_UP2,K(I)=NOD($P(%QC(%QV(PIECE,"%QC"),"REF"),";"))  Q
+	.. 
+	.. I $D(%QV(PIECE)) S GEN=GEN_"D",STR=STR_PIECE,STRX=STRX_UP1_PIECE_OUT_UP2,K(I)=NOD($P(%QC(%QV(PIECE,"%QC"),"REF"),";"))  Q
+	.. 
+	.. S GEN=GEN_"L",STR=STR_PIECE,STRX=STRX_PIECE Q
+	I OPT=1 S OPT("LAST")=""
+	S STRING=""
+	S PK="" F  S PK=$O(PK(PK)) Q:PK=""  S STRING=STRING_","_PK
+	S STRING=$E(STRING,2,999)
+	I $D(DEP) D  
+	. S FLAG("BUBBLE")=1
+BUBBLE	. 
+	. I FLAG("BUBBLE")=1 S DEP="",FLAG("BUBBLE")=0 F  S DEP=$O(DEP(DEP)) Q:DEP=""  D  
+	. . S ONE=$P(DEP,","),TWO=$P(DEP,",",2)
+	. . I $F(STRING,ONE)>$F(STRING,TWO) D  
+	. . . 
+	. . . S FLAG("BUBBLE")=1
+	. . . S STRING=$P(STRING,ONE)_TWO_$P(STRING,ONE,2)
+	. . . S STRING=$P(STRING,TWO)_ONE_$P(STRING,TWO,2,3)
+	. I FLAG("BUBBLE") G BUBBLE
+	K FLAG("BUBBLE")
+	I $D(OPT("KEK")) D  
+	. N I F I=1:1 Q:'$D(OPT("KEK",I))  D  
+	. . N K1,K2,NL 
+	. . S K1=$P(OPT("KEK",I),"="),K2=$P(OPT("KEK",I),"=",2)
+	. . I ","_$P(STRING,K1)[(","_K2_",") S KEY=K1,ARG=K1_"="_K2,NL=K2
+	. . I ","_$P(STRING,K2)[(","_K1_",") S KEY=K2,ARG=K2_"="_K1,NL=K1
+	. . 
+	. . 
+	. . I $P(PK(NL),";",11)'="" S $P(PK(NL),";",11)=$P(PK(KEY),";",11)
+	. . E  D  
+	. . . I $P(PK(NL),";",6)="" S $P(PK(NL),";",6)=$P(PK(KEY),";",6)
+	. . . I $P(PK(NL),";",7)="" S $P(PK(NL),";",7)=$P(PK(KEY),";",7)
+	. . D CASE4 
+	I $D(OPT("D_D")) D
+	. S D=OPT("D_D")
+	. S OP=$S(D["'=":"=",D["'>":">",D["']":"]",D["=":"'=",D[">":"'>",D["]":"']")
+	. S DELM=$S(D["'=":"'=",D["'>":"'>",D["']":"']",D["=":"=",D[">":">",D["]":"]")
+	. S D1=$P(D,DELM),D2=$P(D,DELM,2)
+	. S K1=NOD($P(%QC(%QV(D1,"%QC"),"REF"),";")) 
+	. S K2=NOD($P(%QC(%QV(D2,"%QC"),"REF"),";")) 
+	. I K1=K2                            S KEY=K2,ARG=D1_OP_D2 D CASE1 Q 
+	. I ","_$P(STRING,K1)[(","_K2_",")   S KEY=K1,ARG=D1_OP_D2 D CASE1 Q 
+	. I ","_$P(STRING,K2)[(","_K1_",")   S KEY=K2,ARG=D1_OP_D2 D CASE1 Q 
+	. 
+BLDPK	F I=1:1:$L(STRING,",") S KEY=$P(STRING,",",I) S %PK(I)=PK(KEY)
+EXIT	K STR,N,LP,RP,QW,J,O,T,GEN,PIECE,BOTH,F,ONE,TWO,DEP,XDEP,D,OP,DELM
+	K K1,K2,D1,DEP,ARG,KEY,DN,REF,XTYP,XKEY,D,QWJ,UP1,UP2
+	Q
+START	;
+XINK	S KEY=STR,ARG=$TR(%QW(O),$C(0),"") G CASE8
+XINX	S STR=STR_"=",DELM="=" D XL S VAL="" G CASE3
+XIND	S STR=STR_"=",DELM="=" D KL
+	S ARG="'("_IN_")"
+	G CASE1 
+XKEK	N I
+	F I=1:1 Q:'$D(OPT("KEK",I))
+	S OPT("KEK",I)=STR Q  
+XKEX	;
+XKED	D DEPR
+XKEL	S ARG=STRX,KEY=$P(STR,DELM) G CASE4
+XKFK	S OPT=0 Q
+XKGK	S OPT=0 Q
+XKFX	;
+XKGX	;
+XKFD	;
+XKGD	D DEPR
+XKFL	;
+XKGL	D AKL S ARG="&"_ARG G CASE2
+XKNFK	S OPT=0 Q
+XKNGK	S OPT=0 Q
+XKNFX	;
+XKNGX	;
+XKNFD	;
+XKNGD	;
+	D DEPR
+XKNFL	;
+XKNGL	D AKL G CASE5
+XXEK	D DEPL
+	D REVS G CASE4
+XXEX	S OPT=0 Q
+XXED	D DEPRX
+XXEL	D XL G CASE3
+XXFK	S OPT=0 Q
+XXGK	S OPT=0 Q
+XXFX	S OPT=0 Q
+XXGX	S OPT=0 Q
+XXFD	;
+XXGD	D DEPRX
+XXFL	;
+XXGL	D XL G CASE7
+XXNED	S OPT=0 Q
+XXNEL	S OPT=0 Q
+XXNFK	S OPT=0 Q
+XXNGK	S OPT=0 Q
+XXNFK	S OPT=0 Q
+XXNGX	S OPT=0 Q
+XXNFD	;
+XXNGD	D DEPRX
+XXNFL	;
+XXNGL	D XL S VAL="&"_VAL G CASE6
+XDEK	D DEPL
+XLEK	D REVS G CASE4
+XDED	S OPT("D_D")=STR Q
+XDEL	D KL
+	D REVA G CASE1
+XDFK	;
+XDGK	D DEPL
+	D AKR S ARG="&"_ARG G CASE5
+XDFD	;
+XDGD	S OPT("D_D")=STR Q
+XDFL	;
+XDGL	;
+	D KL
+	D REVA G CASE1
+XDNEK	S OPT=0 Q
+XDNEX	S OPT=0 Q
+XDNED	S OPT("D_D")=STR Q
+XDNEL	D KL
+	D REVR G CASE1
+XDNFK	;
+XDNGK	D DEPL
+	D AKR G CASE2
+XDNFD	;
+XDNGD	S OPT("D_D")=STR Q
+XDNFL	;
+XDNGL	D KL
+	D REVR G CASE1
+XDEX	D DEPLX
+XLEX	D LX G CASE3
+XLED	D KR
+	D REVA G CASE1
+XLEL	S OPT=0 Q
+XLFK	;
+XLGK	D AKR S ARG="&"_ARG G CASE5
+XDFX	;
+XDGX	D DEPLX
+XLFX	;
+XLGX	D LX G CASE6
+XLFD	;
+XLGD	D KR
+	D REVA G CASE1
+XLFL	;
+XLGL	S OPT=0 Q
+XLNEK	S OPT=0 Q
+XLNEX	S OPT=0 Q
+XLNED	D KR
+	D REVR G CASE1
+XLNEL	S OPT=0 Q
+XLNFK	;
+XLNGK	D AKR G CASE2
+XDNFX	;
+XDNGX	D DEPLX
+XLNFX	;
+XLNGX	D LX S VAL="&"_VAL G CASE7
+XLNFD	;
+XLNGD	D KR
+	D REVR G CASE1
+XLNFL	S OPT=0 Q
+XLNGL	S OPT=0 Q
+END	;
+DEPL	;
+	S DEP(NOD($P(%QC(%QV($P(STR,DELM),"%QC"),"REF"),";"))_","_$P(STR,DELM,2))=""
+	Q
+DEPR	;
+	S DEP(NOD($P(%QC(%QV($P(STR,DELM,2),"%QC"),"REF"),";"))_","_$P(STR,DELM))=""
+	Q
+DEPLX	;
+	S DEP(NOD($P(%QC(%QV($P(STR,DELM),"%QC"),"REF"),";"))_","_NOD($P(%QC(%QV($P(STR,DELM,2),"%QC"),"REF"),";")))=""
+	Q
+DEPRX	;
+	S DEP(NOD($P(%QC(%QV($P(STR,DELM,2),"%QC"),"REF"),";"))_","_NOD($P(%QC(%QV($P(STR,DELM),"%QC"),"REF"),";")))=""
+	Q
+KL	;
+	S KEY=NOD($P(%QC(%QV($P(STR,DELM),"%QC"),"REF"),";"))
+	Q
+KR	;
+	S KEY=NOD($P(%QC(%QV($P(STR,DELM,2),"%QC"),"REF"),";"))
+	Q
+REVR	;
+	S ARG=$P(STRX,"'")_$P(STRX,"'",2) 
+	Q
+REVA	;
+	S ARG=$P(STRX,DELM)_"'"_DELM_$P(STRX,DELM,2) 
+	Q
+LX	;
+	S DEPD=$P(STR,DELM,2),KEY=NOD($P(%QC(%QV($P(STR,DELM,2),"%QC"),"REF"),";")),VAL=$P(STRX,DELM) 
+	Q
+XL	;
+	S DEPD=$P(STR,DELM),KEY=NOD($P(%QC(%QV($P(STR,DELM),"%QC"),"REF"),";")),VAL=$P(STRX,DELM,2)
+	Q
+REVS	;
+	S ARG=$P(STRX,DELM,2)_DELM_$P(STRX,DELM),KEY=$P(STR,DELM,2) 
+	Q
+AKR	;
+	S ARG=$P(STRX,DELM),KEY=$P(STR,DELM,2) 
+	Q
+AKL	;
+	S ARG=$P(STRX,DELM,2),KEY=$P(STR,DELM) 
+	Q
+CASE0	;
+CASE1	;
+	S $P(PK(KEY),";",20)=$S($P(PK(KEY),";",20)="":ARG,1:$P(PK(KEY),";",20)_"!("_ARG_")")
+	Q
+CASE2	;
+	S CHK=0 D CHK2,CHK4,CHK8 I CHK=1 S OPT=0 Q
+	D DEL6,DEL7
+	S $P(PK(KEY),";",6)=ARG
+	Q 
+CHK2	;
+	I $P(PK(KEY),";",6)'="",$P(PK(KEY),";",8)="" S CHK=1
+	Q
+DEL2	;
+	I $P(PK(KEY),";",6)'="",$P(PK(KEY),";",8)="" S $P(PK(KEY),";",6)="" S OPT=0
+	Q
+CASE3	;
+	S CHK=0 D CHK3,CHK4,CHK8 I CHK=1 S OPT=0 Q
+	D DEL2,DEL5,DEL6,DEL7
+	S $P(PK(KEY),";",5)=VAL 
+	S $P(PK(KEY),";",8)=DEPD 
+	S $P(PK(KEY),";",9)=$P(%QD(%QV(DEPD,"%QD"),"R"),";",4) 
+	S $P(PK(KEY),";",10)=$P(%QD(%QV(DEPD,"%QD"),"R"),";",5) 
+	S $P(PK(KEY),";",11)=$G(%QW(O,"IN")) 
+	Q
+CHK3	;
+	I $P(PK(KEY),";",5)'="",$P(PK(KEY),";",8)'="" S CHK=1
+	Q
+DEL3	;
+	I $P(PK(KEY),";",5)'="",$P(PK(KEY),";",8)'="" D  
+	. S $P(PK(KEY),";",5)="",$P(PK(KEY),";",8)=""
+	. S $P(PK(KEY),";",9)="",$P(PK(KEY),";",10)=""
+	. S $P(PK(KEY),";",11)=""
+	. S OPT=0
+	Q
+CASE4	;
+	S CHK=0 D CHK4 I CHK=1 S OPT=0 Q
+	D DEL2,DEL3,DEL5,DEL6,DEL7,DEL8
+	S $P(PK(KEY),";",5)=$P(ARG,"=",2)
+	Q
+CHK4	;
+	I $P(PK(KEY),";",5)'="",$P(PK(KEY),";",8)="" S CHK=1
+	Q
+DEL4	;
+	I $P(PK(KEY),";",5)'="",$P(PK(KEY),";",8)="" S $P(PK(KEY),";",5)="" S OPT=0
+	Q
+CASE5	;
+	S CHK=0 D CHK3,CHK5,CHK8 I CHK=1 S OPT=0 Q
+	D DEL6,DEL7
+	S $P(PK(KEY),";",7)=ARG
+	Q
+CHK5	;
+	I $P(PK(KEY),";",7)'="",$P(PK(KEY),";",8)="" S CHK=1
+	Q
+DEL5	;
+	I $P(PK(KEY),";",7)'="",$P(PK(KEY),";",8)="" S $P(PK(KEY),";",7)="" S OPT=0
+	Q
+CASE6	;
+	S CHK=0 D CHK2,CHK3,CHK4,CHK6,CHK5,CHK8 I CHK=1 S OPT=0 Q
+	S $P(PK(KEY),";",7)=VAL 
+	S $P(PK(KEY),";",8)=DEPD 
+	S $P(PK(KEY),";",9)=$P(%QD(%QV(DEPD,"%QD"),"R"),";",4) 
+	S $P(PK(KEY),";",10)=$P(%QD(%QV(DEPD,"%QD"),"R"),";",5) 
+	Q
+CHK6	;
+	I $P(PK(KEY),";",7)'="",$P(PK(KEY),";",8)'="" S CHK=1
+	Q
+DEL6	;
+	I $P(PK(KEY),";",7)'="",$P(PK(KEY),";",8)'="" D  
+	. S $P(PK(KEY),";",7)="",$P(PK(KEY),";",8)=""
+	. S $P(PK(KEY),";",9)="",$P(PK(KEY),";",10)=""
+	. S OPT=0
+	Q
+CASE7	;
+	S CHK=0 D CHK2,CHK3,CHK4,CHK5,CHK7,CHK8 I CHK=1 S OPT=0 Q
+	S $P(PK(KEY),";",6)=VAL 
+	S $P(PK(KEY),";",8)=DEPD 
+	S $P(PK(KEY),";",9)=$P(%QD(%QV(DEPD,"%QD"),"R"),";",4) 
+	S $P(PK(KEY),";",10)=$P(%QD(%QV(DEPD,"%QD"),"R"),";",5) 
+	Q
+CHK7	;
+	I $P(PK(KEY),";",6)'="",$P(PK(KEY),";",8)'="" S CHK=1
+	Q
+DEL7	;
+	I $P(PK(KEY),";",6)'="",$P(PK(KEY),";",8)'="" D  
+	. S $P(PK(KEY),";",6)="",$P(PK(KEY),";",8)=""
+	. S $P(PK(KEY),";",9)="",$P(PK(KEY),";",10)=""
+	. S OPT=0
+	Q
+CASE8	;
+	S CHK=0 D CHK4,CHK8 I CHK=1 S OPT=0 Q
+	D DEL2,DEL3,DEL5,DEL6,DEL7
+	S $P(PK(KEY),";",11)=%QW(O,"IN")
+	Q
+CHK8	;
+	I $P(PK(KEY),";",11)'="" S CHK=1
+	Q
+DEL8	;
+	I $P(PK(KEY),";",11)'="" S $P(PK(KEY),";",11)="" S OPT=0
+	Q
+A(%RES)	N %Z,%,%I
+	S %Z=%RES,%="" F %I=1:1 S %RES=$P(%Z,",",%I) Q:%RES=""  D P S:%I<3&(%REST?1L.E) %RES=$C($A(%RES,1)-32)_$E(%RES,2,256) S %=%_", "_%RES
+	I %MSG="",%I=1 S %MSG="Last name required."
+	I %MSG="",%I<3 S %MSG="First Name required."
+	S %RES=$E(%,3,256) Q
+P	F %X=1:1 Q:$E(%RES,%X)'=" "
+	F %Y=$L(%RES):-1 Q:$E(%RES,%Y)'=" "
+	S %RES=$E(%RES,%X,%Y) Q

@@ -1,0 +1,218 @@
+ROUTINE %DACVRT [Type=INT,LanguageMode=6]
+%DACVRT	;DAH,CONVERSION,SYSTEM,DASL;4-Mar-92;V6.1 Driver routine for all conversions
+	;DASL;N;SYSTEM
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;====================================================================
+	;
+	;  Master conversion routine, this should be run at each update.
+	;  It mantains the data base ^%DASYU("CONVERT")
+	;  Is non distructive (you can run it twice with out causing problems
+	;  If a problem happends during an update and the conversion needs
+	;  to be rerun determine the cause of the problem then the node for
+	;  that version must first be deleted before this routine is run.
+	;
+	;====================================================================
+	;                        NOTE TO DEVELOPERS
+	;   For each new baselevel the following changes need to be made:
+	;    o add a tag under SITE and APPLE in this routine
+	;    o Modify sets to the CONVERT nodes in ^%DAINIT
+	;    o Modify version checks in ^%DAS,^%DASL and ^%DALOGIN
+	;
+	;====================================================================
+	I $P($ZC(%UCI),",",1,2)="MGR,MGR" W !,"DACVRT は、マネージャ UCI では実行してはいけません。" Q  ;	;%%Z1-T
+	S %MSG=""
+	S $ZT="ERROR^%DACVRT",$ZE=""
+	D SITE I %MSG'="" W !,%MSG Q
+	D APPLE I %MSG'="" W !,%MSG Q
+	Q
+	;
+SITE	; Brings all site specific globals up to rev
+	I $D(^DASYU)'=11 S %MSG="'DO ^%DAINIT'を実行して下さい。" Q  ;	;%%Z1-T
+	W !,"ＤＡＳＬ用グローバルを変換します。" ;	;%%Z2-T
+S40	; Conversion from field test B to 4.0
+	I '$D(^DASYU("CONVERT","40")),"40"]^DASYU("CONVERT") D  
+	.I $D(^DASYU("D","D")) S O="" F  S O=$O(^DASYU("D","D",O)) Q:O=""  S $P(^(O,"E"),";",4)="Y"
+	.D NOW^%DAUDTTM
+	.S ^DASYU("CONVERT")="40"
+	.S ^DASYU("CONVERT","40")="Conversion complete "_%DTX_" "_%TMX
+S50	; Conversion from 40 TO 50 FIELD TEST
+	I '$D(^DASYU("CONVERT","50AJ")),"50AJ"]^DASYU("CONVERT") D  ;	;%%Z1-B
+	.D NOW^%DAUDTTM
+	.S ^DASYU("CONVERT")="50AJ" ;	;%%Z1-B
+	.S ^DASYU("CONVERT","50AJ")="Conversion complete "_%DTX_" "_%TMX ;	;%%Z1-B
+S51A	;+%%Z2-B
+	; Conversion from 50 TO 51 FIELD TEST
+	;I '$D(^DASYU("CONVERT","51A")),"51A"]^DASYU("CONVERT") D  
+	;.D NOW^%DAUDTTM
+	;.S ^DASYU("CONVERT")="51A"
+	;.S ^DASYU("CONVERT","51A")="Conversion complete "_%DTX_" "_%TMX
+	;.W !,"Site specific globals converted"
+	;-%%Z2-B
+S52A	; Conversion from 51 TO 52 FIELD TEST
+	I '$D(^DASYU("CONVERT","52AJ")),"52AJ"]^DASYU("CONVERT") D  ;	;%%Z2-B
+	.D NOW^%DAUDTTM
+	.S ^DASYU("CONVERT","52AJ")="Error in conversion" ;	;%%Z20B
+	.W !,"^DATD と ^DAQD のトップノードをセット中 . . ." ;	;%%Z2-T
+	.S ^DATD="Table Definitions"
+	.S ^DATDX="Table cross-reference"
+	.S ^DAQD="Query Definitions"
+	.W !,"データディクショナリ クロスリファレンス 構築中 . . ." ;	;%%Z2-T
+	.D DDREF^%DASDUTL
+	.S ^DASYU("CONVERT")="52AJ" ;	;%%Z2-B
+	.S ^DASYU("CONVERT","52AJ")="Conversion complete "_%DTX_" "_%TMX ;	;%%Z2-B
+	.W !,"グローバルが変換されました。" ;	;%%Z2-T
+S60A	; Conversion from 52 TO 60 
+	;+%%Z3-B ,+%%Z3-T
+	W !
+	;I '$D(^DASYU("CONVERT","60A")),"60A"]^DASYU("CONVERT") D 
+	;.S ^DASYU("CONVERT","60A")="Error in conversion"
+	;
+S61	; Convert for 61
+	I '$D(^DASYU("CONVERT","61AJ")),"61AJ"]^DASYU("CONVERT") D  
+	.S ^DASYU("CONVERT","61AJ")="Error in conversion"
+	.I $D(^DASYU("U","D")) D 
+	..W #,!
+	..W !,?5,"日本語ＤＡＳＬの前バージョンで保存されたパスワードは、現バージョ"
+	..W !,?5,"ンでは使用できません。パスワードの再定義方法を次の２つのオプショ"
+	..W !,?5,"ンから選択して下さい。"
+	..W !
+	..W !,?5,"  o EASY  ---  全てのパスワードをリセットします。全てのユーザは"
+	..W !,?5,"               現バージョンのＤＡＳＬにログインする時にパスワー"
+	..W !,?5,"               ドを設定しなおすことができます。"
+	..W !
+	..W !,?5,"  o SECURE --- 全てのアプリケーションユーザーは現バージョンの"
+	..W !,?5,"               ＤＡＳＬにログインできなくなります。ユーザはパ"
+	..W !,?5,"               スワードをリセットしてもらうようシステムマネー"
+	..W !,?5,"               ジャに連絡をとる必要があります。"
+	..W !
+	..D SEL
+	.; Convert command mode database to remove generated routine name
+	.I $D(^DASYU("U","COM")) N COM,USR S (COM,USR)="" D
+	..F  S USR=$O(^DASYU("U","CMD",USR)) Q:USR=""  D  
+	...F  S COM=$O(^DASYU("U","CMD","SYS",COM)) Q:COM=""  D  
+	....I $E($P(^DASYU("U","CMD","SYS",COM),"`",4))="^" S $P(^DASYU("U","CMD","SYS",COM),"`",4)="" ;	;%%Z3-I
+	.;D NOW^%DAUDTTM
+	.;S ^DASYU("CONVERT")="60A"
+	.;S ^DASYU("CONVERT","60A")="Conversion complete "_%DTX_" "_%TMX
+	.;W !,"Site specific globals converted"
+	.;
+	.D NOW^%DAUDTTM
+	.S ^DASYU("CONVERT")="61AJ"
+	.S ^DASYU("CONVERT","61AJ")="Conversion complete "_%DTX_" "_%TMX
+	.W !,"グローバルが変換されました。" ;	;%%Z3-T
+	;-%%Z3-B 
+	Q
+APPLE	; Brings all application globals up to rev
+	I $D(^DASY)'=11 S %MSG="'DO ^%DAINIT'を実行して下さい。" Q  ;	;%%Z1-T
+	W !,"アプリケーショングローバルを変換します。" ;	;%%Z1-T
+A40	I '$D(^DASY("CONVERT","40")),"40"]^DASY("CONVERT") D  
+	.S ^DASY("CONVERT")="40"
+	.D NOW^%DAUDTTM
+	.S ^DASY("CONVERT","40")="Conversion complete "_%DTX_" "_%TMX
+A50	I '$D(^DASY("CONVERT","50AJ")),"50AJ"]^DASY("CONVERT") D  ;	;%%Z1-B
+	.S ^DASY("CONVERT","50AJ")="Error in conversion"
+	.S X="" F  S X=$O(^DADD(X)) Q:X=""  S:'$D(^DADD(X,"TR","X")) ^DADD(X,"TR","X")=""
+	.S:'$D(^DASY("PARM","STOP")) ^DASY("PARM","STOP")="AN,AND,AT,BY,FOR,IN,IT,OF,OR,ON,THE,TO,WITH"
+	.S:$P($G(^DASY("PARM","MISC")),";",3)="" $P(^DASY("PARM","MISC"),";",3)="N"
+	.I '$D(^DASY("PARM","KD")) S ^DASY("PARM","KD")="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33"
+	.I '$D(^DASY("PARM","KDJ")) S ^DASY("PARM","KDJ")=";;;;;;;;;;;;;" ;	;%%Z1-D
+	.I '$D(^DASY("PARM","CS")) S ^DASY("PARM","CS")=";"
+	.S ^DASY("RESET")="W $C(27),""[2J"",$C(27),""[r"",$C(27),""[m"",$C(27),""[?3l"",$C(27),"">"" U 0:(WID=80:NOPACK:NOESCAPE:NOCONVERT:ECHO:CTRAP="""",TERM="""":NOEXINPUT:KPITCH=4)" ;	;%%Z1-E
+	.S ^DASY("CONVERT")="50AJ" D NOW^%DAUDTTM ;	;%%Z1-B
+	.S ^DASY("CONVERT","50AJ")="Conversion complete "_%DTX_" "_%TMX ;	;%%Z1-B
+A51A	;+%%Z2-B
+	;I '$D(^DASY("CONVERT","51A")),"51A"]^DASY("CONVERT") D
+	;.S ^DASY("CONVERT")="51A" D NOW^%DAUDTTM
+	;.S ^DASY("CONVERT","51A")="Conversion complete "_%DTX_" "_%TMX
+	;.W !,"Application specification globals converted"
+	;-%%Z2-B
+A52A	I '$D(^DASY("CONVERT","52AJ")),"52AJ"]^DASY("CONVERT") D  ;	;%%Z2-B
+	.S ^DASY("CONVERT")="52AJ" D NOW^%DAUDTTM
+	.S ^DASY("CONVERT","52AJ")="Conversion complete "_%DTX_" "_%TMX
+	.W !,"アプリケーショングローバルが変換されました。" ;	;%%Z2-T
+A60A	;+%%Z3-B
+	;I '$D(^DASY("CONVERT","60A")),"60A"]^DASY("CONVERT") D
+	;.S ^DASY("CONVERT","60A")="Error in conversion"
+	;.D DAMSG
+	;.S ^DASY("CONVERT")="60A" D NOW^%DAUDTTM
+	;.S ^DASY("CONVERT","60A")="Conversion complete "_%DTX_" "_%TMX
+	;.W !,"Application specification globals converted"
+A61A	I '$D(^DASY("CONVERT","61AJ")),"61AJ"]^DASY("CONVERT") D
+	.S ^DASY("CONVERT","61AJ")="Error in conversion"
+	.D DAMSG ; Add any new messages
+	.D FKEY  ; Add function keys
+	. ; Change the location of the piece information in the data
+	. ; dictionary.
+	.S NX="" F  S NX=$O(^DADD(NX)) Q:NX=""  D
+	. . Q:$D(^DADD(NX,"PIECE"))
+	. . ; Next line should never happen, data dictionary database has
+	. . ; and error.
+	. . I '$D(^DADD(NX,"REF")) S ^DADD(NX,"REF")=""
+	. . S ^DADD(NX,"PIECE")=$P(^DADD(NX,"REF"),";",2)
+	. ; Build the cross-reference on the global reference on a 
+	. ; data name.
+	. D GREFBLD^%DASDUTL
+	. I $P(^DASY("PARM","KD"),";",24,27)="" S $P(^DASY("PARM","KD"),";",24,27)="24;S;43;L" ; Set defaults for select and last error keys
+	.S ^DASY("CONVERT")="61AJ" D NOW^%DAUDTTM
+	.S ^DASY("CONVERT","61AJ")="Conversion complete "_%DTX_" "_%TMX
+	.W !,"アプリケーショングローバルが変換されました。" ;	;%%Z2-T
+	Q
+	;-%%Z3-B
+DAMSG	; Check ^%DAMSG("US") global for any new message then check existing
+	; languages and set the node with a generic message.
+	;S UCI=$P($ZC(%UCI),",")
+	;S X=$ZC(%SETUCI,"MGR")
+	S UCI=$ZC(%UCI)
+	S X=$ZC(%SETUCI,$P(UCI,",",8),$P(UCI,",",9))
+	S MSG="このメッセージは翻訳が必要です。" ;	;%%Z3-T
+	S CD="" F  S CD=$O(^%DAMSG("US",CD)) Q:CD=""  S USMSG=^%DAMSG("US",CD) D
+	.S LG="" F  S LG=$O(^%DAMSG(LG)) Q:LG=""  D
+	..Q:LG="US"
+	..I '$D(^%DAMSG(LG,CD)) S ^%DAMSG(LG,CD)=$S($E(USMSG,1,6)="S %MSG":"S %MSG="_""""_MSG_"""",1:MSG)
+	;S X=$ZC(%SETUCI,UCI)
+	S X=$ZC(%SETUCI,$P(UCI,",",6),$P(UCI,",",7))
+	K CD,LG,MSG,USMSG,UCI
+	Q
+SEL	R ?5,"EASY または SECURE を選択して下さい。: ",%RES Q:%RES=""  ;	;%%Z3-T
+	I $$UPCASE^%DAZCALL(%RES)=$E("EASY",1,$L(%RES)) D NULPASS Q
+	I $$UPCASE^%DAZCALL(%RES)=$E("SECURE",1,$L(%RES)) W !,?5,"SECURE が選択されました。全てのパスワードをリセットして下さい。" Q  ;	;%%Z3-T
+	W *7,!,?40,"EASY または SECURE を入力して下さい。",! G SEL ;	;%%Z3-T
+	K %RES
+	Q
+NULPASS	; Null out password
+	Q:'$D(^DASYU("U","D"))
+	S %PU="" F  S %PU=$O(^DASYU("U","D",%PU)) Q:%PU=""  D
+	. S %UI=^DASYU("U","D",%PU,"E"),%UI=$P(%UI,";",1)_";;"_$P(%UI,";",3,5)
+	. S ^DASYU("U","D",%PU,"E")=%UI
+	W !,?5,"全てのパスワードがリセットされました。",! ;	;%%Z3-T
+	W ?5,"アプリケーションユーザは新パスワードでログインすることができます。",! ;	;%%Z3-T
+	K %PU,%UI
+	Q
+	;	;%%Z2-X6 start
+FKEY	I '$D(^DASY("PARM","FKEY")) S ^DASY("PARM","FKEY")="RETURN;;;;;;;;;;;;;;;;;UP;DOWN;RIGHT;LEFT;FIND;INSERT;REMOVE;SELECT;PREV;NEXT;;;;;;PF1;PF2;PF3;PF4;;;F7;F8;F9;F10;;F11;F12;F13;F14;;HELP;DO;;F17;F18;F19;F20;;;;;;;;;" ;	;%%Z2-X6
+	Q
+	;	;%%Z2-X6 end
+COMMAND	; Convert to the new MENU Command format (it removes the priv info).
+	I '$D(^DASYU("U","CMD")) Q
+	W !,"メニューコマンドを変換します。" ;	;%%Z3-T
+	S USR=""
+	F  S USR=$O(^DASYU("U","CMD",USR)) Q:USR=""  D  
+	. S USRCMD=""
+	. F  S USRCMD=$O(^DASYU("U","CMD",USR,USRCMD)) Q:USRCMD=""  D  
+	. . S %T=^DASYU("U","CMD",USR,USRCMD)
+	. . S USRCMDX=$P(%T,";",4)
+	. . I $L(USRCMDX,"`")=4 S USRCMDX=$P(USRCMDX,"`",2,4) ;	;%%Z3-I
+	. . ; Be sure routine name is deleted
+	. . I $E($P(USRCMDX,"`",3))="^" S $P(USRCMDX,"`",3)="" ;	;%%Z3-I
+	. . S $P(%T,";",4)=USRCMDX
+	. . S ^DASYU("U","CMD",USR,USRCMD)=%T
+	W !,"メニューコマンドの変換が完了しました。" ;	;%%Z3-T
+	Q
+EXIT	; error
+	W !,"変換中のエラーです。 - DASY(""CONVERT"") と DASYU(""CONVERT"") をチェック" ;	;%%Z2-T
+	W !,"して下さい。" ;	;%%Z2-T
+	K
+	Q

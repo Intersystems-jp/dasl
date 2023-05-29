@@ -1,0 +1,152 @@
+ROUTINE %DARPC2A [Type=INT,LanguageMode=6]
+%DARPC2A	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	K DN,FN,RC,RF,PTR,VAR
+	S RF="^DATG($J,""R""",SCT=10,(VC,SLV)=0,DN=""
+	F SP=1:1:NS S DN=SK(SP) D DDN
+	F PP=1:1:NP S DN=PK(PP) S:$E(DN)'="%" DN(DN)=DN
+	F SP=0:1:NS Q:%MSG]""  F S="H","T" S GRP=S_SP D BUILD^%DARPC2B I %MSG]"" Q
+	F GRP="D","F" D BUILD^%DARPC2B I %MSG]"" Q
+	S VCNT=1 D ALL^%DARPLXA I %MSG]"" Q
+	D COMPILE^%DARPC3 W:'FLAG("SORT") "EVAL"
+	I FLAG("SORT") W "PRT D INIT",!
+	S VS=0 D COMPLST^%DARPC3
+	I FLAG("SORT") D
+	. W " S %F0=999 D NPG S %F0=0",!
+	. W " I %SCP S %=$Y+1,%SCP=23-%,%SCN=""",$S(LL>80:"h",1:"l"),"""_%_"";23"",%LL=",LL,",%PL=1E24,%HF="""" W %E,""["",$E(%SCN,2,9),""r"",%E,""["",%-1,"";1H"",!",!
+	W " S "_^%DASY("MUMPS",%MUMPS,"$ZT")_"=""PERR",%PROGRAM,""",%ECNT=0",!
+	W " I '%CNT D NLN W ?",LL-18\2,",""","出力するデータがありません。",""" D NLN G S0",! ;	;%%Z2-T
+	I 'FLAG("SORT") G SKIP 
+	I DB S COMMENT="Loop through SORT global" D COMMENT
+	F SP=1:1:NS+1 D LOOP^%DARPC2B
+	S COM="",CM="S",J=1 
+	I $P(SK,",",3)'="" S ARG="%"_"="_RF_")" D COM D  
+	. F I=2:1 Q:$P(SK,",",I)=""  S ARG=$P(SK,",",I)_"=$P(%,$C(0),"_J_")",J=J+1 D COM
+	I $P(SK,",",3)="" S ARG=$P(SK,",",2)_"="_RF_")" D COM
+	F I=2:1 Q:$P(SK,",",I)=""  S DN=$P(SK,",",I) D POINTER^%DARPC3:'$D(%VL(DN))&($E(DN)'="%")
+	S VNT="" F  S VNT=$O(FLAG("ALIAS",VNT)) Q:VNT=""  D
+	. S CNT="" F  S CNT=$O(FLAG("ALIAS",VNT,CNT)) Q:CNT=""  D
+	. . S X="" F  S X=$O(FLAG("ALIAS",VNT,CNT,X)) Q:X=""  D
+	. . . S Z="" F  S Z=$O(VAR(Z)) Q:Z=""  I $D(VAR(Z,CNT,X)) S FLAG("VAR",Z,CNT,X)="" K VAR(Z,CNT,X)
+SKIP	D ENDL S CM="S",VS=NS+1 D COMPLST^%DARPC3 I 'FLAG("SORT") G SKIP1
+	K FLAG("BREAK") F SP=1:1:NS S FLAG("BREAK",SP)=0
+	F SP=1:1:NS S GRP="H"_SP F LI=1:1 Q:'$D(^DARD(RPNM,"P",GRP,"G",LI))  I ^(LI,"I")["$PAGE" S FLAG("BREAK",SP)=1 Q
+	F SP=1:1:NS W " I %F",SP W:FLAG("BREAK",SP) " S:%PC'=1 %HD=0" W " D C",SP,",H",SP," S %F",SP,"=0" W:FLAG("BREAK",SP) " S:%PC'=1 %HD=1" W " G S0:%QT",!
+	W " D D G S0:%QT,S",NS+1,!
+SKIP1	I 'FLAG("SORT")  W " D D Q",!
+	F VS=1:1:NS W "C",VS D COMPLST^%DARPC3 W " Q",!
+	S FLAG("PTR")=0
+S0	;
+	I DB S COMMENT="Clean up and exit" D COMMENT
+	W "S0 I %ECNT D NLN W ""*** "",%ECNT,"" データ エラー が発生しました。"" D NLN",! ;	;%%Z2-T
+	I RPLEN W " D F:'%SCP",!
+	;W " I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,""[2J""",! 
+	W " W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,""[2J""",! ;	;%%Z2-R1
+	W:NP " K ^DATG($J,""R"")",!
+	S VNT="" F  S VNT=$O(FLAG("ALIAS",VNT)) Q:VNT=""  D
+	. S CNT="" F  S CNT=$O(FLAG("ALIAS",VNT,CNT)) Q:CNT=""  D
+	. . S X="" F  S X=$O(FLAG("ALIAS",VNT,CNT,X)) Q:X=""  S DN(X)="" I $D(FLAG("VAR",VNT,CNT,X)) S VAR(VNT,CNT,X)=""
+	D ENDL W "KILLI" S COM="",CM="K",ARG="%F0" D COM
+	F SP=1:1:NS S ARG="%F"_SP D COM S ARG="%S"_SP D COM
+	S ARG="%S"_(NS+1) D COM
+	F I=1:1:VC S ARG="%T"_I D COM
+	S ARG="%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2" D COM
+	I $D(%VL) S UVR="" F  S UVR=$O(%VL(UVR)) Q:UVR=""  I $P(%VL(UVR),";",2)="Y" S CM="K",ARG=UVR D COM
+	W:%MUMPS="VAX DSM" !," U %IOD:NOPACK"
+	W !," Q" D ENDL
+PERR	;
+	I DB S COMMENT="Error Handler" D COMMENT
+	W "PERR I $D(%PGMR),%PGMR=1 D RESET^%DASL "_^%DASY("MUMPS",%MUMPS,"ZQ"),!
+	W ^%DASY("MUMPS",%MUMPS,"D ERR^%DAERRT")," U %IOD",!
+	W " D:$X NLN W ""** データレコード中のエラー **"" W:"_^%DASY("MUMPS","DSM-11","$ZE")_"]"""" $P("_^%DASY("MUMPS","DSM-11","$ZE")_","","",$L("_^%DASY("MUMPS","DSM-11","$ZE")_","",""))",! ;	;%%Z2-T
+	W " D NLN I %ECNT>25 W !!,""** 回復不可能なエラー - レポートは中断されました。 **"" G S0",! ;	;%%Z2-T
+	W " S "_^%DASY("MUMPS",%MUMPS,"$ZT")_"=""PERR",%PROGRAM,""",%ECNT=%ECNT+1 G S",$S(NS:NS+1,1:0),!
+	W "ERR" W:NP " K ^DATG($J,""R"")"
+	W " S:"_^%DASY("MUMPS","DSM-11","$ZE")_"]"""" %MSG=$P("_^%DASY("MUMPS","DSM-11","$ZE")_","","",$L("_^%DASY("MUMPS","DSM-11","$ZE")_","","")) "_^%DASY("MUMPS","DSM-11","ZQ"),!
+	I DB S COMMENT="Headers and Trailers" D COMMENT
+	F SP=0:1:NS F S="H","T" S GRP=S_SP D GRP^%DARPC2B
+	I DB S COMMENT="Data Level" D COMMENT
+	S GRP="D" D GRP^%DARPC2B
+	I DB S COMMENT="Footer Level" D COMMENT
+	S GRP="F" D GRP^%DARPC2B
+	W "FORM D INIT S %PL=999 D D G KILLI",!
+	I DB S COMMENT="Canned subroutines" D COMMENT
+	W "INIT S:'$D(%PP) %PP=0 S %PW=",LL,",%PL=",$S('RPLEN:0,1:RPLEN-FLN-1),",(%PG,%PC)=0,(%SCP,%QT)=0"
+	W:%MUMPS="VAX DSM" " $Zwidth(%IOD:PACK" W !
+	W " I %PP",! W " E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0"
+	S X=$S(LL>80:"h",1:"l")
+	W " W:$E(%SCN)'=""",X,""" %E,""[?3",X,""" W:%SCN["";"" %E,""[r"" W %E,""[2J"" F %=1:1:24 S %O(%)=""""",!
+	W " Q",!
+PUSH	;
+	W "SAVE N %FO" F SP=1:1:NS W ",%F"_SP,",%S"_SP
+	W ",%S"_(NS+1) F I=1:1:VC W ",%T"_I
+	W !," N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD"
+	I $D(DN)'>1 W !," G PRT",! G NPG
+	S DN="",SUBDN="",LASTDN=""
+	F I=0:1 S DN=$O(DN(DN)) Q:DN=""  D
+	. I DN'["(" W:(I#20)=0 !," N ",DN W:(I#20)'=0 ",",DN S LASTDN=DN
+	. I $P(DN,"(",1)'=SUBDN,($P(DN,"(",1)'=LASTDN) S SUBDN=$P(DN,"(",1) W:(I#20)=0 !," N ",SUBDN W:(I#20)'=0 ",",SUBDN
+	W ! W:NP " G START" W:'NP " G PRT" W !
+NPG	;
+	;W "NPG" I RPLEN'=0 W " D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:""$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)"",1:""#,$C(0),$ZC(%SETX,0)"")",! ;	;%%Z2-R1
+	;**TM**; $ZC(%SETX) $ZC(%SETY)を削除
+	;W "NPG" I RPLEN'=0 W " D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:""$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)"",%PC=1&('%SCP):""$C(0)"",1:""#,$C(0),$ZC(%SETX,0)"")",! ;	;%%Z2-R1
+	W "NPG" I RPLEN'=0 W " D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:""$C(13),*12"",%PC=1&('%SCP):""$C(0)"",1:""#,$C(0)"")",! ;	;%%Z2-R1
+	F I=0:1:NS-1 W " D H",I," Q:%F",I," "
+	W " D H",NS W !," Q",!
+	I FLAG("SORT") D
+	. W "CVT I %V="""" S %V="" "" Q",!
+	. W " I %V?.N S %V=+%V Q",!
+	. W " I %V'?.UNP S %V="_$$REPLACE(^%DASY("MUMPS",%MUMPS,"$ZC(%UPCASE,P1)"),"P1","%V"),!
+	. W " Q",!
+	I $D(FLAG("NAME")) D
+	. W "NCVT Q:%W=""""  N P,X,Y,FL"
+	. W !," S %W="_$$REPLACE(^%DASY("MUMPS",%MUMPS,"$ZC(%BASEDIT,P1,34)"),"P1","%W")
+	. W !," S P=$P(%W,"",""),FL=""L"" D  S %L=P,P=$P(%W,"","",2),FL=""F"" D  S %F=P"
+	. W !," . Q:P=""""  F X=1:1 Q:$E(P,X)'="" """
+	. W !," . I FL=""L"" F Y=$L(P):-1 Q:$E(P,Y)'="" """
+	. W !," . I FL=""F"" F Y=X:1 I $E(P,Y)'?1U S Y=Y-1 Q"
+	. W !," . S P=$E(P,X,Y)"
+	. W !," . F X=1:1:$L(P) S:$E(P,X)'?.U P=$E(P,1,X-1)_$E(P,X+1,255),X=X-1"
+	. W !," S %W=%L_"",""_%F Q",!
+	I $D(FLAG("XREF")) D
+	. W "XRCVT Q:%W="""""
+	. I %XTYP="STRING" W "  S %W="_$$REPLACE(^%DASY("MUMPS",%MUMPS,"$ZC(%BASEDIT,P1,34)"),"P1","%W")
+	. W !," Q",!
+	W "NLN0 W:%PL'=0 $C(0)",!
+	W "NLN G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)",!
+	W " I %PP Q",!," D ^%DARPRD Q"
+	I $D(FLAG("%")) S CMD="" D USRLOAD K CMD
+ZSAVE	;
+	W !! Q:FILE=0!($D(%PRTD))  
+	;U FILE:DISCON X ("ZR  ZL  ZS "_$P(%PROGRAM,"^",2))
+	C FILE O FILE U FILE X ("ZR  ZL  ZS "_$P(%PROGRAM,"^",2))
+	S $P(^DARD(RPNM,"H"),";",5)=+$H
+	Q
+USRLOAD	;
+	S CMD=$O(FLAG("%",CMD)) Q:CMD=""
+	W CMD I DB W " ; ",^DASDC($E(CMD,2,99),"D"),! 
+	S I="" F  S I=$O(^DASDC($E(CMD,2,99),"S",I)) Q:I=""  W ^(I),!
+	G USRLOAD
+	Q
+DDN	;
+	I DN?1U.6UN!(DN?1U.6UN1"("1N.N1")")!(DN?1U.6UN1"("1""""1NAP.NAP1""""1")") S DN(DN)=DN Q
+	I $E(DN)="-" S DN=$E(DN,2,999),DN(DN)=""
+	Q
+REPLACE(STRING,OLD,NEW)	
+	S STRING=$P(STRING,OLD,1)_NEW_$P(STRING,OLD,2)
+	Q STRING
+COM	;**TM**;S %KJ=$ZC(KJOFF) ;	;%%Z1-A
+	I $X+$L(ARG)>200 W ! S COM=""
+	I $E(COM)="." W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON) ;	;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+COMMENT	;
+	W " ;====================================================================",!
+	W " ;",?72-$Zwidth(COMMENT)/2,COMMENT,! ;	;%%Z1-G
+	W " ;====================================================================",!
+	Q

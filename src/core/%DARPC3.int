@@ -1,0 +1,105 @@
+ROUTINE %DARPC3 [Type=INT,LanguageMode=6]
+%DARPC3	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+COMPILE	;
+	K RC S DN="" F  S DN=$O(DN(DN)) Q:DN=""  I DN(DN)="" D COMP1
+	S DN="" F  S DN=$O(DN(DN)) Q:DN=""  I DN(DN)'?.UN,(DN(DN)'?.UN1"("1N.N1")"),(DN(DN)'?.UN1"("1""""1NAP.NAP1""""1")"),(DN(DN)'?.";") D COMP2
+	Q
+COMP1	;
+	S REF=%DN(DN,"R"),DN(DN)=REF,NODE=$P(DN(DN),";",1)
+	Q:NODE=""  S KNOWN=$D(RC(NODE)) S:'KNOWN RC(NODE)=DN
+	I KNOWN,(RC(NODE)?.UN!(RC(NODE)?.UN1"("1N.N1")")!(RC(NODE)?.UN1"("1""""1NAP.NAP1""""1")")) S VC=VC+1,RC(NODE)="%T"_VC
+	K REF,NODE,KNOWN
+	Q
+COMP2	;
+	S REF=DN(DN) Q:$P(REF,";",1)=""  S V=RC($P(REF,";",1))
+	I %DN(DN,"PI")="",$P(REF,";",3)?1";" S DN(DN)=$P(REF,";",1)_$C(125,1)_$P(REF,";",1) K REF Q
+	I V?.UN!(V?.UN1"("1N.N1")")!(V?.UN1"("1""""1NAP.NAP1""""1")")  S V=$P(REF,";",1)
+	S Y=$S(%DN(DN,"PI")]"":%DN(DN,"PI"),1:0)
+	S Z=$S($P(REF,";",3)]"":$P(REF,";",3),1:0)
+	D PIECE^%DASDC($S(Y=0:"",1:Y),.V,$S(Z=0:"",Z>0:Z))
+	S DN(DN)=REF_$C(125,1)_V K REF
+	Q
+COMPLST	;
+	K TMP S CNT=""
+	I FLAG("PTR") F  S CNT=$O(PTR(VS,CNT)) Q:CNT=""  D
+	. S PNT="" F  S PNT=$O(PTR(VS,CNT,PNT)) Q:PNT=""  S DN="" F  S DN=$O(PTR(VS,CNT,PNT,DN)) Q:DN=""  I DN(DN)[$C(125,1) S TMP(PNT,$P($P(DN(DN),$C(125,1),1),";",1),DN)=""
+	. 
+	D COMPL
+	I FLAG("PTR") D EVCOMPL
+	K TMP,FTMP
+	S CNT="" F  S CNT=$O(VAR(VS,CNT)) Q:CNT=""  S DN="" F  S DN=$O(VAR(VS,CNT,DN)) Q:DN=""  I DN(DN)'?.UN,(DN(DN)'?.UN1"("1N.N1")"),(DN(DN)'?.UN1"("1""""1NAP.NAP1""""1")") S TMP(CNT,$P($P(DN(DN),$C(125,1),1),";",1),DN)=""
+	D COMPL
+EVCOMPL	S (CNT,ONODE)=""
+	F  S CNT=$O(FTMP(CNT)) Q:CNT=""  D
+	.S NODE="" F  S NODE=$O(FTMP(CNT,NODE)) Q:NODE=""!(NODE["*"!(NODE["#"))  S TEMP="" F  S TEMP=$O(FTMP(CNT,NODE,TEMP)) Q:TEMP=""  S DN="" F  S DN=$O(FTMP(CNT,NODE,TEMP,DN)) Q:DN=""  D COMPL1
+	D ENDL K REF,FTMP,NODE,TEMP,CNT,CT,PNT
+	Q
+COMPL	;
+	S CNT="",OCNT=0 F  S CNT=$O(TMP(CNT)) Q:CNT=""  D
+	.S (NODE,ONODE)="" F  S NODE=$O(TMP(CNT,NODE)) Q:NODE=""  D
+	.. S DN="" F  S DN=$O(TMP(CNT,NODE,DN)) Q:DN=""  S TEMP=RC(NODE) I TEMP]"" S ORD=$S(NODE=ONODE:OCNT,1:CNT),FTMP(ORD,NODE,TEMP,DN)="",OCNT=$S(ONODE=NODE:OCNT,1:CNT),ONODE=NODE
+	K NODE,ONODE,ORD,CNT
+	Q
+COMPL1	;
+	I ONODE'=NODE S CM="S",ARG="%=$D(^"_$P(NODE,"^",2,99)_"),"_TEMP_"=""""" D COM D NAKED S CM="S:%#10",ARG=TEMP_"="_REF D COM S ONODE=NODE
+	I TEMP?.UN!(TEMP?.UN1"("1N.N1")")!(TEMP?.UN1"("1""""1NAP.NAP1""""1")")  S DN=TEMP,DN(TEMP)="" D POINTER
+	S CM="S"
+	I DN(DN)'?.UN,(DN(DN)'?.UN1"("1N.N1")"),(DN(DN)'?.UN1"("1""""1NAP.NAP1""""1")") D
+	.S ARG=DN_"="_$P(DN(DN),$C(125,1),2,99),DN(DN)=""
+	.I $P(ARG,$S(Y?.N:FLAG("SYSDELM"),1:$E(Y,$L(Y))))'["*"&($P(ARG,$S(Y?.N:FLAG("SYSDELM"),1:$E(Y,$L(Y))))'["#") D COM,POINTER
+	Q
+NAKED	;
+	I TEMP?1U.6UN!(TEMP?1U.6UN1"("1N.N1")")!(TEMP?1U.6UN1"("1""""1NAP.NAP1""""1")") S REF=$P(DN(TEMP),$C(125,1),2,99)
+	E  S REF=NODE
+SUB	I NODE'["("!(REF?1"%T".N)!(REF?1"$P(%T".E)!(REF?1"$E(%T".E) Q
+	I REF["$C" S SUB=$P($P(REF,"(",$L(REF,"(")-1),")"),SUB=$P(SUB,",",$L(SUB,","))
+	E  S SUB=$P($P(REF,"(",$L(REF,"(")),")"),SUB=$P(SUB,",",$L(SUB,","))
+	I SUB["*"!(SUB["#")!(SUB="") S %MSG="グループ'"_GRP_"' ライン'"_LI_"' のサブスクリプト"""_SUB_"""が不適当です。" ZT %MSG ;	;%%Z1-T
+	I REF?1"$"."EP".E S XREF=$P(REF,"(",1)_"(^("_SUB_")" D
+	. I REF["$C" S REF=XREF_$P(REF,")",2,$L(REF,")"))
+XX	. E  S REF=XREF_$P(REF,")",$L(REF,")")-1)_")"
+	E  S REF="^("_SUB_")"
+	K SUB,XREF
+	Q
+POINTER	;
+	S:$E(DN)="-" DN=$E(DN,2,99) S POINTER=$P(%DN(DN,"R"),";",7)
+	Q:POINTER=""  I '$D(%DN(POINTER)) S %DDNM=POINTER D REPORT^%DADDLD
+	S CM="S",REF=$P(%DN(POINTER,"R"),";")
+	I REF["*"!(REF["#") S ARG=POINTER_"=$S("_DN_"]"""":"_DN_",1:"" "")"
+	E  S ARG=POINTER_"="_DN
+	D COM
+	Q
+ITEM	;
+LOOP	S CNT="" F  S CNT=$O(ALIAS(GRP,LI,CNT)) Q:CNT=""  D
+	. S DN="" F  S DN=$O(ALIAS(GRP,LI,CNT,DN)) Q:DN=""  D
+REEVAL	. . 
+	. . S REF=$P(%DN(DN,"R"),";")
+	. . 
+	. . I $D(RC(REF)) N RC
+	. . D COMP1 I DN(DN)'?.UN,(DN(DN)'?.UN1"("1N.N1")"),(DN(DN)'?.UN1"("1""""1NAP.NAP1""""1")") D COMP2
+	. . S CHAIN=ALIAS(GRP,LI,CNT,DN) F N=1:1:$L(CHAIN,",") D CHAIN I DN(DN)'?.UN,(DN(DN)'?.UN1"("1N.N1")"),(DN(DN)'?.UN1"("1""""1NAP.NAP1""""1")") S DN(DN)="" 
+	K CHAIN
+	Q
+CHAIN	;
+	S PDN=$P(CHAIN,",",N),SDN=$P(%DN(PDN,"R"),";",7)
+	S CM="S",ARG=SDN_"=$S("_PDN_"]"""":"_PDN_",1:"" "")" D COM
+	S DEPDDN=$S($P(CHAIN,",",N+1)]"":$P(CHAIN,",",N+1),1:DN)
+	S REF=$P(DN(DEPDDN),$C(125,1),1)
+	I REF="" S REF=%DN(DEPDDN,"R") S:$P(REF,";",2,3)?.";" DN(DEPDDN)=$P(REF,";",1)_$C(125,1)_$P(REF,";",1) S:$P(REF,";",2)?.N DN(DEPDDN)=$P(REF,";",1)_$C(125,1)_$P(REF,";",1,2) S REF=$P(REF,";",1)
+	S:REF["*" REF=$P(REF,"*")_SDN_")" S:REF["#" REF=$P(REF,"#")_SDN_")"
+	S CM="S",ARG="%=$D(^"_$P($P(REF,"^",2),";",1)_"),"_DEPDDN_"=""""" D COM
+	S REF=$P(DN(DEPDDN),$C(125,1),2),NODE=REF D SUB
+	S CM="S:%#10",ARG=DEPDDN_"="_REF D COM D POINTER
+	K PDN,SDN,REF,DEPDDN,NODE
+	Q
+COM	;
+	;**TM**; S %KJ=$ZC(KJOFF) ;	;%%Z1-A
+	I $X+$L(ARG)>200 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**; S %KJ=$ZC(KJON) ;	;%%Z1-A
+	Q
+ENDL	;
+	I COM]"" W ! S COM=""
+	Q

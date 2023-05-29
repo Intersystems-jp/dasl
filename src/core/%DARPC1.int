@@ -1,0 +1,220 @@
+ROUTINE %DARPC1 [Type=INT,LanguageMode=6]
+%DARPC1	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	S NP=0,FLAG("PTR")=1
+	S FLAG("SYSDELM")=$$DELIM^%DASDUTL(^DASY("PARM","DELIM"))
+	S FLAG("SORT")=^DARD(RPNM,"C","S")'=""
+	F NS=1:1 Q:'$D(^DARD(RPNM,"C","FW",NS))  S X=^DARD(RPNM,"C","FW",NS) Q:X?.P  D DEP
+	S %RES=^DARD(RPNM,"C","S"),(NS,VS)=0 D VSORT^%DARPLXB:%RES]""
+	K %SORTV D COMPILE^%DARPC3
+WRITE	;
+	D NOW^%DAUDTTM
+	S X=^DARD(RPNM,"REP"),LL=+X,RPLEN=$P(X,";",2),X=^DARD(RPNM,"A")
+	U FILE
+	I $D(%PRTD) W $P(%PROGRAM,"^",2),!
+	W $P(%PROGRAM,"^",2)," ;V6.1;",%DTX," ",%TMX,";",RPNM," ",$P(X,";",2),!
+	W " ;DASL;",$P(X,";",3),!
+	I $D(^DASY("ACT","E")),^("E")="Y" D
+	.S I="" F  S I=$O(^DASY("ACT","S",I)) Q:I=""  W " ;;     ",^(I),!
+	W " D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI",!
+	W " S "_^%DASY("MUMPS",%MUMPS,"$ZT")_"=""ERR"_%PROGRAM,""""," G SAVE",!
+	I NP W "START K ^DATG($J,""R"")" W:FLAG("SORT") " S %CNT=0" W !
+	I 'FLAG("SORT") D  Q:%MSG]""  ;;%%Z3-DASLV61_BUGS-18 +++
+	. W "PRT S %CNT=0 D INIT",!
+	. S RF="^DATG($J,""R""",SCT=10,(VC,SLV)=0,DN=""
+	. F GRP="H0","T0" D BUILD^%DARPC2B I %MSG]"" Q
+	. S VCNT=1 D ALL^%DARPLXA I %MSG]"" Q
+	. S RC="" D COMPILE^%DARPC3
+	. S VS=0 D COMPLST^%DARPC3
+	. I $D(FNC(0)) S (DN,COM)="",CM="S" D  W !
+	. . F  S DN=$O(FNC(0,DN)) Q:DN=""  D INIT^%DARPC2B  ;;%%Z3-DASLV61_BUGS-18 ---
+	. W " S %F0=999 D NPG S %F0=0",!
+	. W " I %SCP S %=$Y+1,%SCP=23-%,%SCN=""",$S(LL>80:"h",1:"l"),"""_%_"";23"",%LL=",LL,",%PL=1E24,%HF="""" W %E,""["",$E(%SCN,2,9),""r"",%E,""["",%-1,"";1H"",!",!
+	F I=1:1 Q:'$D(XNN(I))  D
+	. W " S %W=",XNN(I)," D NCVT S ",XNN(I),"=%W",!
+	F I=1:1 Q:'$D(XRF(I))  S %XTYP=XKEY(I) D
+	. I %XTYP'["TRAN" W " S %W=",XRF(I) S %XTYP=XKEY(I) D
+	. . I %XTYP="STRING" W " D XRCVT S ",XRF(I),"=%W",!
+	. . I %XTYP="NUMERIC" W " S ",XRF(I),"=+%W",!
+	S XK="" F PP=1:1:NP D BLDLP
+	S VS=0 D COMPLST^%DARPC3
+	I DB,FLAG("SORT") S COMMENT="Build SORT global" D COMMENT
+	S (V,I,SK,X)=""
+	F  S X=$O(SK(X)) Q:X=""  S V=$S(SK(X)[":":$P(SK(X),":",1),1:SK(X)) S:$E(V)="-" V=$E(V,2,99) I '$D(DN(V)) S SK=SK_","_V,I=I_"_$C(0)_"_V
+	S V=""
+	F  S V=$O(DN(V)) Q:V=""  S SK=SK_","_V,I=I_"_$C(0)_"_V
+	F SP=1:1:NS S DN=SK(SP) D SORT
+BK	W " S %CNT=%CNT+1"
+	I FLAG("SORT") W ",",RF,"%CNT)=",$E(I,8,999)
+	E  W " D EVAL"
+	W ! I NP W " G K",NP,!
+	W "K0 S ^DATG($J,""R"")=""",RPNM,",""_%DTR_"",""_%TMR_"",""_%CNT",!
+	S (COM,DN)="",CM="K"
+	F I=1:1 S DN=$O(DN(DN)) Q:DN=""  S ARG=DN D COM
+	F I=1:1:NS S ARG="%S"_I D COM
+	F I=1:1:VC S ARG="%T"_I D COM
+	D ENDL K COND,XK,XRF,%KEQ
+	I 'FLAG("SORT") W " D T0",!," G S0",!  ;;%%Z3-DASLV61_BUGS-18
+	Q
+DEP	;
+	S %RES=$P(X,";",1),COND=$P(X,";",2,99)
+	S:$E(COND,$L(COND))=";" COND=$E(COND,1,$L(COND)-1)
+	D VKEY^%DARPLXB Q:%MSG]""
+	S Y=%DN(DN,"R"),DDXREF=$P(Y,";",4),DDXTYP=$P(Y,";",5),DDXKEY=$P(Y,";",6)
+	I DDXREF="" S ARG=Y G DEPPK
+	S %DDNM=DDXKEY D REPORT^%DADDLD
+	S DN(DN)=DN,ARG=DDXREF,VC=VC+1,XK(VC)=DN_";"_DDXTYP_";"_VC,DN="%T"_VC
+	I ARG["(" S ARG=$E(ARG,1,$L(ARG)-1)_",*)"
+	E  S ARG=ARG_"(*)"
+DEPPK	;
+	S X=$F(ARG,"(")
+	F J=0:0 S J=$F(ARG,",",X) Q:'J  S V=$E(ARG,X,J-2) D KEY:V'[""""&(V'?.N) S X=J
+	S J=$F(ARG,")",X),V=$E(ARG,X,J-2)
+	S FLAG="*#"[V I FLAG S V=DN D KEY
+	I 'FLAG D KEY:V'[""""&(V'?.N) S X=99,V=DN D KEY
+	I DDXTYP["TRAN" D
+	. S:FR'="" %EXT(NP)=FR S:TO'="" %EXT(NP+1)=TO
+	. 
+	S FR(NP)=$S(FR]"":FR,1:""""""),TO(NP)=$S(TO]"":TO,1:"""""")
+	G DEPCND:DDXREF=""
+	I (DDXTYP="NAME")!(DDXTYP="JNAME") S ARG=$E(ARG,1,X-1)_V_",",X=X+$L(V)+1,VC=VC+1,%KEQ(VC)=0,V="%T"_VC D KEY I FR]""!(TO]"") D
+	. 
+	. 
+	. S LIST="FR,TO" F I=1,2 S VAR=$P(LIST,",",I),STR="" D
+	. . I @VAR'="""""",@VAR'["%PARM" S LN=$P(@VAR,",",1) F Z=1:1:$L(LN) I $E(LN,Z)'=" " S STR=STR_$E(LN,Z)
+	. . I STR'="" S:$P(@VAR,",",2)]"" @VAR=STR_","_$S($E($P(@VAR,",",2),1)=" ":$P(@VAR,", ",2),1:$P(@VAR,",",2)) S:$P(@VAR,",",2)="" @VAR=STR
+	. S LIST="FR,TO" F I=1,2 S VAR=$P(LIST,",",I) D
+	. . 
+	. . I @VAR'["%PARM" D
+	. . . 
+	. . . I @VAR["," S @VAR@(NP)=""""_$S($E($P(@VAR,",",2),1)=" ":$P(@VAR,", ",2),1:$P(@VAR,",",2)),@VAR@(NP-1)=$P(@VAR,",",1)_""""
+	. . . 
+	. . . I @VAR'["," S @VAR@(NP)="""""",@VAR@(NP-1)=$S(@VAR]"":@VAR,1:"""""")
+	. . 
+	. . I @VAR["%PARM" D
+	. . . S @VAR@(NP-1)="$P("_@VAR_","","")"
+	. . . S @VAR@(NP)="$P("_@VAR_","","",2)"
+	. . . S:'$D(XNN(0)) XNN(0)=1 D
+	. . . . I '$D(FLAG("NAME")) S XNN(XNN(0))=@VAR,XNN(0)=XNN(0)+1
+	. . . . I $D(FLAG("NAME")) S:FR'=TO&(VAR="TO") XNN(XNN(0))=@VAR,XNN(0)=XNN(0)+1
+	. . . S FLAG("NAME")=""
+	I DDXTYP="TRAN2"  S ARG=$E(ARG,1,X-1)_V_",",X=X+$L(V)+1,VC=VC+1,%KEQ(VC)=0,V="%T"_VC D KEY D
+	. S LIST="FR,TO" F I=1,2 S VAR=$P(LIST,",",I) D
+	. . I @VAR'="" S @VAR@(NP-1)=$S(VAR="FR":"S",1:"E")_(NP-1),@VAR@(NP)=$S(VAR="FR":"S",1:"E")_NP
+	. . I @VAR="" D
+	. . . I '$D(FLAG("NOOPT")) S @VAR@(NP-1)=$S(VAR="FR":"E",VAR="TO":"S",1:"")
+	. . . I $D(FLAG("NOOPT"))  S @VAR@(NP-1)=""""""
+	I DDXTYP="TRAN1" S LIST="FR,TO" F I=1,2 S VAR=$P(LIST,",",I) D
+	. I @VAR'="" S @VAR@(NP)=$S(VAR="FR":"S",1:"E")_NP
+	. I @VAR="" D
+	. . I '$D(FLAG("NOOPT")) S @VAR@(NP)=$S(VAR="FR":"E",VAR="TO":"S",1:"")_NP
+	. . I $D(FLAG("NOOPT")) S @VAR@(NP)=""""""
+	. . . I VAR="FR" S @VAR@(NP)=""""""
+	S ARG=$E(ARG,1,X-1)_V_",",X=X+$L(V)+1,V=DDXKEY D KEY
+	I DDXTYP="STRING"!(DDXTYP="NUMERIC") S LIST="FR,TO" F I=1,2 S VAR=$P(LIST,",",I) D
+	. I @VAR["%PARM",@VAR'="""""" S:'$D(XRF(0)) XRF(0)=1 D
+	. . I '$D(FLAG("XREF")) S XRF(XRF(0))=@VAR,XRF(0)=XRF(0)+1,XKEY(I)=DDXTYP,FLAG("XREF")=""
+	. . I $D(FLAG("XREF")) S:FR'=TO&(VAR="TO") XRF(XRF(0))=@VAR,XRF(0)=XRF(0)+1,XKEY(I)=DDXTYP
+	. I @VAR'["%PARM",@VAR'="" D
+	. . I DDXTYP="NUMERIC" S @VAR@(NP)=@+VAR
+DEPCND	;
+	I COND]"" S %RES=COND,COND(NP,0)=0 D VCOND^%DARPLXB S COND(NP)=ITM
+	Q
+KEY	;
+	S:'$D(DN(V)) (NP,VS)=NP+1,RF(NP)=$E(ARG,1,X-1),PK(NP)=V S:$E(V)'="%" DN(V)=V S:'$D(%KEQ(NP)) %KEQ(NP)=0
+	I V?1U.6UN!(V?1U.6UN1"("1N.N1")")!(V?1U.6UN1"("1""""1NAP.NAP1""""1")")&('$D(%DN(V))) S %DDNM=V D REPORT^%DADDLD
+	Q
+BLDLP	;
+	S PK=PK(PP) S:$E(PK)="%"&(XK="") XK=XK(+$E(PK,3,99))
+	G BLDLST:RF(PP)[";"
+	S FR=$S($D(FR(PP)):FR(PP),1:""""""),TO=$S($D(TO(PP)):TO(PP),1:"""""")
+	S FR=$S(FR]"":FR,1:""""""),TO=$S(TO]"":TO,1:"""""")
+	S DN=PK S:$E(PK)="%" DN=$P(XK,";",1)
+	S I=%DN(DN,"T"),NUMERIC=$S(I="":0,1:"DATE,TIME,NUME"[$E(I,1,4))
+	S I=$S(I["DATE":"DT",I["TIME":"TM",1:"")
+	G BLD0:I=""&($P(XK,";",2)'["TRAN")
+	I $P(XK,";",2)["TRAN" F I=1:1 G:'$D(%EXT(I)) BLD0  D
+	. W " S %EXT=",%EXT(I)," ",%DN(DN,"XT"),!
+	. I $P(XK,";",2)="TRAN2" D
+	. . I I=1,$D(FR(I)) W " S ",FR(1),"=%INT1",",",FR(2),"=%INT2",!
+	. . I I=2,$D(TO(I)) W " S ",TO(1),"=%INT1",",",TO(2),"=%INT2",!
+	. E  D
+	. . I I=1,$D(FR(I)) W " S ",FR(1),"=%INT",!
+	. . I I=2,$D(TO(1)) W " S ",TO(1),"=%INT",!
+	I FR'=TO,TO'="""""" S VC=VC+1 W " S %",I,"X=",TO," D ",I,"XI^%DAUDTTM S %T",VC,"=$S(%",I,"I'="""":%",I,"I,1:",TO,")",! S TO="%T"_VC
+	I FR'="""""" W " S %",I,"X=",FR," D ",I,"XI^%DAUDTTM S:%",I,"I']"""" %",I,"I=",FR S:FR=TO TO="%"_I_"I" S FR="%"_I_"I"
+BLD0	;
+	I $D(%EXT) K %EXT
+	W " S ",PK,"=",FR
+	I FR'="""""" D
+	. 
+	. I $E(PK)'="%" W " I $D(",RF(PP),PK,")) G K",PP,"X",!,"K",PP
+	. 
+	. I $E(PK)="%" W " I ",PK,"'="""",$D(",RF(PP),PK,")) G K",PP,"X",! W "K",PP
+	I FR="""""" W !,"K",PP
+	I FR'=TO!(FR="""""") D
+	. 
+	. I FR'["%PARM",TO'["%PARM" W " S ",PK,"=$O(",RF(PP),PK,")) " W "I ",PK,"=""""" W:TO'="""""" "!(",PK,$S(NUMERIC:">",1:"]"),TO D
+	. . I PP>1,$D(TO(PP)),TO(PP)'="""""",$D(TO(PP-1)) W:$E(PK)="%" "&(",PK(PP-1),"=",TO(PP-1),")"
+	. . I $D(TO(PP)),TO(PP)'="""""" W ")"
+	I '%KEQ(PP),$E(PK)="%",(FR["%PARM"!(TO["%PARM")) D  
+	. 
+	. I FR'=TO W " S ",PK,"=$O(",RF(PP),PK,")) " W "I ",PK,"=""""","!(",PK,$S(NUMERIC:">",1:"]") W:TO'="""""" "$S("_TO_"'="""":"_TO_",1:""zzz"")" W:TO="""""" """zzz"")" D
+	. . I PP>1,$D(TO(PP)),TO(PP)'="""""",$D(TO(PP-1)) W:$E(PK)="%" "&(",PK(PP-1),"=",TO(PP-1),")"
+	. . I $D(TO(PP)),TO(PP)'="""""" W ")"
+	I '%KEQ(PP),$E(PK)'="%",FR["%PARM"!(TO["%PARM") W " S ",PK,"=$O(",RF(PP),PK,")) " W "I ",PK,"=""""","!(",PK,$S(NUMERIC:">",1:"]") W:TO'="""""" TO,")"
+	W " G K",PP-1,!
+	I $E(PK)="%",$D(FR(PP+1)),FR(PP+1)'="""""",FR'=TO!(FR="""""") D
+	. I DDXTYP="NAME"!(DDXTYP="JNAME")!(DDXTYP="TRAN2"),PK="%T1" W " S:'$D(%T2) %T2="""" G K",PP+1,! ;	;%%Z3-M
+	I $D(LOOP(PP)) D  K LOOP(PP) W !
+LOOP	. 
+	. W " I '(",PK,"=",LOOP(PP,1)
+	. F J=2:1 Q:'$D(LOOP(PP,J))  W "!(",PK,"=",LOOP(PP,J),")"
+	. W ") G K",PP
+	G BLD1
+BLDLST	;
+	S I=$P(RF(PP),";",1),J=$P(RF(PP),";",2),(FR,TO)=""""""
+	S:J I="$P("_I_","""_$S(J?.N:";",1:$E(J,$L(J)))_""","_+J_")"
+	W " S %T",VC+1,"=",I,",%T",VC+2,"=0",!
+	W "K",PP," S %T",VC+2,"=%T",VC+2,"+1,",PK,"=$P(%T",VC+1,","","",%T",VC+2,") I ",PK,"="""" G K",(PP-1),!
+	S VC=VC+2
+BLD1	;
+	I FR'="""""" W "K",PP,"X"
+	S COM="",CM="S",DN=PK
+	I XK=""!($E(PK)="%") G BLD2
+	S DN=$P(XK,";",1),I=$P(XK,";",2),J=$P(XK,";",3)
+	I I="STRING"!(I="NUMERIC")!(I="TRAN1") S ARG="%=^("_PK_"),"_DN_"=$S(%="""":%T"_J_",1:%)"
+	S DELM=$S(I="NAME":""", """,I="JNAME":"""　""",1:""" """) ;	;%%Z3-M
+	I I="NAME"!(I="JNAME")!(I="TRAN2") S ARG="%=^("_PK_"),"_DN_"=$S(%="""":%T"_J_"_"_DELM_"_%T"_(J+1)_",1:%)" ;	;%%Z1-M
+	I I="KWIC" S ARG="%=^("_PK_"),"_DN_"=$S(%="""":%T"_J_",1:%)"
+	S XK="" D COM
+BLD2	;
+	Q:$E(DN)="%"  S:$E(DN)="-" DN=$E(DN,2,99) D POINTER^%DARPC3
+	S VS=PP D COMPLST^%DARPC3 Q:'$D(COND(PP))
+	F I=1:1:COND(PP,0) W:COND(PP,I)'="" COND(PP,I),!
+	I $E(COND(PP))="@" W $E(COND(PP),2,99),!," G K",PP,":'%FND",! Q
+	W " I '",COND(PP)," G K",PP,!
+	Q
+SORT	;
+	I $E(DN)="-" S DN=$E(DN,2,255)
+	I DN["(" S DN=$P(DN,"(")
+	I $D(%VL(DN)) W " S %V=$E("_DN_",1,"_SX(SP)_")"
+	E  W " S %V=",$S('SX(SP):DN,1:"$E("_DN_",1,"_SX(SP)_")")
+	I FLAG("SORT") W " D CVT S %S",SP,"="_$S($E(SK(SP))'="-":"%V",1:"-%V"),!
+	S RF=RF_"%S"_SP_","
+	Q
+COM	;
+	;**TM**;S %KJ=$ZC(KJOFF) ;	;%%Z1-A
+	I $X+$L(ARG)>200 W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON) ;	;%%Z1-A
+	Q
+ENDL	;
+	I COM]"" W ! S COM=""
+	Q
+COMMENT	;
+	W " ;====================================================================",!
+	W " ;",?72-$Zwidth(COMMENT)/2,COMMENT,! ;	;%%Z1-G
+	W " ;====================================================================",!
+	Q

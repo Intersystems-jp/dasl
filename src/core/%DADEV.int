@@ -1,0 +1,211 @@
+ROUTINE %DADEV [Type=INT,LanguageMode=6]
+%DADEV	;JEB/DAH/DBS,,UTILITY,DASL;4-Mar-92;V6.1 Device selection validation
+	;DASL;Y;UTILITY,SECURITY
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;
+	;  Enter at %DADEV to validate a device name only.
+	;  Enter at OPEN to additionally require device ownership.
+	;
+	;  Input:
+	;
+	;    %ATR - an optional list of attributes (OR condition).
+	;    %OPV - List of privilege codes for the current option.
+	;    %PDV - A synonym for the DDN DEVPRT.  This is the physical
+	;           port name with the leading underscore removed.
+	;           Defined in %DALOGIN, its the principal device, and
+	;           a secondary key in the device dictionary.
+	;    %DEV - A synonym for the DDN DEV.  This is the NAME of the
+	;           user's principal device, and is the primary key in the
+	;           device dictionary.  Defined in %DALOGIN.
+	;
+	;  Return:
+	;
+	;    %IOD - internal port name of output device (DEVPRT),
+	;           or the name of a sequential file.
+	;     DEV - The DDN for device name in the device dictionary.
+	;           This is the primary key returned by performing a
+	;           lookup on the port (DEVPRT).
+	;  %RPDEV - Device name for %DARPDRV.  Synonym for DEV.
+	;
+	;  %PDV and %DEV point to the user's principal device.
+	;  %IOD, DEV, and %RPDEV point to the selected output device.
+	;====================================================================
+	;           EXTERNAL ENTRY POINTS (%DADEV & OPEN)
+	;====================================================================
+	D SET I %MSG]"" S %FND=0
+	I '%FND,%MSG="" S %MSG="デバイスが不適当です。" ;	;%%Z1-T
+	Q
+OPEN	D SET I %MSG]"" S %FND=0 Q
+	I '%FND,%MSG="" S %MSG="デバイスが不適当です。" Q  ;	;%%Z1-T
+	I %IOD="" S %MSG="デバイスがオープンできません。ポートが指定されていません。" Q  ;      	;%%Z2-T
+	S $ZT="OPERR^%DADEV"
+	O %IOD::0 E  S %MSG=$S('%PGMR:"デバイスが使用できません",1:"デバイス'"_%IOD_"'がオープンできません")_"。" ;   	;%%Z1-T
+	Q
+	;====================================================================
+	;            SUBROUTINE CALLED BY (%DADEV & OPEN)
+	;====================================================================
+SET	S (%FND,%PP)=0 ; %PP - Flag for Printer port
+	; Programmer mode
+	I %PGMR,$S('$D(%DEV):1,%DEV="":1,'$D(%PDV):1,%PDV="":1,1:0) S %MSG="このオプションはアプリケーションモードで実行して下さい。" Q  ;	;%%Z1-T
+	I %RES="." S %RES=%DEV
+	I %RES=".P" S %RES=%DEV,%PP=1 ;$S('$D(^DASYU("D","D",%RES)):0,(","_$P(^DASYU("D","D",%RES,"E"),";",2)_",")[",VT200P":1,1:0)
+	I '$D(^DASYU("D","D",%RES)) D LOOKUP G END
+	S DEV=%RES D SELECT S DEV="" S:%MSG="" %FND=1
+	;**TM**; デフォルトはUTF8,pitchは2とする
+	;END	S %RPKPIT=4,%RPKTYP="DEC",%RPKON="",%RPKOF="" ;	;%%Z1-F setup default
+END	S %RPKPIT=2,%RPKTYP="UTF8",%RPKON="",%RPKOF="" ;	;%%Z1-F setup default
+	I '%FND S (%IOD,DEV,%RPDEV)="" Q
+	S (%RPDEV,DEV)=%RES,%IOD=$P(^DASYU("D","D",DEV,"E"),";",1)
+	;%%Z1-F
+	N %ZZ1
+	S %ZZ1=$G(^DASY("DEV",$P($P(^DASYU("D","D",DEV,"E"),";",2),","),"P")) D:%ZZ1'=""
+	.;**TM**; Pitchを半分にする
+	.;S %RPKPIT=$P(%ZZ1,";")*2
+	.S %RPKPIT=$P(%ZZ1,";")
+	.S %RPKTYP=$P(%ZZ1,";",2)
+	.S:%RPKTYP="JIS" %RPKON=$C(27)_$P(%ZZ1,";",3),%RPKOF=$C(27)_$P(%ZZ1,";",4)
+	;%%Z1-F
+	; Wildcard terminal - LAT support, remote terminals (TT*)
+	I $ZV["VAX DSM" D
+	. I %IOD["*" S %IOD=$$GETDVI^%DAZCALL($I,"TT_PHYDEVNAM") S:%IOD="" %IOD=$I I $E(%IOD)="_" S %IOD=$E(%IOD,2,99)
+	I $ZV["DSM for ULTRIX" S %IOD=$I ; Need more work
+	I $ZV["IRIS" S %IOD=$I ; IRIS ;**TM**
+	I $ZV["Cache" S %IOD=$I ; Cache ;**TM**
+	;**TM**; デフォルトはUTF8
+	;I $D(%RPFNC),%RPFNC["D",DEV=%DEV S %MSG="レポートディレクトリ機能では不適当なデバイスです" S (%IOD,DEV,%RPDEV)="",%RPKPIT=4,%RPKTYP="DEC",%RPKON="",%RPKOF="" ;	;%%Z1-F;%%Z1-T
+	I $D(%RPFNC),%RPFNC["D",DEV=%DEV S %MSG="レポートディレクトリ機能では不適当なデバイスです" S (%IOD,DEV,%RPDEV)="",%RPKPIT=2,%RPKTYP="UTF8",%RPKON="",%RPKOF="" ;	;%%Z1-F;%%Z1-T
+	Q
+	;====================================================================
+	;                SUBROUTINES CALLED BY SET
+	;====================================================================
+PROG	; In programmer mode don't perform any priv. checking etc.
+	;**TM**; デフォルトはUTF8
+	;S %RPKPIT=4,%RPKTYP="DEC",%RPKON="",%RPKOF="" ;	;%%Z1-F
+	S %RPKPIT=2,%RPKTYP="UTF8",%RPKON="",%RPKOF="" ;	;%%Z1-F
+	S (%FND,%PP)=0 
+	;I $ZV["DSM for ULTRIX" D ULTRIX Q
+	I $ZV["IRIS" D IRIS Q ;;**TM** IRIS対応
+	I $ZV["Cache" D IRIS Q ;;**TM** Cache対応
+	;I %RES="." D PRSET Q
+	;I %RES=".P" D PRSET S %PP=1 Q
+	;I %RES?.1"_"3U1.3N.1":" G VPDEV
+	;I %RES?1A.A2":".1"_"3U1.3N1":" G VPNODE
+	;I %RES?.E1.39ANP1"."1.39ANP.1";".5N G VFILE ;	;%%Z1-Y
+	;I %RES?.E1A.38AN1"."1A.38AN.1";".5N G VFILE ;	;%%Z1-Y
+	;  Check to see if its a logical name.
+	;I $ZV["VAX DSM" S %=$$TRNLOG^%DAZCALL(%RES) D
+	;. I %]"" S (%RES,%IOD,DEV)=$S($E(%)="_":$E(%,2,255),1:%),%FND=1 Q
+	;. S %MSG="出力デバイスが不適当です。" ;	;%%Z1-T
+	Q
+	;=============== SUBROUTINES CALLED BY PROG ===============
+PRSET	; Programmer Mode - Set up device variables to current device
+	;I $ZV["VAX DSM" S %PDV=$ZC(%GETDVI,$I,"TT_PHYDEVNAM") I $E(%PDV)="_" S %PDV=$E(%PDV,2,99)
+	I $ZV["DSM for ULTRIX" S %PDV=$I
+	;**TM**;
+	set %PDV=$I
+	S (%IOD,%RES)=%PDV,%FND=1
+	Q
+	;================= TAGS GONE TO FROM PROG ===========================
+	;VPDEV	; Programmer Mode - print device on this system
+	;D CHK I %MSG]"" Q
+	;I $ZV["VAX DSM" D
+	;. S %IOD=$ZC(%GETDVI,%RES,"DEVNAM"),%FND=1
+	;. S (%RES,%IOD,DEV)=$S($E(%IOD)="_":$E(%IOD,2,99),1:%IOD),DEV=$P(DEV,":")
+	; Need to remove underscore for compiled reports if output to screen
+	;Q
+	;VPNODE	; Programmer Mode - print device on another node
+	;I %RES["::" D
+	;. I $ZV["DSM for ULTRIX" S %MSG="Invalid network print device" Q
+	;. ;I $ZV["VAX DSM" S %FND=1,(%IOD,DEV)=%RES Q
+	;. ;I $ZC(%GETDVI,%RES,"EXISTS") S %FND=1,(%IOD,DEV)=%RES Q
+	;. ;E  S %MSG="ネットワークプリントデバイスが不適当です。" ;	;%%Z1-T
+	;Q
+	;VFILE	; Check for VMS file spec
+	;**TM** IRISのみ対応
+	;;I $ZV["VAX DSM" D
+	;. ;S %=$$PARSE^%DAZCALL(%RES) I %="" S %MSG="ファイル指定が不適当です。" Q  ;	;%%Z1-T
+	;. ;S (%IOD,DEV)=$P(%,";"),%FND=1
+	; I $ZV["DSM for ULTRIX" D
+	;. ;S %=$$DTYPE^%GETDVI(%RES)
+	;. ;I %="DB" S (%IOD,DEV)=%RES,%FND=1
+	;. E  S %MSG="ファイル指定が不適当です。" ;	;%%Z1-T
+	;Q
+	;ULTRIX	I %RES="." D PRSET Q
+	;I %RES=".P" D PRSET S %PP=1 Q
+	; S %=$$SPOOL^%DAZCALL(%RES) I % S %IOD=%RES,%FND=1 Q
+	;S %=$$DTYPE^%GETDVI(%RES)
+	;I %="TT" S (%IOD,%RES)=%PDV,%FND=1 Q
+	;I %="DB" S (%IOD,DEV)=%RES,%FND=1 Q
+	;E  S %MSG="デバイスが不適当です。" ;	;%%Z3-T
+	;Q
+IRIS	I %RES="." D PRSET Q
+	I %RES=".P" D PRSET S %PP=1 Q
+	; S %=$$SPOOL^%DAZCALL(%RES) I % S %IOD=%RES,%FND=1 Q
+	;**TM**;S %=$$DTYPE^%GETDVI(%RES)
+	S %=$$GETDT^%DAIO(%RES)
+	;
+	I %="TRM" S (%IOD,%RES)=%PDV,%FND=1 Q
+	I %="RMS" S (%IOD,DEV)=%RES,%FND=1 Q
+	E  S %MSG="デバイスが不適当です。" ;	;%%Z3-T
+	Q
+LOOKUP	I '$D(%OPV),'$D(%ATR) S %XS=""
+	E  S %XS="D SELECT^%DADEV"
+	S %CD="LO",%PR="Device Name: ",%XL="^DASYU(""D"",""D"");KEY;"
+	S %XT="                    Location/Description",%XD="DEV",%XA=""
+	S %XL(1)="??20,$P(^DASYU(""D"",""D"",DEV,""E""),"";"",3)"
+	D ^%DASDLU Q:%EX
+	; Rather than quit goto the repaint subroutine of the calling screen
+	S %LABEL="Q",%NAME=%L(0) D SCREEN^%DARUN
+	Q  ; darun will do a goto to the Q subroutine which will quit
+	;                      (Spagitti code)
+	;
+SELECT	; Entry from ^%DASDLU via X %XS
+	S %MSG="" 
+	I $P(^DASYU("D","D",DEV,"E"),";",4)'="Y" S %MSG="デバイスがアクティブ状態ではありません。" Q  ;	;%%Z1-T
+	I $D(%ATR) D ACHK I %MSG S %MSG="この操作に対してはデバイスが不適当です。" Q  ;	;%%Z1-T
+	I $D(%OPV) D PCHK I %MSG S %MSG="この操作に対しては特権が不十分です。" Q  ;	;%%Z1-T
+	Q
+	;====================================================================
+	;                SUBROUTINES CALLED BY SELECT
+	;====================================================================
+ACHK	; Check device attributes - Failure is %MSG=1
+	Q:%ATR=""  S %MSG=1,%Y=","_$P(^DASYU("D","D",DEV,"E"),";",2)_","
+	F %=1:1:$L(%ATR,",") I %Y[(","_$P(%ATR,",",%)_",") S %MSG="" Q
+	Q
+PCHK	Q:%OPV["@"  S %Y="" ; Check device privs - Failure is %MSG=1
+	F %X=0:0 S %X=$O(^DASYU("D","D",DEV,"S",%X)) Q:%X=""  S %Y=%Y_^(%X)
+	Q:%Y["@"  S %MSG=1 F %=1:1:$L(%OPV) I %Y[$E(%OPV,%) S %MSG="" Q
+	Q
+	;====================================================================
+	;                SUBROUTINES CALLED BY VPDEV
+	;====================================================================
+CHK	; Validate a port - called directly from Screen USRDEV, and is
+	;  default validation for DDN DEVPRT
+	S $ZT="ERR^%DADEV" F %=1:1 Q:$E(%RES,%)'="_"
+	I %RES?.P S %MSG="フォーマットが不適当です。" Q  ;	;%%Z1-T
+	;I $ZV["VAX DSM" D
+	;. S %RES=$E(%RES,%,99) S:":*"'[$E(%RES,$L(%RES)) %RES=%RES_":"
+	;. ;  Do not perform function call if device has two colons together.
+	;. I %RES["::" Q
+	;. I '$ZC(%GETDVI,$S(%RES?2U1"*":$E(%RES,1,2),1:%RES),"EXISTS") S %MSG="このようなポートはありません。" Q  ;	;%%Z1-T
+	Q
+	;====================================================================
+	;                       ERROR TRAP
+	;====================================================================
+OPERR	I $ZE["OPENERR" S %MSG=$S('%PGMR:"この操作に対しては特権が不十分です。",1:$ZE),$ZE="" Q  ;	;%%Z1-T
+	;**TM**; ZQ動作の変更; ZQ
+	ZQ 1 G @$ZT
+ERR	S %MSG=$S($ZE=""!'%PGMR:"ポート指定が不適当です。",1:$ZE),$ZE="" ;	;%%Z1-T
+	Q
+	;====================================================================
+	;                    TEST ENTRY POINT
+	;====================================================================
+TEST	;  Test Device validation.
+	D PROG^%DASL,INIT^%DALOGIN S %DEV=%PDV
+TESTD	R !,"Device: ",%RES#15 I %RES="" D EXIT^%DALOGIN Q
+	S (%W,%INP,%OLD,%MSG)="" D OPEN I %MSG="" W "   ",%INP G TESTD
+	W $C(7),"  ",%MSG
+	G TESTD

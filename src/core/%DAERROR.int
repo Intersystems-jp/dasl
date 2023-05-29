@@ -1,0 +1,130 @@
+ROUTINE %DAERROR [Type=INT,LanguageMode=6]
+%DAERROR	;RSC/YJH/DBS/RFD,ERROR,SYSTEM,DASL;4-Mar-92;V6.1 Error handler
+	;DASL;N;SYSTEM
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+BEG	K  W $C(27),"[2J",$C(27),"[H","- DASL Error Utility -"
+	I $O(^DAER(""))="" W "  No errors on file." Q
+	S %=$P(^DAER,";",2) I %'="" D PURGE G DATE
+	R "  Purge errors? <N> ",C:120 Q:'$T  I "Yy"[$E(C)&(C'="") D PURGE1 K  
+	;
+DATE	; Prompt for date
+	R !!,"Errors for Date: ",DAT:120 I DAT="" D KILL1,KILL2 Q
+	I DAT="?" W !,"Enter date of error or ""*"" for a list." G DATE
+	I DAT="*" S DAT="" W ! D LISDAT G SDAT:DAT]"" G DATE
+	S %DTX=DAT D DTXI^%DAUDTTM
+	I %DTI="" W "    Invalid date." G DATE
+	S DAT=-%DTI D DTIX^%DAUDTTM
+	I '$D(^DAER(DAT)) W "    No errors for ",%DTX G DATE
+SDAT	S CNT=$P(^DAER(DAT,"CNT"),";",2)
+	W "    ",CNT," error",$S(CNT=1:"",1:"s")," on ",%DTX
+	;
+ERR	; Prompt for error number
+	R !!,"Error number: ",ERR G:ERR="" DATE
+	I ERR="?" W !,"Enter number of error or ""*"" for a list." G ERR
+	I ERR="*" S (ERR,NUM)="" W ! D LISERR G:ERR]"" OPT G DATE
+	I '$D(^DAER(DAT,"E",ERR)) W "    Invalid error number." G ERR
+	S %ze=^DAER(DAT,"E",ERR,"$ZE"),%=^("$H"),%TMI=$P(%,",",2)
+	D TMIX^%DAUDTTM W !,%TMX,?10,%ze
+	;
+OPT	I %ze="Deleted" W !,"Error was deleted" G ERR
+	R !!,"Reload, Output, or Delete: ",OPT G:OPT="" ERR
+	I OPT="?"!("ROrodD"'[$E(OPT)) D HELP G OPT
+	W $S("Rr"[$E(OPT):$E("eload",$L(OPT),9),"Dd"[$E(OPT):$E("elete",$L(OPT),9),1:$E("utput",$L(OPT),9))," Error"
+	S %9dat=DAT,%9num=ERR I "Rr"[$E(OPT) D RELOAD Q
+	I "Oo"[$E(OPT) D OUTPUT G ERR
+	; Delete single error
+	S %=^DAER(DAT,"E",ERR,"$H") K ^DAER(DAT,"E",ERR)
+	S ^DAER(DAT,"E",ERR,"$H")=%,^("$ZE")="Deleted"  W !,"Error Deleted"
+	G ERR
+LISDAT	; List dates with errors
+	F I=1:1:20 S DAT=$O(^DAER(DAT)) Q:DAT=""  S CNT=$P(^(DAT,"CNT"),";",2) D LD2
+LD1	Q:I=1  W !!,"Enter a number to select a date"
+	S MORE=DAT]""&($O(^DAER(DAT))]"")
+	I MORE W ", <RETURN> for MORE dates, or Q to Quit" 
+	R ": ",%:12 I %="" W ! G:MORE LISDAT S DAT="" Q
+	I "Qq"[% S DAT="" Q
+	I %'?1N.N!'%!(I'=20&(%'<I))!(I=20&(%'<21)) W *7 G LD1
+	S NUM="",%=SV(%),DAT=$P(%,";"),%DTX=$P(%,";",2)
+	Q
+LD2	S %DTI=-DAT D DTIX^%DAUDTTM S SV(I)=DAT_";"_%DTX
+	W !,$J(I,2),".",$J(%DTX,12),$J(CNT,5)," error" W:CNT'=1 "s"
+	Q
+LISERR	;List errors per date
+	S SV=0 F C=1:1:20 S NUM=$O(^DAER(DAT,"E",NUM)) Q:SV>18!(NUM="")  D LE2
+LE1	W !!,"Error number"
+	S MORE=$S(NUM="":0,C=20:$O(^DAER(DAT,"E",NUM))]"",1:1)
+	I MORE W ", <RETURN> for MORE errors, or Q to Quit"
+	R ": ",ERR:120
+	S EC=$S('$T:1,ERR="Q"!(ERR="q"):1,ERR="":'MORE,1:0) I EC S ERR="" Q
+	I ERR="?" W !,"Enter number of error",$S('MORE:".",1:" <RETURN>, or Q.")
+	I ERR="" S NUM=$S(C=20:NUM,1:NUM-1) W ! G LISERR
+	I '$D(^DAER(DAT,"E",ERR)) W *7 G LE1
+	Q
+LE2	S %ze=^DAER(DAT,"E",NUM,"$ZE"),%=^("$H"),%TMI=$P(%,",",2)
+	D TMIX^%DAUDTTM W !,$J(NUM,2),". ",%TMX,?15,%ze
+	S SV=SV+$S($L(%ze)<65:1,1:2+($L(%ze)-64\79)) ; Count # of lines
+	Q
+RELOAD	; Reload local variables. Use variables that won't be over written.
+	S %h=^DAER(%9dat,"E",%9num,"$H"),%i=^("$I"),%j=^("$J"),%za=^("$ZA")
+	S %zb=^("$ZB"),%ze=^("$ZE"),%zh=^("$ZH"),%9fl=^("FL"),%9pgm=$P(%ze,",")
+	W !!,"Recreating symbol table for error # ",ERR," on ",%DTX,! D KILL1
+	I %9pgm]"" W " - Error occurred at ",%9pgm
+	F %9cnt=1:1 Q:'$D(^DAER(%9dat,"E",%9num,%9cnt))  S %=^(%9cnt,"V"),@%=^("D")
+	W !,"Symbol table recreated",!!,%9fl
+	W !!?5,"Special Variables such as $ZE appear as %ze"
+	K %,%9dat,%9num,%9cnt,%9pgm,%9fl
+	Q
+OUTPUT	S %QTY=2 W ! D ^%IOS W ! Q:'$D(%IOD)  I %IOD=$I S %IOD=0
+	S %h=^DAER(%9dat,"E",%9num,"$H")
+	S %i=^("$I"),%j=^("$J")
+	S %za=^("$ZA"),%zb=^("$ZB"),%ze=^("$ZE"),%zh=^("$ZH")
+	S %DTI=$P(%h,","),%TMI=$P(%h,",",2) D TMIX^%DAUDTTM,DTIX^%DAUDTTM
+	U %IOD W #!,"Date and time: ",%DTX," ",%TMX,!!,"Special Variables:"
+	W !!,"$H = ",%h,!,"$I = ",^DAER(%9dat,"E",%9num,"$I"),!,"$J = ",^("$J")
+	W !,"$ZA = ",^("$ZA"),!,"$ZB = ",^("$ZB"),!,"$ZE = ",^("$ZE"),!,"$ZH = ",^("$ZH")
+	W !!,"Symbol table:",!!
+	F I=1:1 Q:'$D(^DAER(%9dat,"E",%9num,I,"V"))  W !,^("V")," = ",^("D")
+	W ! U 0 I %IOD'=0 C %IOD W ?5,"Output sent to ",%ZIOD,!
+	Q
+PURGE	; Auto purge if ^DAER has number of days stored
+	W " Purge errors over ",%," days old? <Y> " R C:120 Q:'$T
+	Q:"Yy"'[$E(C)  S %D=-$H+%+1 F  S %D=$O(^DAER(%D)) Q:%D=""  K ^DAER(%D)
+	W !!,"Errors have been purged." K %,%D Q
+PURGE1	; Ask dates to be purged.
+	R !,"Purge date(s): ",DAT Q:DAT=""
+	I DAT="?" W !,"Enter date of error or ""*"" for a list." G PURGE1
+	I DAT="*" S DAT="" D LISDAT G PONE1:DAT]"" G PURGE1
+	S %DTX=$P(DAT,":",1) D DTXI^%DAUDTTM
+	I %DTI="" W "   Invalid date." G PURGE1
+	S SD=%DTI*-1,%DTX=$P(DAT,":",2) G:%DTX="" PONE D DTXI^%DAUDTTM
+	I %DTI="" W "  Last date invalid." G PURGE1
+	S ED=%DTI*-1 I ED>SD W "  This is a funny range...Try again." G PURGE1
+	W !,"Dates deleted." F C=ED:1:SD K ^DAER(C)
+	Q
+PONE	; Purge one date
+	I '$D(^DAER(SD,"CNT")) W !,"No errors on that date." K ^DAER(SD) G PURGE1
+	W !,"Date ",DAT," has ",$P(^DAER(SD,"CNT"),";",1)," error(s)." S DAT=SD
+PONE1	R !,"Do you wish to delete all errors? <Y>: ",C:120 Q:'$T
+	I "Yy"[$E(C) K ^DAER(DAT) W !,"Date deleted." G PURGE1
+	S CNT=$P(^DAER(DAT,"CNT"),";",1)
+PONE2	R !,"Error number(s): ",ERR:120 G:ERR="" PURGE1
+	I ERR="*" S (NUM,ERR)="" D LISERR G:ERR="" PONE2
+	S SN=$P(ERR,":",1),EN=$P(ERR,":",2) S:EN="" EN=SN
+	I EN'?1N.N!(EN>CNT)!(SN'?1N.N)!(SN>CNT)!(EN<SN) D HELP1 G PONE2
+	F C=SN:1:EN I $D(^DAER(DAT,"E",C)) S H=^(C,"$H") K ^DAER(DAT,"E",C) S ^DAER(DAT,"E",C,"$H")=H,^("$ZE")="Deleted"
+	W !,"Error(s) deleted!" G PURGE1
+HELP	W !,"Please enter R, O, D, or press <RETURN> to quit.",!
+	W !,"R - Reload symbol table"
+	W !,"O - Output an error's symbol table to a file"
+	W !,"D - Delete error"
+	Q
+HELP1	; Help text for purge error numbers
+	W !,"Please enter in a number or a range of numbers (NN:NN)",!
+	W "or enter ""*"" to get a list." Q
+KILL1	K I,J,C,H,MORE,SV,NUM,DAT,ERR,CNT,EC,%,%TMX,%TMI,%DTX,%DTI,%IOD,%ZIOD
+	Q
+KILL2	K OPT,%h,%i,%j,%za,%zb,%ze,%zh,%9dat,%9num
+	Q

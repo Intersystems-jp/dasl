@@ -1,0 +1,40 @@
+ROUTINE %DARPCMP [Type=INT,LanguageMode=6]
+%DARPCMP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+SELECT	;
+	W !,"Compile Reports",! S %VAR("TYPE")="R" D SELECT^%DAUDMP
+	S RPNM="" F  S RPNM=$O(^DATG($J,"U","R",RPNM)) Q:RPNM=""  D COMP
+	K RPNM,^DATG($J,"U","R")
+	Q
+ALL	;
+	W !,"Compiling all reports",!! 
+	S RPNM="" F  S RPNM=$O(^DARD(RPNM)) Q:RPNM=""  D COMP
+	K RPNM
+	Q
+BCHONE	;
+	W !,"Compile one report",!! G COMP
+BCHSEL	;
+	W !,"Compile selected reports",!!
+	S RPNM="" F  S RPNM=$O(^DATG($J,"U","R",RPNM)) Q:RPNM=""  D COMP
+	K RPNM
+	Q
+COMP	;
+	S $ZT="ERRC^%DARPCMP"
+	W ?5,RPNM,?20,$P(^DARD(RPNM,"A"),";",2),!
+	;**TM**;S ($ZE,%MSG)="",COMPILE=1 ZA ^DARD(RPNM) D ^%DARPC ZD ^DARD(RPNM)
+	S %MSG="",COMPILE=1 ZA ^DARD(RPNM) D ^%DARPC ZD ^DARD(RPNM)
+	I %MSG]"" W $C(27),"[1m",%MSG,$C(27),"[0m",!! D CLEAN^%DARPC
+	Q
+ERRC	ZD  U 0 W "Error  ",$ZE,!! D CLEAN^%DARPC
+	Q
+DASLC	;
+	;**TM**; $ZEを定義しない
+	;S $ZT="ERRDASL^%DARPCMP",($ZE,%MSG)="",COMPILE=1
+	S $ZT="ERRDASL^%DARPCMP",%MSG="",COMPILE=1
+	ZA ^DARP(RPNM) D ^%DARPC ZD ^DARP(RPNM)
+	Q
+ERRDASL	;
+	S %MSG=$S(%MSG]"":%MSG,$ZE]"":$ZE,1:RPNM_" レポートコンパイル異常終了") ;	;%%Z1-T
+	ZD ^DARP(RPNM) D CLEAN^%DARPC
+	Q

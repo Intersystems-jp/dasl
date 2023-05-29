@@ -1,0 +1,147 @@
+ROUTINE %DAQC7 [Type=INT,LanguageMode=6]
+%DAQC7	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I DB S COMMENT="Eval,Having,Heading,Distinct Function & Print subroutines - ^%DAQC7" D COMMENT
+EVAL	;
+	;********************************************************************	
+	I '$D(NOD) G SELECT
+	I DB S COMMENT="Evaluate dependent data by node" D COMMENT
+	S %DDREF=$O(NOD("")),%KEY=NOD(%DDREF) 
+	W LB(%KEY_".EV") 
+	S %DDREF="" F  S %DDREF=$O(NOD(%DDREF)) Q:%DDREF=""  S %OK=%KEY,%KEY=NOD(%DDREF) S:%OK'=%KEY CM="Q",ARG="" W:%OK'=%KEY&$X ! D:%OK'=%KEY COM,ENDL W:%OK'=%KEY LB(%KEY_".EV") S CM="S",ARG="%T=$G("_%DDREF_")" D COM D  
+	. 
+	. 
+	. 
+	. N %E S %P="" F  S %P=$O(NOD(%DDREF,%P)),%E="" Q:%P=""  F  S %E=$O(NOD(%DDREF,%P,%E)),%LVN="" Q:%E=""  F  S %LVN=$O(NOD(%DDREF,%P,%E,%LVN)) Q:%LVN=""  D EVALONE
+	K %LVN,%OK
+	W:$X ! S CM="Q",ARG="" D COM,ENDL
+SELECT	I FLAG("GLOBAL") Q
+	I DB S COMMENT="Print one record" D COMMENT
+	W "PRT" 
+	S CM="I",ARG="%VT,%LC#17=0,%LC'=0" D COM
+	S CM="W",ARG="%E_""[23;"_(-$ZL(^%DAMSG(%FLANG,"RET1"))+%SW\2)_"H"_^%DAMSG(%FLANG,"RET1")_"""" D COM ;	;%%Z3-G
+	S CM="R",ARG="X#1:%TMO" D COM
+	S CM="S",ARG="%EX=$S($ZB\256=40:1,$ZB\256=41:2,1:0)" D COM
+	S ARG="%T=$ZB#256" D COM
+	S CM="Q:%EX",ARG="" D COM
+	S CM="W",ARG="%E_""[21;1H""" D COM
+	S CM="I",ARG="%T=23" D COM
+	S CM="D",ARG="H" D COM
+	I $D(FLAG("DFNC")),DB S COMMENT="^%DAQC5" D COMMENT
+	I $D(FLAG("DFNC")) D DFNC^%DAQC5
+	I $D(FLAG("DFNC")),DB S COMMENT="Return to ^%DAQC7" D COMMENT
+	D ENDL
+HAVING	S (V1,STR)="" 
+	I $D(%QH) D
+	. S STR=%QR(0) F I=1:1 Q:'$D(%QR(I))  S STR=STR_"!("_%QR(I)_")"
+	. 
+	. F %I=$L(STR):-1:1 D
+	. . I "(&!)"[$E(STR,%I) Q
+	. . 
+	. . S N=$E(STR,%I) F  Q:$E(STR,%I-1)'?1N  S %I=%I-1 S N=$E(STR,%I)_N
+	. . S LP=$S(%I=1:"",1:"("),RP=$S(%I=1:"",1:")")
+	. . S I=N,%SP="H",V1=%QH(I,0,"OUT") D
+	. . . F %JJ=1:1 Q:'$D(%QH(I,%JJ))  S %DM=%QH(I,%JJ),%FG=$P(%QH(I,%JJ,"FLAG"),";") D
+	. . . . 
+	. . . . I %FG="F",DB S COMMENT="^%DAQC5" D COMMENT
+	. . . . I %FG="F" S %FNT=$P(%QH(I,%JJ,"FLAG"),";",3),%VE=%QH(I,%JJ,"FUNC"),%VE="("_%VE_")" S %QE=I D FNC^%DAQC5 S STR=$E(STR,0,%I-1)_LP_%VE_RP_$E(STR,%I+$L(N),255)
+	. . . . I %FG="F",DB S COMMENT="Return to ^%DAQC7" D COMMENT
+	. . . . 
+	. . . . I %FG="C" S STR=$E(STR,0,%I-1)_LP_V1_RP_$E(STR,%I+$L(N),255)
+	I STR'="" S COM="",CM="I" S ARG=STR_" D" D COM,ENDL S COM="",CM=". W"
+	I STR="" S CM="W"
+	S V1=""
+	F %QE=1:1 Q:'$D(%QE(%QE))  I $D(%QE(%QE,"POS")) S ARG=$S(%QE'=1:"?"_%QE(%QE,"POS"),1:"!") D COM S %FG=$P(%QE(%QE,"FLAG"),";") D
+	. 
+	. I %FG="C" S ARG=$S($D(FLAG("EX",%QE(%QE,"OUT"))):%QE(%QE,"OUT")_"x",1:%QE(%QE,"OUT")) D FMT(.ARG,"%QE",%QE),COM
+	. I %FG="VE" S ARG=%QE(%QE,"OUT") D FMT(.ARG,"%QE",%QE),COM
+	. I %FG="S" S ARG=%QE(%QE,"OUT") D COM
+	. 
+	. I %FG="F",$D(%QG) S ARG=%QE(%QE,"FUNC") D FMT(.ARG,"%QE",%QE),COM 
+	S CM="S",ARG="%LC=%LC+1" D COM
+	S COM="*" D ENDL
+	S CM="Q",ARG="" D COM,ENDL
+HEAD	;
+	I DB S COMMENT="If query is displayed on terminal" D COMMENT
+	W "H" 
+	S CM="I",ARG="%VT" D COM 
+	S CM="W",ARG="%E_""[1;1H""" 
+	S ARG=ARG_"_%E_""[J""" 
+	S ARG=ARG_"_%E_""[?3"_$S(%SW=80:"l",1:"h")_"""" 
+	S ARG=ARG_"_%E_""[1m""" 
+	S ARG=ARG_"_%E_""#6""" D COM 
+	S ARG="%E_""[1;"_(-$ZL(QUNM)/2+%SW\4-1)_"H"_QUNM_"""" D COM ;	;%%Z3-G
+	S ARG="%E_""[2;5H""_%DTX" 
+	S ARG=ARG_"_%E_""[2;"_(%SW-$ZL(%TMX)-5)_"H""_%TMX" ;	;%%Z3-G
+	S ARG=ARG_"_%E_""(0""" D COM 
+	S ARG="%E_""[4;1H""_%L" D COM 
+	S ARG="%E_""[22;1H""_%L" D COM 
+	S ARG=ARG_"_%E_""(B""" 
+	S ARG=ARG_"_%E_""[0m""" 
+	S ARG=ARG_"_%E_""[5;21r""" 
+	S ARG=ARG_"_%E_""[2;1H""" D COM 
+	D ENDL
+	I DB S COMMENT="Headings" D COMMENT
+	S CM="W"
+	S ARG="$C(0)" D COM
+	F %I=1:1 Q:'$D(%QE(%I))  I $D(%QE(%I,"POS")) S ARG=$S(%I'=1:"?"_(%QE(%I,"POS")),1:"!") D COM S ARG=%QE(%I,"HEAD") D QS(.ARG) S ARG=""""_ARG_"""" D COM
+	S ARG="$C(0),$C(0)" D COM
+	D ENDL
+	S CM="I",ARG="%VT" D COM 
+	S CM="W",ARG="%E_""[4;1H""" D COM 
+	D ENDL S CM="Q",ARG="" D COM 
+	D ENDL
+RETURN	;
+	W "RET"
+	S CM="W",ARG="%E_""[23;"_(-$ZL(^%DAMSG(%FLANG,"RET2"))+%SW\2)_"H""_%E_""[2K"_^%DAMSG(%FLANG,"RET2")_"""" D COM ;	;%%Z3-G
+	S CM="R",ARG="X#1:%TMO" D COM
+	S CM="S",ARG="%EX=$S($ZB\256="_$P(^DASY("PARM","KD"),";",3)_":1,$ZB\256="_$P(^DASY("PARM","KD"),";",5)_":2,1:0)" D COM
+	W:$X ! S CM="Q",ARG="" D COM
+	D ENDL
+	QUIT
+EVALONE	;
+	S CV="" 
+	S D=NOD(%DDREF,%P),%DDXTRCT=NOD(%DDREF,%P,%E,%LVN)
+	S ARG=%LVN 
+	S %=%QD(%QV(%LVN,"%QD"),"T")  I %="DATE" S ARG=ARG_",%DTI",CV=%
+	S %=%QD(%QV(%LVN,"%QD"),"T")  I %="TIME" S ARG=ARG_",%TMI",CV=%
+	S %=%QD(%QV(%LVN,"%QD"),"OT") I %'="" S ARG=ARG_",%INT",CV="OT"
+	I ARG["," S ARG="("_ARG_")" 
+	S CM="S",ARG=ARG_"="
+	N VAR S VAR="%T" D PIECE^%DASDC(%P,.VAR,$S(%E=0:"",1:%E))
+	S ARG=ARG_VAR
+	D COM 
+	I CV="DATE"!(CV="TIME") S CM="D",ARG=$S(CV="DATE":"DTIX",1:"TMIX")_"^%DAUDTTM" D COM S CM="S",ARG=%LVN_$S(CV="DATE":"x=%DTX",1:"x=%TMX") D COM
+	I CV="OT" D  
+	. D ENDL S CM="S",ARG="%EXT=""""" D COM
+	. S CM="I",ARG=%LVN_"'=""""" D COM 
+	. W " "_%QD(%QV(%LVN,"%QD"),"OT") D ENDL
+	. S CM="S",ARG=%LVN_"x=%EXT" D COM
+	I CV="OT" S FLAG("EX",%LVN)=CV
+	Q
+FMT(ARG,ARRAY,SUB)	
+	N LENFLG,NUMFLG,LEN,DEC
+	S LENFLG=$P(@ARRAY@(SUB,"FLAG"),";",4)
+	S NUMFLG=$P(@ARRAY@(SUB,"FLAG"),";",5)
+	S LEN=$P(@ARRAY@(SUB,"LEN"),".")
+	S DEC=$P(@ARRAY@(SUB,"LEN"),".",2)
+	I NUMFLG S ARG="$J("_ARG_","_LEN_$S(DEC'="":","_DEC,1:"")_")" Q
+	I LENFLG S ARG="$E("_ARG_",1,"_LEN_")"
+	Q
+COM	;
+	S %KJ=$ZC(KJOFF) ;	;%%Z3-A
+	I $X+$L(ARG)>200 W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	S %KJ=$ZC(KJON) ;	;%%Z3-A
+	Q
+ENDL	;
+	I COM]"" W:$X ! S COM=""
+	Q
+QS(A)	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+COMMENT	;
+	W:$X !
+	W " ;",XX,!," ;",?72-$ZL(COMMENT)/2,COMMENT,!," ;",XX,! ;	;%%Z3-G
+	Q

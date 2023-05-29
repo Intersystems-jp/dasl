@@ -1,0 +1,187 @@
+ROUTINE %DAQC6 [Type=INT,LanguageMode=6]
+%DAQC6	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I DB S COMMENT="Sorts and kills - ^%DAQC6" D COMMENT
+SORT	S RF=%GLOBAL_","
+	I $D(%QG) S SUB("CVT")="" F %QG=1:1 Q:'$D(%QG(%QG))  D  
+	. S OUT=%QG(%QG,"OUT"),TYPE=%QD(%QC(%QG(%QG)),"T")
+	. I "DATE,TIME"[TYPE S OUT=$P(OUT,"x")
+	. W " S %V="_OUT_" D CVT S %S"_%QG_"=%V",!
+	. S RF=RF_"%S"_%QG_","
+	I $D(%QG) S %NS=%QG S:$D(%QE(0))!$D(%QF) %NS=%NS-1
+	I OPT("LAST")'="" W " I '("_OPT("LAST")_") G K",XP-1,!
+	I '$D(%DIST) S %DIST=0
+	I '%DIST,'$D(%QF) W " S %CNT=%CNT+1"
+	I $D(%QH)!$D(%QE(0))!$D(FLAG("SFUNC"))!$D(%QG)!FLAG("GLOBAL")
+	E  W " D PRT G:%EX EXIT" 
+	W:$X !
+	S SD=""
+	I $D(%QG)!(FLAG("GLOBAL")) F %QE=1:1 Q:'$D(%QE(%QE))  S %FG=$P(%QE(%QE,"FLAG"),";") D:%FG'="F"
+	. 
+	. S SD=SD_"_$C(0)_"_$S($D(FLAG("EX",%QE(%QE,"OUT"))):%QE(%QE,"OUT")_"x",1:%QE(%QE,"OUT"))
+	S SD=$E(SD,8,999) 
+	S %KJ=$ZC(KJOFF) S %zz=$L(SD)+$L(RF) S %KJ=$ZC(KJON) ;	;%%Z3-A
+	I %zz>250 S %MSG="ソートキーとなるストリングが長すぎます。" K %zz q  ;%%Z3-A;%%Z3-T
+	K %zz ;	;%%Z3-A
+	;I ($L(SD)+$L(RF))>250 S %MSG="String too long, variable in for sort node." q
+	I $D(%QG),'$D(%QE(0)),'$D(FLAG("SFUNC")) W " S "_RF_"%CNT)="_SD,!
+	I $D(%QF)!$D(%QE(0)) D  
+	. W " I '$D("_RF_"""DA"")) D  "
+	. 
+	. S %QF=""
+	. F  S %QF=$O(%QF(%QF)) Q:%QF=""  D  
+	. . S FT=$E(%QF(%QF),1,2) 
+	. . S GLO=RF_""""_%QF_""")" 
+	. . S GLOC=RF_""""_%QF_"C"_""")" 
+	. . S DT=$P(%QF(%QF),";",6) 
+	. . 
+	. . S DT=$S(DT="NUMERIC":"N",DT="STRING":"S",DT="DATE":"N",DT="TIME":"N",DT="NAME":"S",DT="JNAME":"S",1:"N") ;	;%%Z2-M
+	. . S IVAL=$S(FT="AV":"""""",FT="CO":"""""",FT="MA":"""""",FT="MI"&(DT="N"):"1E25",FT="MI"&(DT="S"):"$C(253)",FT="SU":"""""")
+	. . I FT="AV" W:$X ! W " . S "_GLOC_"="_IVAL
+	. . W:$X ! W " . S "_GLO_"="_IVAL
+	I $D(%QF)!$D(%QE(0)) W:$X ! W " . S "_RF_"""DA"")="_$S(SD="":"""""",1:SD),!
+	I $D(%QF) S %QF="" F  S %QF=$O(%QF(%QF)) Q:%QF=""  D  W:$X !
+	. S IF=""
+	. S FT=$E(%QF(%QF),1,2)
+	. S ARG="("_$P(%QF(%QF),";",3)_")"
+	. S GLO=RF_""""_%QF_""")"
+	. S GLOC=RF_""""_%QF_"C"_""")"
+	. S DT=$P(%QF(%QF),";",6) 
+	. 
+	. S DT=$S(DT="NUMERIC":"N",DT="STRING":"S",DT="DATE":"N",DT="TIME":"N",DT="NAME":"S",DT="JNAME":"S",1:"N") ;	;%%Z3-M
+	. I FT'="CO" S IF=ARG_"'=""""" 
+	. I FT="MA",DT="N" S IF=IF_","_ARG_">"_GLO
+	. I FT="MA",DT="S" S IF=IF_","_ARG_"]"_GLO
+	. I FT="MI",DT="N" S IF=IF_","_ARG_"<"_GLO
+	. I FT="MI",DT="S" S IF=IF_","_GLO_"]"_ARG
+	. 
+	. I $P(%QF(%QF),";",5) D  
+	. . S GLOFD=RF_""""_%QF_""","_ARG_")"
+	. . S IF=IF_$S(IF="":"",1:",")_ARG_"'="""""
+	. . S IF=IF_$S(IF="":"",1:",")_"'$D("_GLOFD_")"
+	. I IF'="" W " I "_IF_" D  ",!," ."
+	. I FT="AV" W " S "_GLO_"="_GLO_"+"_ARG
+	. I FT="AV" W " S "_GLOC_"="_GLOC_"+1"
+	. I FT="CO" W " S "_GLO_"="_GLO_"+1"
+	. I FT="MA" W " S "_GLO_"="_ARG
+	. I FT="MI" W " S "_GLO_"="_ARG
+	. I FT="SU" W " S "_GLO_"="_GLO_"+"_ARG
+	. 
+	. I $P(%QF(%QF),";",5) W:$X ! W " . S "_GLOFD_"="""""
+	I %DIST W:$X ! W " . S %CNT=%CNT+1",!
+	E  I $D(FLAG("SFUNC")) W:$X ! W " S %CNT=1",!
+	W " G K",XP-1
+	W:$X ! W "K0"
+	W " S $ZT=""PERR^",%RTNM,""",%ECNT=0"
+	S COM="*" D ENDL
+	I 'FLAG("GLOBAL") W " I '%CNT W !,?",%SW-18\2,",""","出力するデータがありません。",""" W ! G S0" W ! ;	;%%Z2-T
+	I '$D(%QG),$D(%QF) S %QF="",CM="S" F  S %QF=$O(%QF(%QF)) Q:%QF=""  D  
+	. S FT=$E(%QF(%QF),1,2)
+	. S GLO=RF_""""_%QF_""")"
+	. S GLOC=RF_""""_%QF_"C"_""")"
+	. S %QE=$E($P(%QF(%QF),";",4),3,9)
+	. I FT="AV" D  
+	. . S ARG=GLO_"/"_GLOC 
+	. . S ARG=%QF_"="_"$S("_GLOC_"="""":"""",1:"_ARG_")"
+	. I FT="MI" D  
+	. . S ARG=GLO
+	. . S ARG=%QF_"="_"$S("_GLO_"=1E25:"""","_GLO_"=$C(253):"""",1:"_ARG_")"
+	. I "AV MI"'[FT D  
+	. . S ARG=GLO 
+	. . S ARG=%QF_"="_ARG
+	. D COM
+	I '$D(%QG),$D(%QF) S CM="W",ARG="!" F %QE=1:1 Q:'$D(%QE(%QE))  D  
+	. I $P(%QE(%QE,"FLAG"),";")="F" S CM="I",ARG="%CNT" D COM
+	. S CM="W",ARG=$S(%QE'=1:"?"_%QE(%QE,"POS"),1:"!")  D COM
+	. S %FNT=$P(%QE(%QE,"FLAG"),";",3),%SP="S",%VE=%QE(%QE,"FUNC")
+	. 
+	. S CM="W",ARG=%VE D COM,ENDL
+	I FLAG("GLOBAL") G S0
+SLOOP	;
+	I $D(%QG) S RF=%GLOBAL_"," F SP=1:1:%NS D
+	. W " S %S",SP,"=""""",!
+	. S RF=RF_"%S"_SP_","
+	. 
+	. W "S"_SP_" S "_"%S"_SP_"=$O("_$E(RF,1,$L(RF)-1)_")) I %S"_SP_"="""""
+	. 
+	. 
+	. 
+	. W " G S",SP-1,!
+	. 
+	. I SP=%NS,$D(FLAG("HFUNC")) D FSET,ENDL,HIF S ARG="'"_ARG,CM="I" D COM W " G S"_SP,!
+	S (COM)="",(CM,%SP)="S",J=1
+	F %QE=1:1 Q:'$D(%QE(%QE))  S %FG=$P(%QE(%QE,"FLAG"),";") D
+	. 
+	. I %FG="C" S X(J)=%QE(%QE,"OUT")_"=$P(%,$C(0),"_J_")",J=J+1
+	. 
+	. 
+	. I %FG="F" Q
+	. I %FG="S" S X(J)="s"_%QE_"=$P(%,$C(0),"_J_")",J=J+1 
+BREAK	I $D(%QG),$D(X(1)) S ARG=$S(J=2:$P(X(1),"=",1),1:"%")_"="_$E(RF,1,$L(RF)-1)_$S(('$D(%QF)&'$D(FLAG("DSTC"))):")",1:",""DA"")") D COM I J>2 F I=1:1:J-1 S ARG=X(I) D COM I $D(FLAG("DFNC",%SP,I)) D  
+	. 
+	. 
+	I $D(%QG),$D(X(1)) S COM="*" D ENDL 
+	I $D(%QG),'$D(FLAG("HFUNC")) D FSET 
+	I $D(%QR),'$D(FLAG("HFUNC")) D HIF S CM="I" D COM 
+	I $D(%QG) W " D PRT G:%EX EXIT",!
+	I $D(%QG) S CM="G",ARG="S"_$S($D(%QF):%NS,'$D(%QF):%NS+1) D COM,ENDL
+S0	W "S0 I %ECNT W !,""**** "",%ECNT,""データエラーが発生しました。"",!",! ;	;%%Z1-T
+CLEAN	W "EXIT" S (COM,DN)=""
+	I FLAG("GLOBAL")=0 D  
+	. S CM="I",ARG="%VT,'%EX" D COM
+	. S CM="D",ARG="RET" D COM,ENDL
+	. 
+	. S CM="W:%VT",ARG="%E_""[1;24r"""_$S(%SW=80:"",1:"_%E_""[?3l""")
+	. D COM,ENDL
+	. S CM="S:%EX=2",ARG="%EX=0" D COM,ENDL
+	I FLAG("GLOBAL")=1 W " "
+	S (COM,ARG)="",CM="K"
+	I FLAG("GLOBAL")=0 S ARG=%GLOBAL_")" D COM
+	S I="" F  S I=$O(%VAR(I)) Q:I=""  S ARG=%VAR(I) D COM
+	S %QF="" F  S %QF=$O(%QF(%QF)) Q:%QF=""  S ARG=%QF D COM
+	I $D(%QG) F I=1:1:%NS+1 S ARG="%S"_I D COM
+	S ARG="X,%LC,%EXT,%INT,%ECNT,%L,%V" D COM
+	I FLAG("GLOBAL")=0 S ARG="%CNT" D COM 
+	S KILL="" F  S KILL=$O(KILL(KILL)) Q:KILL=""  S ARG=KILL D COM
+	K KILL,SD,%NS
+	W:$X ! W " Q",!
+	Q
+FSET	;
+	S CM="S"
+	S %QF="" F  S %QF=$O(%QF(%QF)) Q:%QF=""  D  
+	. S %QE=$E($P(%QF(%QF),";",4),3,9)
+	. S FT=$E(%QF(%QF),1,2)
+	. S GLO=RF_""""_%QF_""")"
+	. S GLOC=RF_""""_%QF_"C"_""")"
+	. I FT="AV" D  
+	. . S ARG=GLO_"/"_GLOC 
+	. . S ARG=%QF_"="_"$S("_GLOC_"="""":"""",1:"_ARG_")"
+	. I FT="MI" D  
+	. . S ARG=GLO 
+	. . S ARG=%QF_"="_"$S("_GLO_"=1E25:0,"_GLO_"=$C(253):0,1:"_ARG_")"
+	. I "AV MI"'[FT D  
+	. . S ARG=GLO 
+	. . S ARG=%QF_"="_ARG
+	. D COM
+	Q
+HIF	S ARG=%QR(0) F %QR=1:1 Q:'$D(%QR(%QR))  S ARG=ARG_"!("_%QR(%QR)_")"
+	S L=$L(ARG) 
+	F  Q:L=0  S %QH=$E(ARG,L) S L=L-1 I %QH?1N D  
+	. I $E(ARG,L)?1N S %QH=$E(ARG,L)_%QH,L=L-1 
+	. S ARG=$E(ARG,1,L)_"("_%QH(%QH,"IF")_")"_$E(ARG,L+$L(%QH)+1,999)
+	Q
+COM	;
+	S %KJ=$ZC(KJOFF) ;	;%%Z3-A
+	I $L(ARG)>250 B
+	I $X+$L(ARG)>200 W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	S %KJ=$ZC(KJON) ;	;%%Z3-A
+	Q
+ENDL	;
+	I COM]"" W:$X ! S COM=""
+	Q
+COMMENT	;
+	W:$X !
+	W " ;",XX,!," ;",?72-$ZL(COMMENT)/2,COMMENT,!," ;",XX,! ;	;%%Z3-G
+	Q

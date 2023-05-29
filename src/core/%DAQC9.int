@@ -1,0 +1,61 @@
+ROUTINE %DAQC9 [Type=INT,LanguageMode=6]
+%DAQC9	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	I DB S COMMENT="Error handlers, Function initalization and canned code - ^%DAQC9" D COMMENT
+	F I=0:1 S X=$P($T(FIXED+I),";",3,99) S:$P(X," ")'="" TG=$P(X," ")  Q:X=""  W:$D(SUB(TG)) X,!
+PERR	I DB S COMMENT="Error Handler" D COMMENT
+	W "PERR"
+	S CM="I",ARG="$D(%PGMR),%PGMR=1" D COM
+	S CM="D",ARG="EXIT,RESET^%DASL" D COM
+	S CM="ZQ",ARG="" D COM,ENDL
+	S CM="D",ARG="ERR^%DAERRT" D COM,ENDL
+	I FLAG("GLOBAL")=0 D  
+	.S CM="U",ARG="%IOD" D COM
+	.S CM="W",ARG="!,""**データレコード中のエラー。 **""" D COM ;	;%%Z2-T
+	.S CM="W:$ZE]""""",ARG="$P($ZE,"","",$L($ZE,"",""))" D COM
+	.S CM="W",ARG="!" D COM
+	S CM="I",ARG="%ECNT>25" D COM
+	I FLAG("GLOBAL")=0 D  
+	.S CM="W",ARG="!!,""** 回復不可能なエラー - レポートは中断されました。 **""" D COM,ENDL ;	;%%Z1-T
+	S CM="G",ARG="S0" D COM,ENDL
+	S CM="S",ARG="$ZT=""PERR^"_%RTNM_""",%ECNT=%ECNT+1" D COM
+	S CM="G",ARG="S0" D COM,ENDL
+	W "ERR" W:$D(SK) " K "_%GLOBAL_")",!
+	;**TM**; ZQの変更; W " G EXIT:$ZE[""CTRAP"" S:$ZE]"""" %MSG=$P($ZE,"","",$L($ZE,"",""))",!," D EXIT ZQ",!
+	W " G EXIT:$ZE[""CTRAP"" S:$ZE]"""" %MSG=$P($ZE,"","",$L($ZE,"",""))",!," D EXIT ZQ 1 G @$ZT",!
+	W ! 
+	Q:FILE=0
+	U FILE:DISCON X ("ZR  ZL  ZS "_%RTNM)
+	K TG
+	Q
+COM	;
+	S %KJ=$ZC(KJOFF) ;	;%%Z3-A
+	I $X+$L(ARG)>200 W:$X ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	S %KJ=$ZC(KJON) ;	;%%Z3-A
+	Q
+ENDL	;
+	I COM]"" W:$X ! S COM=""
+	Q
+COMMENT	;
+	W:$X !
+	W " ;",XX,!," ;",?72-$ZL(COMMENT)/2,COMMENT,!," ;",XX,! ;	;%%Z3-G
+	Q
+CANNED	;
+	D UTILSX^%DASDC5
+	Q
+QS(A)	;
+	F P=1:1 S P=$F(A,"""",P) Q:'P  S A=$E(A,1,P-1)_$E(A,P-1,255)
+	Q
+	;	;%%Z2-P FIXED+2,FIXED+8
+FIXED	;;CVT I %V="" S %V=" "
+	;; I %V?.N.1".".N S %V=+%V
+	;; I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	;; Q
+	;;NAM N P,X,Y
+	;; S P=$P(%N,",") D  S %L=P,P=$P(%N,",",2) D  S %F=P,%N=%L_", "_%F
+	;; .F X=1:1 Q:$E(P,X)'=" "
+	;; .F Y=$L(P):-1 Q:$E(P,Y)'=" "
+	;; .S P=$ZC(%ZUPCASE,$E(P,X,Y))
+	;; Q

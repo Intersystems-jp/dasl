@@ -1,0 +1,107 @@
+ROUTINE %DAQC1 [Type=INT,LanguageMode=6]
+%DAQC1	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	N %VAR
+	I DB W !,"**^%DAQC1**"
+	I $D(%QW) D  
+	. S %TYPE="",%QW=""
+	. F  S %QW=$O(%QW(%QW)) Q:%QW=""  D  
+	. . F I=1:1:$L(%QW(%QW),$C(0)) S PIECE=$P(%QW(%QW),$C(0),I) I $D(%QC(PIECE)),$D(%QD(%QC(PIECE))) S %TYPE=%QD(%QC(PIECE),"T") I "DATE/TIME"[%TYPE D  Q
+	. . . F I=1:1:$L(%QW(%QW),$C(0)) S PIECE=$P(%QW(%QW),$C(0),I) D  
+	. . . . I PIECE?.N!($E(PIECE)="""") D 
+	. . . . . Q:PIECE=""""""
+	. . . . . I $E(PIECE)="""",$E(PIECE,$L(PIECE))="""" S PIECE=$E(PIECE,2,$L(PIECE)-1)
+	. . . . . I %TYPE="DATE" D  
+	. . . . . . S %DTX=PIECE D DTXI^%DAUDTTM
+	. . . . . . I PIECE?1"T"!(PIECE?1"T"1"-"1N.N)!(PIECE?1"T"1"+"1N.N) S $P(%QW(%QW),$C(0),I)="+$H"_$P(PIECE,"T",2,99)
+	. . . . . . E  S $P(%QW(%QW),$C(0),I)=%DTI
+	. . . . . . 
+	. . . . . . I PIECE?1"T"1"-"1N.N!(PIECE?1"T"1"+"1N.N) S $P(%QW(%QW),$C(0),I)="("_$P(%QW(%QW),$C(0),I)_")"
+	. . . . . . I %DTI="" S %MSG="Invalid date string in where statement."
+	. . . . . I %TYPE="TIME" S %TMX=PIECE D TMXI^%DAUDTTM S $P(%QW(%QW),$C(0),I)=%TMI I %TMI="" S %MSG="Invalid time string in where statement."
+	I $D(%QH) D  
+	. S %TYPE="",%QH=""
+	. F  S %QH=$O(%QH(%QH)) Q:%QH=""  D  
+	. . F I=1:1:$L(%QH(%QH),$C(0)) S PIECE=$P(%QH(%QH),$C(0),I) I $D(%QC(PIECE)),$D(%QD(%QC(PIECE))) S %TYPE=%QD(%QC(PIECE),"T") I "DATE/TIME"[%TYPE D  Q
+	. . . F I=1:1:$L(%QH(%QH),$C(0)) S PIECE=$P(%QH(%QH),$C(0),I) D  
+	. . . . I PIECE?.N!($E(PIECE)="""") D 
+	. . . . . Q:PIECE=""""""
+	. . . . . I $E(PIECE)="""",$E(PIECE,$L(PIECE))="""" S PIECE=$E(PIECE,2,$L(PIECE)-1)
+	. . . . . 
+	. . . . . I %TYPE="DATE" D  
+	. . . . . . S %DTX=PIECE D DTXI^%DAUDTTM
+	. . . . . . I PIECE?1"T"!(PIECE?1"T"1"-"1N.N)!(PIECE?1"T"1"+"1N.N) S $P(%QH(%QH),$C(0),I)="+$H"_$P(PIECE,"T",2,99)
+	. . . . . . E  S $P(%QH(%QH),$C(0),I)=%DTI
+	. . . . . . 
+	. . . . . . I PIECE?1"T"1"-"1N.N!(PIECE?1"T"1"+"1N.N) S $P(%QH(%QH),$C(0),I)="("_$P(%QH(%QH),$C(0),I)_")"
+	. . . . . . I %DTI="" S %MSG="Invalid date string in having statement."
+	. . . . . I %TYPE="TIME" S %TMX=PIECE D TMXI^%DAUDTTM S $P(%QH(%QH),$C(0),I)=%TMI I %TMI="" S %MSG="Invalid time string in having statement."
+	S %FC=0
+	;		and in correct operational order.
+	G:'$D(%QF) QH S QF="",%FC="F",%VAR="%QF"
+	F  S QF=$O(%QF(QF)) Q:QF=""  D  
+	. S VE=$P(%QF(QF),";",2),%FDT="" 
+	. D L2 S $P(%QF(QF),";",3)=OUT,$P(%QF(QF),";",6)=%FDT
+	K %FDT,%TYPE
+	;		Expand %QH and init function variables 
+	;		variables and corretn operational order.
+QH	I $D(%QH) F I=1:1 Q:'$D(%QH(I))  D  
+	. S %SP="H",%VAR="%QH",VE=%QH(I) 
+	. D L2 S %QH(I,0,"OUT")=OUT,IF=OUT
+	. F %JX=1:1 Q:'$D(%QH(I,%JX))  S VE=%QH(I,%JX) D  
+	. . D L2 S %QH(I,%JX)=OUT 
+	. . 
+	. . 
+	. . 
+	. . D:$D(%QH(I,%JX,"FUNC"))
+	. . . S IF=$P(IF,%QH(I,%JX),1)_%QH(I,%JX,"FUNC")_$P(IF,%QH(I,%JX),2)
+	. S %QH(I,"IF")=IF
+	;		 correct operational order.
+	;		 correct operational order.
+QE	S POS=1 
+	S %SP="S" F %VAR="%QE","%QG" F %I=1:1 Q:'$D(@%VAR@(%I))  D  
+	. S:%VAR="%QE" %FC=$p(@%VAR@(%I,"FLAG"),";")
+	. S VE=@%VAR@(%I) S:$E(VE,$L(VE))=$C(0) VE=$E(VE,1,$L(VE)-1) 
+	. S %FG=%QE(%I,"FLAG") S LENFLG=0,NUMFLG=0 D L2
+	. I %VAR="%QE",$D(%QE(%I,"HEAD")) D  
+	. . S @%VAR@(%I,"POS")=POS
+	. . S POS=POS+$S($ZL(@%VAR@(%I,"HEAD"))>LEN:$ZL(@%VAR@(%I,"HEAD"))+1,1:LEN+1) ;	;%%Z3-G
+	. . S X=$$STRLEN^%DASDUTL I POS>X S %MSG="列の幅が'"_X_"'を越えました。SELECT 文のカラム数を減らして下さい。" ;	;%%Z3-T
+	. . S @%VAR@(%I,"LEN")=LEN,$P(@%VAR@(%I,"FLAG"),";",4)=LENFLG
+	. . S $P(@%VAR@(%I,"FLAG"),";",5)=NUMFLG
+	Q:'$D(%QE(0))
+	F J=1:1 Q:'$D(%QE(J))  D
+	. 
+	. S %FC="" F I=1:1 Q:'$D(%QG(I))  S:%QG(I)=%QE(J) %FC=1  
+	. I %FC="",$E(%QE(J,"FLAG"))'="F" S %QG(%I)=%QE(J),%QG(%I,"OUT")=%QE(J,"OUT"),%I=%I+1
+	Q 
+L2	S S=0,OPER="",OUT="",LEN=0
+	F JJ=1:1:$L(VE,$C(0)) S ATOM=$P(VE,$C(0),JJ),L=0 D FORMAT I %VAR="%QE"!(%VAR="%QH") S:L>LEN LEN=L
+	I S'=0 F S=S:-1:0 S:S'=0 OUT=S(S)_OUT Q:S=0  K S(S)
+	I %VAR="%QE"!(%VAR="%QG") S @%VAR@(%I,"OUT")=OUT
+	Q
+FORMAT	;
+	I '$D(NUMFLG) S (NUMFLG,LENFLG)=0
+	I 'LENFLG,$D(%QC(ATOM)),$D(%QD(%QC(ATOM),"F")) S LENFLG=%QD(%QC(ATOM),"F") 
+	I 'NUMFLG,$D(%QC(ATOM)) S NUMFLG=$S(%QD(%QC(ATOM),"T")="NUMERIC":1,1:0)
+	I $D(%QC(ATOM)) S LEN=%QD(%QC(ATOM),"L"),ATOM=%QC(ATOM,"VAR")
+	I ATOM="(" D  Q 
+	. I OPER'="" S S=S+1,S(S)=OPER,OPER="" 
+	. S S=S+1,S(S)="(" 
+	I "*/"[ATOM S OPER=ATOM Q
+	I "+-"[ATOM S OPER=ATOM Q
+	S L=0
+	I $D(%QV(ATOM)),%FC="C"!(%FC="F") D  G OPERAND
+	. 
+	. I $D(FLAG("EX",ATOM)) S ATOM=ATOM_"x" S:'$D(KILL(ATOM)) KILL(ATOM)=""
+	I ATOM=")" F  S A=S(S),ATOM=A_ATOM K S(S) S S=S-1 G:A="(" OPERAND
+	I $E(ATOM)="""" G OPERAND 
+	I +ATOM?.1".".N.1".".N S L=$L(ATOM) G OPERAND
+	Q
+OPERAND	;
+	I OPER="",$D(S(S)),"*/"[S(S) S OPER=S(S) K S(S) S S=S-1
+	I OPER="" S S=S+1,S(S)=ATOM Q
+	I "*/"[OPER S S(S)="("_S(S)_OPER_ATOM_")",OPER="",(LEN,L)=L+LEN Q
+	I "+-"[OPER S S=S+1,S(S)=OPER,S=S+1,S(S)=ATOM,OPER="",L=L+1,LEN=LEN+1 Q
+	Q

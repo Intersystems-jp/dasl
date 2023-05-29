@@ -1,0 +1,33 @@
+ROUTINE %DARPLXQ [Type=INT,LanguageMode=6]
+%DARPLXQ	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	F %Q=1:1:$L(QUAL,"/") S QUALF=$P(QUAL,"/",%Q) D  Q:%MSG]""
+	.I ",NODATA,STRIP,PROMPT,EVAL,"'[(","_QUALF_",") S %MSG="'/"_QUALF_"'が分かりません。" Q  ;	;%%Z1-T
+	.S %MSG=$S(QUALF'="EVAL"&(%DDNM?1U.6UN1",".UNP):"'/"_QUAL_"'には複数のデータネームは使用できません。",1:"") I %MSG]"" Q  ;	;%%Z1-T
+	.D @QUALF
+	K %Q,PROMPT,%DDNM,TEMP,OREF,REF,DDN,QUALF
+	Q
+PROMPT	;
+	S PROMPT=$S($D(%DN(%DDNM,"P")):%DN(%DDNM,"P"),1:$P(^DADD(%DDNM,"DF","E"),";",2))
+	I PROMPT="" S TEMP=$P(^DADD(%DDNM,"B"),";",3) D
+TEMPLAT	. 
+	. I TEMP="" S %MSG="'"_%DDNM_"'にはプロンプトが定義されていません。" Q  ;	;%%Z1-T
+	. I TEMP]"",$P(^DADDT(TEMP,"DF","E"),";",3)="" S %MSG="'"_%DDNM_"'にはプロンプトが定義されていません。" ;	;%%Z1-T
+	Q
+NODATA	;
+	I QUAL'["PROMPT" S %MSG="'/PROMPT'修飾子がありません。" Q  ;	;%%Z1-T
+	D PROMPT
+	Q
+STRIP	;
+	I QUAL'["PROMPT" S %MSG="'/PROMPT'修飾子がありません。" Q  ;	;%%Z1-T
+	D PROMPT
+	Q
+EVAL	;
+	I $L(QUAL,"/")>1 S %MSG="'/EVAL'修飾子には他の修飾子は使用できません。" Q  ;	;%%Z1-T
+	S OREF="" F %Q=1:1 S DDN=$P(%DDNM,",",%Q) Q:DDN=""  D  Q:%MSG]""
+	.S REF=$S($D(%DN(DDN)):$P(%DN(DDN,"R"),";"),1:$P(^DADD(DDN,"REF"),";"))
+CHECK	.I REF["*"!(REF["#") S %MSG="'/EVAL'にはプライマリ(主)キーデータネーム'"_%DDNM_"'は使用できません。" Q  ;	;%%Z1-T
+	.I OREF]"",OREF'=REF S %MSG="'/EVAL'でのすべてのデータネームは同じグローバルリファレンスを持たなければなりません。" Q  ;	;%%Z1-T
+	.S OREF=REF
+	Q

@@ -1,0 +1,170 @@
+ROUTINE %DARPC2C [Type=INT,LanguageMode=6]
+%DARPC2C	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+NOLINE	Q
+LINE	I ITM'["(" D LINEX,ENDL Q
+	I $E(ITM,7)?1N G LINEN
+	D LINEX W:GRP'="F" " " 
+	S JUS=+$P(ITM,",",2),COL=+$P(ITM,",",3) S:'JUS JUS=1 S:'COL COL=LL
+	S X="" F J=JUS:1:COL S X=X_$E(ITM,8)
+	S CM="W" S:COND]"" CM=CM_":"_COND I JUS>1 S ARG="?"_(JUS-1) D COM
+	I FMT["W" S ARG="$C(27),""[5w""" D COM
+	S ARG=""""_X_"""" D COM
+	I FMT["W" S ARG="$C(27),""[0w""" D COM
+	D LINEX,ENDL
+	Q
+LINEX	I GRP="F" S FLN=FLN+1,CM="W",ARG="$C(0),!" D COM Q
+	S CM="D",ARG="NLN"_$E(0,GRP="H0") S:COND]"" CM="D:"_COND
+	D COM W " Q:%QT"
+	Q
+LINEN	S X=+$E(ITM,7,99) 
+	I X>1 S COM="",CM="F",ARG="%V=1:1:"_X D COM S:GRP="F" FLN=FLN+X-1
+	D LINEX,ENDL
+	Q
+PAGE	I GRP="F" Q 
+	I COND]"" S CM="I",ARG=COND D COM
+	I GRP["H" S CM="I",ARG="'%HD" D COM W " S:%SCP %SCP=1 D NLN I '%SCP D NPG Q" D ENDL Q
+	S CM="S:%SCP",ARG="%SCP=1" D COM
+	S CM="D",ARG="NLN,NPG:'%SCP" D COM W " Q:%QT" D ENDL
+	Q
+SECTION	I COND]"" S CM="G",ARG="SEC"_COL_":'("_COND_")" D COM
+	S VS=COL,SLV=SLV+1,SLV(SLV)=COL
+	I %RPT D REEVAL,COMPLST^%DARPC3,PGCHK^%DARPC2B Q
+	D ENDL D COMPLST^%DARPC3,PGCHK^%DARPC2B
+	Q
+ENDSEC	D ENDL W "SEC",COL," ;",! S SLV=SLV-1,VS=SLV(SLV)
+	Q
+REPEAT	;
+	S %RPT=%RPT+1,SUBS=""
+	S DN=$E(ITM,$F(ITM,"("),$L(ITM)-1),VS=COL,SLV=SLV+1,SLV(SLV)=COL
+	S LPCT(COL)=$S($P(DN,":",2)]"":$P(DN,":",2),1:""),DN=$P(DN,":",1)
+	I DN]"" D  D COM
+	. I "^%"'[$E(DN),'$D(%VL($P(DN,"("))) S CM="S",ARG=DN_"="""""
+	. E  D
+	. . S SUBS=$E(DN,$F(DN,"("),$L(DN)-1)
+	. . I SUBS["," S SUBS=$P(SUBS,",",$L(SUBS,","))
+	. . S CM="S",ARG=SUBS_"="""""
+	I LPCT(COL)]"" S CM="S",ARG="CTR"_COL_"=0" D COM
+	D ENDL W "REPL",COL
+	I COND]"" S CM="G",ARG="REP"_COL_":'("_COND_")" D COM
+	I SUBS]"" D
+	. S CM="S",ARG=SUBS_"=$O("_DN_")" D COM
+	. S CM="G",ARG="REP"_COL_":"_SUBS_"=""""" D COM
+	S X="" I DN]"",$D(%DN(DN,"R")) S X=$P(%DN(DN,"R"),";")
+	I X["*"!(X["#") D
+	. S CM="S"
+	. S ARG=DN_"=$O(^"_$P($P(X,$S(X["*)":"*)",1:"#)"),1),"^",2)_DN_"))"
+	. D COM
+	. S CM="G",ARG="REP"_COL_":"_DN_"=""""" D COM
+	I LPCT(COL)]"" S CM="G",ARG="REP"_COL_":(CTR"_COL_">"_LPCT(COL)_")" D COM
+	I X]"" D
+	. S SAVE=DN D REEVAL
+	. I $P(%DN(SAVE,"R"),";",7)]"" S DN=SAVE D POINTER^%DARPC3
+	. D COMPLST^%DARPC3
+	Q
+REEVAL	;
+	S CNT="" F  S CNT=$O(FLAG("ALIAS",VS,CNT)) Q:CNT=""  D
+	.S DN="" F  S DN=$O(FLAG("ALIAS",VS,CNT,DN)) Q:DN=""  D
+	..S Z="" F  S Z=$O(VAR(Z)) Q:Z=""  I $D(VAR(Z,CNT,DN)) S FLAG("VAR",Z,CNT,DN)="" K VAR(Z,CNT,DN),DN(DN)
+	S CNT="" F  S CNT=$O(VAR(VS,CNT)) Q:CNT=""  D
+	. S DN="" F  S DN=$O(VAR(VS,CNT,DN)) Q:DN=""  I DN(DN)'?.UN S DN(DN)=""
+	S CNT="" F  S CNT=$O(VAR(VS,CNT)) Q:CNT=""  D
+	. S DN="" F  S DN=$O(VAR(VS,CNT,DN)) Q:DN=""  I DN(DN)="" D SAVERC
+	S CNT="" F  S CNT=$O(VAR(VS,CNT)) Q:CNT=""  D
+	. S DN="" F  S DN=$O(VAR(VS,CNT,DN)) Q:DN=""  I DN(DN)'?.UN D COMP2^%DARPC3
+	S CNT="" F  S CNT=$O(FLAG("ALIAS",VS,CNT)) Q:CNT=""  D
+	.S DN="" F  S DN=$O(FLAG("ALIAS",VS,CNT,DN))  Q:DN=""  S DN(DN)="" I $D(FLAG("VAR",VS,CNT,DN)) S VAR(VS,CNT,DN)=""
+	Q
+SAVERC	S REF=$P(%DN(DN,"R"),";")
+	I $D(RC(REF)) N RC
+	D COMP1^%DARPC3
+	Q
+RPTARRY	;
+	S SUBS=$E(DN,$F(DN,"("),$L(DN)-1) I SUBS["," S SUBS=$P(SUBS,",",$L(SUBS,","))
+	S CM="S",ARG=SUBS_"=""""" S:LPCT(COL)]"" ARG=ARG_",CTR"_COL_"=0" D COM,ENDL
+	W "REPL",COL
+	W " S ",SUBS,"=$O(",DN,") I ",SUBS,"=""""" W:LPCT(COL)]"" "!(CTR"_COL_">"_LPCT(COL)_")" W " G REP",COL,!
+	Q
+QUITREP	;
+	D ENDL W:COND'="" " G:"_COND W:COND="" "G " W " REP",SLV(SLV),! 
+	Q
+ENDREP	D ENDL W:LPCT(COL)]"" " S CTR"_COL_"=CTR"_COL_"+1"
+	W " G REPL",COL,!,"REP",COL," ;",! S SLV=SLV-1,VS=SLV(SLV),%RPT=%RPT-1 K LPCT(COL)
+	Q
+PAGEN	S V="%PG" G FMT^%DARPC2B
+PAGEC	S V="%PC" G FMT^%DARPC2B
+SETPAGE	S CM="S"_$S(COND]"":":("_COND_")",1:""),ARG="%PG=0" D COM
+	Q
+REQUIRE	;
+	I RPLEN=0 Q
+	S LNCNT=$P(ITM,"(",2)-1
+	I GRP'["H" S CM="D",ARG="NPG:$Y+"_LNCNT_">%PL"_$S(COND]"":"&("_COND_")",1:"") D COM Q
+	S CM="I",ARG="$Y+"_LNCNT_">%PL"_$S(COND]"":"&("_COND_")",1:"")
+	D COM W " D NPG Q" D ENDL
+	K LNCNT
+	Q
+DATE	S V="%DTR" G FMT^%DARPC2B
+TIME	S V="%TMR" G FMT^%DARPC2B
+MIN	S V="%MI("_SP_",@)"
+FUNC	;
+	S X=$P($P(ITM,")",1),"(",2)
+	F J=1:1 Q:V'["@"  S V=$P(V,"@",1)_""""_X_""""_$P(V,"@",2,99)
+	G FMT^%DARPC2B
+MI	S CM="S:"_X_"<%MI("_SP_","""_ODX_""")",ARG="%MI("_SP_","""_ODX_""")="_X
+	D COM
+	Q
+MAX	S V="%MA("_SP_",@)" G FUNC
+MA	S CM="S:"_X_">%MA("_SP_","""_ODX_""")",ARG="%MA("_SP_","""_ODX_""")="_X
+	D COM
+	Q
+MED	S CM="S",ARG="%MCNT=%CO("_SP_")/2,%MAX=$S(%MCNT[""."":%MCNT+0.5,1:%MCNT+1)" D COM
+	S X=$P($P(ITM,")",1),"(",2)
+	S CM="S",ARG="X=""%ME("_SP_","""""_X_""""")""" D COM S CM="F",ARG="%I=1:1:%MAX S X=$Q(@X) Q:X=""""  D" D COM W !
+	S CM=".I",ARG="%MCNT[""."",%MCNT+0.5=%I S %MED("_SP_","""_X_""")=@X" D COM
+	S CM=".E",ARG=" I %I=%MCNT S %OLD=@X" D COM
+	S CM=".E",ARG=" I %I=%MAX S %MED=(%OLD+@X)/2,%MED("_SP_","""_X_""")=%MED" D COM
+	S V="%MED("_SP_",@)"
+	G FUNC
+ME	S CM="S",ARG="%ME("_SP_","""_ODX_""","_"+"_ODX_",%CO("_SP_"))=+"_ODX
+	D COM
+	Q
+AVE	S V="%TO("_SP_",@)/%CO("_SP_")" G FUNC
+AV	Q 
+STD	S V=$$REPLACE(^%DASY("MUMPS","VAX DSM","$ZC(%SQRT,P1)"),"P1","-%TO("_SP_",@)*%TO("_SP_",@)/%CO("_SP_")+%ST("_SP_",@)/%CO("_SP_")")
+	G FUNC
+ST	S CM="S",ARG="%ST("_SP_","""_ODX_""")="_ODX_"*"_ODX_"+%ST("_SP_","""_ODX_""")"
+	D COM
+	Q
+COUNT	S V="%CO("_SP_")" G FUNC
+CO	S CM="S",ARG="%CO("_SP_")=%CO("_SP_")+1"
+	D COM
+	Q
+TOTAL	S V="%TO("_SP_",@)" G FUNC
+TO	S CM="S",ARG="%TO("_SP_","""_ODX_""")=%TO("_SP_","""_ODX_""")+"_ODX
+	D COM
+	Q
+REPLACE(STRING,OLD,NEW)	
+	S STRING=$P(STRING,OLD,1)_NEW_$P(STRING,OLD,2)
+	Q STRING
+PCNV	;
+	S V1="" F A=1:1 Q:$D(FR(A))#10=0  I FR(A)=V S V1=PK(A)
+	I V1']"" F A=1:1 Q:$D(TO(A))#10=0  I TO(A)=V S V1=PK(A)
+	Q
+	;**TM**2箇所定義されているためコメントアウト
+	;REPLACE(STRING,OLD,NEW)	
+	;S STRING=$P(STRING,OLD,1)_NEW_$P(STRING,OLD,2)
+	;Q STRING
+COM	;**TM**;S %KJ=$ZC(KJOFF) ;	;%%Z1-A
+	I $X+$L(ARG)>200 W ! S COM=""
+	I $E(COM)="." W ! S COM=""
+	W:COM'=CM " ",CM," " W:COM=CM "," W ARG S COM=CM
+	;**TM**;S %KJ=$ZC(KJON) ;	;%%Z1-A
+	Q
+ENDL	I COM]"" W ! S COM=""
+	Q
+COMMENT	;
+	W " ;====================================================================",!
+	W " ;",?72-$Zwidth(COMMENT)/2,COMMENT,! ;	;%%Z1-G
+	W " ;====================================================================",!
+	Q

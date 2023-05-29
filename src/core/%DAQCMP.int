@@ -1,0 +1,44 @@
+ROUTINE %DAQCMP [Type=INT,LanguageMode=6]
+%DAQCMP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+QUERY	W !,"Query Compiler",!
+ASK	R !,"Query: ",QUNM Q:QUNM=""  
+	I '$D(^DAQD(QUNM)) W *7,QUNM_" Not defined" G ASK
+	S %NAME=QUNM D QUERY^%DANAME S X="ZR  ZS @$E(%PROGRAM,2,9)" X X
+	W ! S %PGMR=1
+COMP	;
+	S DB=$G(DB)
+	I 'DB S $ZT="ERROR^%DAQCMP"
+	S FLAG("FORCE_COMPILE")=1
+	W !,?5,QUNM,?15,$P(^DAQD(QUNM,"1A"),";",1)
+	S (%MSG,$ZE)="" ZA ^DAQD(QUNM) D ^%DAQC ZD ^DAQD(QUNM)
+	I %MSG]"" W !,"  ",$C(27),"[1m",%MSG,$C(27),"[0m",!! D EXIT^%DAQC
+	K FLAG("FORCE_COMPILE")
+	Q
+EXIT	K %PGMR
+	Q
+ERROR	L  U 0 W !,"Error  ",$ZE,!
+	D EXIT^%DAQC
+	Q
+ALL	;
+	W !,"Compiling all Queries",!! 
+	D DQR^%DAQDUTL 
+	K ^DANX("Q") S ^DANX("Q")=0
+	S QUNM="" F  S QUNM=$O(^DAQD(QUNM)) Q:QUNM=""  D COMP
+	K QUNM
+	Q
+BCHSEL	;
+	W !,"Compile selected Query",!!
+	S QUNM="" F  S QUNM=$O(^DATG($J,"U","Q",QUNM)) Q:QUNM=""  D COMP
+	K QUNM
+	Q
+DASLQC	;
+	N %VAR ;	;%%Z2-
+	S $ZT="ERRQC^%DAQCMP",($ZE,%MSG)="",COMPILE=1
+	ZA ^DAQD(QUNM) D ^%DAQC ZD ^DAQD(QUNM)
+	Q
+ERRQC	;
+	S %MSG=$S(%MSG]"":%MSG,$ZE]"":$ZE,1:"検索要素'"_QUNM_"'コンパイル中にエラーが発生しました。") ;	;%%Z1-T
+	ZD ^DAQU(QUNM)
+	Q
