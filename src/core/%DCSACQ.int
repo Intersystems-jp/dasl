@@ -1,0 +1,205 @@
+ROUTINE %DCSACQ [Type=INT,LanguageMode=6]
+%DCSACQ	;V6.1;19-May-93  4:20 PM;HLOCK Help for LOCK
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=5:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %bqA="" F %Z=0,5:1:23 S $P(%bqA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HLOCK",%L(5)="%DCSACQ",%L(24)="",%MSG="",%bqD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "フォーマット（ Format ）                                 ",!
+	W !
+	W "    LOCK｛/timeout=n｝<SP>引数｛:後付け条件｝             （ 短縮形: LK ）",!
+	W !
+	W "      パラメータ",!
+	W !
+	W "        /timeout=N  ： 引数で指定のデータ構造を、DASLソフトウェアがロック状態",!
+	W "                       にしようとn秒間試みることを指定するオプションのタイム",!
+	W "                       アウト",!
+	W "         ",!
+	W "        引数        ： DSM LOCK+ 引数の形式に相当する引数",!
+	W !
+	W "        後付け条件  ： オプションの後付け条件式",!
+	W !
+	W !
+	W "        LOCKアクションは、2人のユーザが同時に同一のデータベース要素を更新しよ",!
+	W "      うとするのを防ぎます。",!
+	F %=18:1:18 W !
+	G RET
+2	;
+	W "        LOCKアクションは、DSM LOCK+ 引数コマンドに相当します。LOCKアクションは",!
+	W "      引数リスト内で指定される全グローバルもしくはローカル変数を同時にロック状",!
+	W "      態にします。",!
+	W !
+	W "        サブスクリプトなしの名前をロック状態にすると、DASLソフトウェアは、同名",!
+	W "      のサブスクリプト付きのいかなるノードも他のユーザが使用できないように設定",!
+	W "      します。",!
+	W !
+	W "        例（ Example ）",!
+	W !
+	W "             LOCK ^EDATA locks ^EDATA(""PAT"",ID) and ^EDATA(""EXAM"",ID)",!
+	W !
+	W "        データネーム、スクリーン名およびフィールド名をはじめ、いかなる名前もロ",!
+	W "      ック状態にします。LOCKアクションは、それらの要素（グローバル変数、ローカ",!
+	W "      ル変数および名前）をDSMロック・テーブルに加えます。",!
+	F %=16:1:18 W !
+	G RET
+3	;
+	W "        LOCK使用の際には、アプリケーション全体で、同一の規則を使用して下さい。",!
+	W "      例えば、同じデータをロックするために、以下のオプションを使用することもで",!
+	W "      きます。",!
+	W !
+	W "           o  データネームID（従業員登録）をロック状態にする",!
+	W !
+	W "           o  グローバル^EDATA(ID)（データネームがキーです）をロック状態",!
+	W "              にする",!
+	W !
+	W "           o  データネームIDが使用されているフィールド・ネームをロック状",!
+	W "              態にする",!
+	W !
+	W "        この場合、DASLソフトウェアは、ロック・テーブルに3つの異なる名前を入力",!
+	W "      します。",!
+	F %=15:1:18 W !
+	G RET
+4	;
+	W "        他のユーザによって、既にロック状態にされている名前をあるスクリーンでロ",!
+	W "      ック状態にしようとした場合、DASLソフトウェアは、その名前がロックされてい",!
+	W "      ない状態になるまで実行を待機します。待機時間が長くなりすぎないようタイム",!
+	W "      アウトを使用して下さい。",!
+	W !
+	W "         o  タイムアウトになる前に指定の名前をロック状態に設定できると、その名",!
+	W "            前をロック状態にして、DASL変数%FNDを1に設定します。",!
+	W !
+	W "         o  タイムアウトになる前に指定の名前をロック状態に設定できない場合には",!
+	W "            DASL変数%FNDを0に設定します。",!
+	W !
+	W "        DASLソフトウェアは、指定のグローバルが既にロック状態であるということを",!
+	W "      知らせるメッセージをユーザに表示しません。%FNDをチェックして、希望のレコ",!
+	W "      ードが現在使用できないということを知らせるメッセージをユーザに表示するこ",!
+	W "      とができます。",!
+	F %=15:1:17 W !
+RET	S %bqC="4 ページ中 "_%bqD_" ページ; <RETURN> を押すと "_$S(%bqD=4:"終了",1:"続行")_"します。"
+	W %E,"[",40-($Zwidth(%bqC)+1\2),"C",%bqC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %bqE=%bqD
+READ	S %bqB=1,%bqB(0)="E",%W="1;23;"_(41+($Zwidth(%bqC)+1\2)+($Zwidth(%bqC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %bqD=$S(%bqD=1:1,1:%bqD-1)
+	E  I %RES?1N.N S %bqD=$S(%RES>4:4,+%RES=0:1,1:+%RES)
+	E  S %bqD=%bqD+1
+	I %bqD>4 G E
+	I %bqD=%bqE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%bqD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSACQ" G @("R^"_%L(%Z))
+	W %E,"[5;1H"
+	F %Z=5:1:23 S %O(0)=1
+	G @%bqD
+E	I %O W %E,"[5;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,5:1:23 S %O(%Z)=0,%L(%Z)=$P(%bqA,",",%Z+1)
+	K %bqA,%bqB,%bqE,%bqD,%bqC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l5;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="5;23"!($E(%SCN)'="l") W %E,"[5;23r"
+	S %SCN="l5;23",%LL=80 Q
+I	I $D(%bqB(%bqB-1)),%bqB(%bqB-1)=$P(%W,";",5) S %bqB=%bqB-1
+	E  S %bqB(%bqB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSACQ" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%bqB(0)=%bqB(%bqB) %bqB(1)=%bqB(0),%bqB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %bqB=%bqB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%bqB(%bqB)=%bqB(0),@%bqB(0)
+	I %F="44"&%F S:%bqB>1 %bqB=%bqB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%bqB(%bqB)'="" @%bqB(%bqB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

@@ -1,0 +1,218 @@
+ROUTINE %DCSACN [Type=INT,LanguageMode=6]
+%DCSACN	;V6.1;19-May-93  4:16 PM;HFILES Help for FILES
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=5:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %bnA="" F %Z=0,5:1:23 S $P(%bnA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HFILES",%L(5)="%DCSACN",%L(24)="",%MSG="",%bnD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "フォーマット（ Format ）                              ",!
+	W !
+	W "    FILES/KEY=キー名<SP>ネームリスト｛:後付け条件｝        （ 短縮形: FS/K ）",!
+	W !
+	W "      パラメータ",!
+	W !
+	W "        /KEY    ： FILESに対する引数が、キー・データ・ネームまたはキー・デー",!
+	W "                   タ・ネームを含むフィールド名であることを示す必須の修飾子。",!
+	W !
+	W "        キー名  ： スクロール領域カウンタ（リファレンス・サブスクリプト内の最",!
+	W "                   後の文字として、イゲタ印(#)を持つデータネーム）もしくは*キ",!
+	W "                   ー・データ・ネームを含むフィールドの名前（各スクロール領域",!
+	W "                   カウンタの直前には、パーセント記号(%)を置いて下さい。)",!
+	W !
+	W "        ネームリスト ： 1つ以上の従属データネーム、もしくは、従属データネーム",!
+	W "                        を含むフィールド（各データネームの前には、パーセント記",!
+	W "                        号(%)を置いて下さい。）",!
+	W !
+	G RET
+2	;
+	W "        後付け条件   ： オプションの後付け条件式",!
+	W !
+	W !
+	W "        FILESフィールド・アクションは、スクロール領域からのデータをアプリケー",!
+	W "      ション・データベースに格納します。",!
+	F %=6:1:18 W !
+	G RET
+3	;
+	W "        /KEY 修飾子",!
+	W !
+	W "            キー・データネームがスクロール領域カウンタ（つまり、グローバル・リ",!
+	W "          ファレンスの最後サブスクリプトにイゲタ印(#)を持つ）の場合、そのデー",!
+	W "          タネームをキー修飾子として使用して下さい。この場合、キーの値は、1か",!
+	W "          らnまでの整数であり、ここでのnとは、そのスクロール領域内のエントリ数",!
+	W "          もしくはオプションの後付け条件が真になるエントリの数です。以下の様に",!
+	W "          データネームの前にパーセント記号(%)を置いて下さい。       ",!
+	W !
+	W "             FILES/KEY=%EXNO TYPE,DATE       EXNOはスクロール領域のカウンタ",!
+	W !
+	W "            キー・データネームがプライマリ・キーの場合（つまり、グローバル・リ",!
+	W "          ファレンスの最後サブスクリプトとして、アスタリスクを持つ場合）には、",!
+	W "          そのキー・データネームに対するフィールドの名前をキー修飾子として使用",!
+	W "          して下さい。以下の様にデータネームの前にパーセント記号(%)は置かない",!
+	W "          で下さい。       ",!
+	W !
+	W "             FILES/KEY=EMPID ADDR1,ADDR2,PHONE    EMPIDはキーデータネームを含",!
+	G RET
+4	;
+	W "                                                  むフィールド",!
+	F %=2:1:18 W !
+	G RET
+5	;
+	W "        ネームリスト",!
+	W !
+	W "          ネームリスト中にフィールドを指定するには、以下のことに注意して下さい",!
+	W !
+	W "            o  指定されているフィールドは全て、現スクロール領域の第1行目に配置",!
+	W "               されていなければなりません。",!
+	W !
+	W "            o  フィールドはそれぞれ、修飾子で指定するキーに従属するデータネー",!
+	W "               ムを持たなければなりません。",!
+	W !
+	W "        ネームリスト中の各データネームの前に、パーセント記号(%)を置いて下さい。",!
+	W !
+	W "          例（ Example ）",!
+	W !
+	W "                FILES/KEY=%EXNO  FIELD1,FIELD2,%DDN1",!
+	F %=16:1:18 W !
+	G RET
+6	;
+	W "        注釈",!
+	W !
+	W "          o  1つのFILESネームリスト・アクション内で参照されているデータネーム",!
+	W "             は全て、同じグローバル・ノードもしくはサブツリーに存在していなけ",!
+	W "             ればなりません。他のグローバルやサブツリー内のデータをファイルす",!
+	W "             る必要がある場合には、複数のFILESアクションを使用して下さい。",!
+	W !
+	W "          o  同一ノードに存在するデータに対して、複数のFILES文を使用しないで下",!
+	W "             さい。後で実行するFILESアクションは、前のFILESアクションに支障を",!
+	W "             きたします。",!
+	W !
+	W "          o  特別な処理の実行が必要な場合には、FILESアクションの代わりに ",!
+	W "             MUMPSルーチンを使用して下さい。",!
+	F %=13:1:17 W !
+RET	S %bnC="6 ページ中 "_%bnD_" ページ; <RETURN> を押すと "_$S(%bnD=6:"終了",1:"続行")_"します。"
+	W %E,"[",40-($Zwidth(%bnC)+1\2),"C",%bnC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %bnE=%bnD
+READ	S %bnB=1,%bnB(0)="E",%W="1;23;"_(41+($Zwidth(%bnC)+1\2)+($Zwidth(%bnC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %bnD=$S(%bnD=1:1,1:%bnD-1)
+	E  I %RES?1N.N S %bnD=$S(%RES>6:6,+%RES=0:1,1:+%RES)
+	E  S %bnD=%bnD+1
+	I %bnD>6 G E
+	I %bnD=%bnE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%bnD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSACN" G @("R^"_%L(%Z))
+	W %E,"[5;1H"
+	F %Z=5:1:23 S %O(0)=1
+	G @%bnD
+E	I %O W %E,"[5;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,5:1:23 S %O(%Z)=0,%L(%Z)=$P(%bnA,",",%Z+1)
+	K %bnA,%bnB,%bnE,%bnD,%bnC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l5;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="5;23"!($E(%SCN)'="l") W %E,"[5;23r"
+	S %SCN="l5;23",%LL=80 Q
+I	I $D(%bnB(%bnB-1)),%bnB(%bnB-1)=$P(%W,";",5) S %bnB=%bnB-1
+	E  S %bnB(%bnB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSACN" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%bnB(0)=%bnB(%bnB) %bnB(1)=%bnB(0),%bnB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %bnB=%bnB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%bnB(%bnB)=%bnB(0),@%bnB(0)
+	I %F="44"&%F S:%bnB>1 %bnB=%bnB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%bnB(%bnB)'="" @%bnB(%bnB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

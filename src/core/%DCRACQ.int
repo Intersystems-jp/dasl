@@ -1,0 +1,141 @@
+ROUTINE %DCRACQ [Type=INT,LanguageMode=6]
+%DCRACQ	;V6.1;15-Oct-92  3:52 PM;UTBPRTN Print Table definitions by column name
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRACQ" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S TBNM=""
+K1	S TBNM=$O(^DATD(TBNM)) I TBNM="" G K0
+	S %FND=$D(^DATG($J,"U","TB",TBNM))
+	G K1:'%FND
+	S TBCLN=""
+K2	S TBCLN=$O(^DATD(TBNM,"C",TBCLN)) I TBCLN="" G K1
+	S %=$D(^DATD(TBNM,"C",TBCLN)),TBCLNM="" S:%#10 TBCLNM=$P(^(TBCLN),";")
+	S %V=TBNM D CVT S %S1=%V
+	S %V=TBCLNM D CVT S %S2=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%S2,%CNT)=TBCLN_$C(0)_TBCLNM_$C(0)_TBNM
+	G K2
+K0	S ^DATG($J,"R")="UTBPRTN,"_%DTR_","_%TMR_","_%CNT
+	K TBCLN,TBCLNM,TBNM,%S1,%S2
+PRT	D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRACQ",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %F2=2,%S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S %S3=""
+S3	S %S3=$O(^DATG($J,"R",%S1,%S2,%S3)) I %S3="" S %F2=1 D T2 G S0:%QT,S2
+	S %=^DATG($J,"R",%S1,%S2,%S3),TBCLN=$P(%,$C(0),1),TBCLNM=$P(%,$C(0),2),TBNM=$P(%,$C(0),3)
+	I %F1 S:%PC'=1 %HD=0 D C1,H1 S %F1=0 S:%PC'=1 %HD=1 G S0:%QT
+	I %F2 D C2,H2 S %F2=0 G S0:%QT
+	D D G S0:%QT,S3
+C1	S %=$D(^DATD(TBNM,"REF")),%T3="" S:%#10 %T3=^("REF") S TBPRV=$P(%T3,";",4)
+	Q
+C2	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%F2,%S2,%S3,%T1,%T2,%T3,%T4,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRACQ",%ECNT=%ECNT+1 G S3
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZL("Print Table Definitions",%RPKPIT)\2+39,"Print Table Definitions" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+H1	I $Y>%PL D NPG Q
+	I '%HD S:%SCP %SCP=1 D NLN I '%SCP D NPG Q
+	S %=$D(^DATD(TBNM,"REF")),TBPRV="" S:%#10 TBPRV=$P(^("REF"),";",4)
+	S PRV=TBPRV,PRV=PRV_%FPV
+	I PRV["@" S %MSG=""
+	E  S %MSG=1 D
+	. F %Z=1:1:$L(%FPV) I PRV[$E(%FPV,I) S %MSG=""
+	G SEC13:'(%MSG="")
+	S %=$D(^DATD(TBNM,"REF")),%T3="" S:%#10 %T3=^("REF") S TBDES=$P(%T3,";",3),TBGROUP=$P(%T3,";"),%=$D(^DATD(TBNM,"H")),%T4="" S:%#10 %T4=^("H") S TBHV=$P(%T4,";"),TBHC=$P(%T4,";",2),TBHLE=$P(%T4,";",4)
+	S %=$D(^DATD(TBNM,"REF")),%T3="" S:%#10 %T3=^("REF") S TBKEY=$P(%T3,";",2),%=$D(^DATD(TBNM,"SC1")),TBCSC1="" S:%#10 TBCSC1=^("SC1")
+	I $Y>%PL D NPG Q
+	W ?-$ZL("テーブル定義: "_TBNM,%RPKPIT)\2+39,"テーブル定義: "_TBNM D NLN Q:%QT  W "________________________________________________________________________________" D NLN Q:%QT
+	D NLN Q:%QT
+	W:TBDES]"" ?4,"Desc: "_TBDES D:TBDES]"" NLN Q:%QT
+	W ?4,"Group(s): "_TBGROUP W:TBHV]"" ?64,"Version: "_TBHV D NLN Q:%QT
+	W:TBHC]"" ?4,"Created by: "_TBHC G SEC14:'(TBHLE]"")
+	S %=$D(^DATD(TBNM,"H")),%T4="" S:%#10 %T4=^("H") S TBHE=$P(%T4,";",3)
+	I $Y>%PL D NPG Q
+	S %DTI=TBHLE D DTIX^%DAUDTTM W ?29,"Edited on:"_%DTX," by ",TBHE D NLN Q:%QT
+SEC14	;
+	W ?4,"Primary Key(s): "_TBKEY D NLN Q:%QT
+	W ?4,"Privilege Code: "_TBPRV G SEC15:'(TBCSC1'="")
+	S %=$D(^DATD(TBNM,"SC2")),TBCSC2="" S:%#10 TBCSC2=^("SC2") S %=$D(^DATD(TBNM,"SC3")),TBCSC3="" S:%#10 TBCSC3=^("SC3")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?-$ZL("Comments that display on Schema Definition",%RPKPIT)\2+39,"Comments that display on Schema Definition" D NLN Q:%QT
+	W TBCSC1 D NLN Q:%QT
+	W TBCSC2 D:TBCSC2'="" NLN Q:%QT
+	W TBCSC3 D:TBCSC3'="" NLN Q:%QT
+SEC15	;
+	D NLN Q:%QT  W ?4,"_______________________________________________________________________" D NLN Q:%QT
+SEC13	;
+	D NLN Q:%QT
+	Q
+T1	Q
+H2	Q
+T2	Q
+D	S %HD=0 D NPG:$Y>%PL
+	S PRV=TBPRV
+	I PRV_%FPV["@" S %MSG=""
+	E  S %MSG=1 D
+	. F %Z=1:1:$L(%FPV) I PRV[$E(%FPV,I) S %MSG=""
+	G SEC11:'(%MSG="")
+	S %=$D(^DATD(TBNM,"C",TBCLN)),%T2="" S:%#10 %T2=^(TBCLN) S TBCLDN=$P(%T2,";",3),DDNM=$S(TBCLDN]"":TBCLDN,1:" "),%=$D(^DADD(DDNM,"B")),%T1="" S:%#10 %T1=^("B") S DDTMPL=$P(%T1,";",3)
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DATD(TBNM,"C",TBCLN)),%T2="" S:%#10 %T2=^(TBCLN) S TBCLDES=$P(%T2,";",2),TBCLTYP=$P(%T2,";",6),%=$D(^DADD(DDNM,"B")),%T1="" S:%#10 %T1=^("B")
+	S DDTYPE=$P(%T1,";",2),%=$D(^DADDT(TMNM,"B")),TMTYPE="" S:%#10 TMTYPE=$P(^("B"),";",2) S %=$D(^DATD(TBNM,"C",TBCLN)),%T2="" S:%#10 %T2=^(TBCLN) S TBCLLEN=$P(%T2,";",4)
+	S %=$D(^DADD(DDNM,"DF","E")),DDLEN="" S:%#10 DDLEN=$P(^("E"),";") S %=$D(^DADDT(TMNM,"DF","E")),TMLEN="" S:%#10 TMLEN=$P(^("E"),";") S %=$D(^DATD(TBNM,"C",TBCLN)),%T2="" S:%#10 %T2=^(TBCLN)
+	S TBCLATT=$P(%T2,";",5),%=$D(^DADD(DDNM,"DF","AT",1)),DDATT1="" S:%#10 DDATT1=^(1) S %=$D(^DADDT(TMNM,"DF","AT")),TMATT1="" S:%#10 TMATT1=^("AT")
+	D NPG:$Y>%PL,NPG:$Y+3>%PL W ?4,"Column Number: "_TBCLN S %=$D(^DATD(TBNM,"C",TBCLN)),TBCLDN="" S:%#10 TBCLDN=$P(^(TBCLN),";",3) S DDNM=$S(TBCLDN]"":TBCLDN,1:" ")
+	S %=$D(^DADD(DDNM,"B")),DDTMPL="" S:%#10 DDTMPL=$P(^("B"),";",3) S TMNM=$S(DDTMPL]"":DDTMPL,1:" ")
+	W ?26,"Data Name: "_TBCLDN,?54,"Column Name: "_TBCLNM D NLN Q:%QT
+	W ?4,"Desc: "_TBCLDES,?54,"Data Type: "_TBCLTYP," (",DDTYPE W:DDTYPE="" TMTYPE W ")" D NLN Q:%QT
+	W ?4,"Data Length: "_TBCLLEN," (",DDLEN W:DDLEN="" TMLEN W ")" D NLN Q:%QT
+	G SEC12:'(TBCLATT]""!(DDATT1]"")!(TMATT1]""))
+	D NPG:$Y>%PL W ?4,"Attr: "_TBCLATT," (",DDATT1 W:DDATT1'="" TMATT1 W ")"
+SEC12	;
+	F %V=1:1:2 D NLN Q:%QT
+SEC11	;
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%F2,%S2,%S3,%T1,%T2,%T3,%T4
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N DDATT1,DDLEN,DDTMPL,DDTYPE,TBCLATT,TBCLDES,TBCLDN,TBCLLEN,TBCLN,TBCLNM,TBCLTYP,TBCSC1,TBCSC2,TBCSC3,TBDES,TBGROUP,TBHC,TBHE,TBHLE,TBHV
+	N TBKEY,TBNM,TBPRV,TMATT1,TMLEN,TMTYPE
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1 Q:%F1  D H2
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

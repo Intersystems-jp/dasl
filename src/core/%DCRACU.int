@@ -1,0 +1,417 @@
+ROUTINE %DCRACU [Type=INT,LanguageMode=6]
+%DCRACU	;V6.1;7-Dec-92 12:40 PM;USPYX Single Data screen in line, column, and field order.
+	;DASL;Y
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRACU" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S SDNM=%PARM I $D(^DASD(SDNM)) G K1X
+K1	G K0
+K1X	S %=$D(^DASD(SDNM,"SCR")),SDTYPE="" S:%#10 SDTYPE=$P(^("SCR"),";")
+	I '(SDTYPE="DATA") G K1
+	S SDFN=""
+K2	S SDFN=$O(^DASD(SDNM,"D","F",SDFN)) I SDFN="" G K1
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T1="" S:%#10 %T1=^("P") S SDFYP=$P(%T1,";"),SDFXP=$P(%T1,";",2)
+	S %V=SDNM D CVT S %S1=%V
+	S %V=SDFYP D CVT S %S2=%V
+	S %V=SDFXP D CVT S %S3=%V
+	S %V=SDFN D CVT S %S4=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%S2,%S3,%S4,%CNT)=SDFN_$C(0)_SDFXP_$C(0)_SDFYP_$C(0)_SDNM_$C(0)_SDTYPE
+	G K2
+K0	S ^DATG($J,"R")="USPYX,"_%DTR_","_%TMR_","_%CNT
+	K SDFN,SDFXP,SDFYP,SDNM,SDTYPE,%S1,%S2,%S3,%S4,%T1
+PRT	D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRACU",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %F2=2,%S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S %S3=""
+S3	S %F3=2,%S3=$O(^DATG($J,"R",%S1,%S2,%S3)) I %S3="" S %F2=1 D T2 G S0:%QT,S2
+	S %S4=""
+S4	S %F4=2,%S4=$O(^DATG($J,"R",%S1,%S2,%S3,%S4)) I %S4="" S %F3=1 D T3 G S0:%QT,S3
+	S %S5=""
+S5	S %S5=$O(^DATG($J,"R",%S1,%S2,%S3,%S4,%S5)) I %S5="" S %F4=1 D T4 G S0:%QT,S4
+	S %=^DATG($J,"R",%S1,%S2,%S3,%S4,%S5),SDFN=$P(%,$C(0),1),SDFXP=$P(%,$C(0),2),SDFYP=$P(%,$C(0),3),SDNM=$P(%,$C(0),4),SDTYPE=$P(%,$C(0),5)
+	I %F1 S:%PC'=1 %HD=0 D C1,H1 S %F1=0 S:%PC'=1 %HD=1 G S0:%QT
+	I %F2 D C2,H2 S %F2=0 G S0:%QT
+	I %F3 D C3,H3 S %F3=0 G S0:%QT
+	I %F4 D C4,H4 S %F4=0 G S0:%QT
+	D D G S0:%QT,S5
+C1	S %=$D(^DASD(SDNM,"SCR")),%T5="" S:%#10 %T5=^("SCR") S SDTYPE=$P(%T5,";")
+	Q
+C2	Q
+C3	Q
+C4	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%F2,%S2,%F3,%S3,%F4,%S4,%S5,%T1,%T2,%T3,%T4,%T5,%T6,%T7,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2,ATT
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRACU",%ECNT=%ECNT+1 G S5
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZL("スクリーン定義",%RPKPIT)\2+39,"スクリーン定義" D NLN0 Q:%QT
+	Q
+T0	S %HD=0 D NPG:$Y>%PL
+	K %OLDSN
+	K %ZZ1,%ZZ2
+	D NLN Q:%QT
+	Q
+H1	I $Y>%PL D NPG Q
+	I '%HD S:%SCP %SCP=1 D NLN I '%SCP D NPG Q
+	W ?-$ZL("Definition of Screen: "_SDNM,%RPKPIT)\2+39,"Definition of Screen: "_SDNM
+	S:'$D(%OLDSN) %OLDSN=""
+	G SEC68:'(%OLDSN=""!(SDNM'=%OLDSN))
+	S %=$D(^DASD(SDNM,"A")),%T3="" S:%#10 %T3=^("A") S SDDES=$P(%T3,";",2),%=$D(^DASD(SDNM,"H")),%T4="" S:%#10 %T4=^("H") S SDHV=$P(%T4,";"),%=$D(^DASD(SDNM,"A")),%T3="" S:%#10 %T3=^("A")
+	S SDGROUP=$P(%T3,";"),%=$D(^DASD(SDNM,"H")),%T4="" S:%#10 %T4=^("H") S SDHC=$P(%T4,";",2),SDHLE=$P(%T4,";",4),SDHE=$P(%T4,";",3),SDHLC=$P(%T4,";",5),%=$D(^DASD(SDNM,"SCR")),%T5="" S:%#10 %T5=^("SCR")
+	S SDFL=$P(%T5,";",2),SDLL=$P(%T5,";",3),%=$D(^DASD(SDNM,"A")),%T3="" S:%#10 %T3=^("A") S SDMR=$P(%T3,";",3)
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT  W "________________________________________________________________________________" D NLN Q:%QT
+	D NLN Q:%QT
+	W "Description: "_SDDES,?54,"Type: "_SDTYPE,?-$ZL("Version: "_SDHV,%RPKPIT)+80,"Version: "_SDHV D NLN Q:%QT
+	W "Group(s): "_SDGROUP,?-$ZL("Created by: "_SDHC,%RPKPIT)+80,"Created by: "_SDHC D NLN Q:%QT
+	S %DTI=SDHLE D DTIX^%DAUDTTM W "Edited on "_%DTX," by ",SDHE S %DTI=SDHLC D DTIX^%DAUDTTM W ?-$ZL("Compiled on "_%DTX,%RPKPIT)+80,"Compiled on "_%DTX D NLN Q:%QT
+	W "First Line: "_SDFL,?-$ZL("Last Line: "_SDLL,%RPKPIT)\2+39,"Last Line: "_SDLL,?-$ZL("Map Compiled Screen? "_SDMR,%RPKPIT)+80,"Map Compiled Screen? "_SDMR G SEC69:'(SDTYPE="DATA")
+	S %=$D(^DASD(SDNM,"D","S","AC",1)),SDACT1="" S:%#10 SDACT1=^(1) S %=$D(^DASD(SDNM,"D","S","AC",2)),SDACT2="" S:%#10 SDACT2=^(2) S %=$D(^DASD(SDNM,"D","S","AC",3)),SDACT3="" S:%#10 SDACT3=^(3)
+	I $Y>%PL D NPG Q
+	S ATT=0
+	S SDATTCT=""
+REPL70	S SDATTCT=$O(^DASD(SDNM,"D","S","AT",SDATTCT)) G REP70:SDATTCT="" S %=$D(^DASD(SDNM,"D","S","AT",SDATTCT)),SDATT="" S:%#10 SDATT=^(SDATTCT)
+	G SEC71:'(ATT=0)
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W "Attributes:"
+	S ATT=1
+SEC71	;
+	D NLN Q:%QT
+	W ?4,SDATT
+	G REPL70
+REP70	;
+	G SEC72:'(SDACT1]"")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W "Actions: "_SDACT1
+SEC72	;
+	G SEC73:'(SDACT2]"")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?9,SDACT2
+SEC73	;
+	G SEC74:'(SDACT3]"")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?9,SDACT3
+SEC74	;
+SEC69	;
+	G SEC75:'(SDTYPE="OPTION")
+	S %=$D(^DASD(SDNM,"O","S")),%T6="" S:%#10 %T6=^("S") S SDOPCF=$P(%T6,";",2),SDOPHD=$P(%T6,";")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W "Enable Command Definition? "_SDOPCF,?-$ZL("Header Screen: "_SDOPHD,%RPKPIT)+80,"Header Screen: "_SDOPHD
+SEC75	;
+	G SEC76:'($D(^DASD(SDNM,"CM")))
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	S SDCLC=""
+REPL77	S SDCLC=$O(^DASD(SDNM,"CM",SDCLC)) G REP77:SDCLC="" S %=$D(^DASD(SDNM,"CM",SDCLC)),SDCCOM="" S:%#10 SDCCOM=^(SDCLC)
+	D NLN Q:%QT
+	W SDCCOM
+	G REPL77
+REP77	;
+SEC76	;
+	D NLN Q:%QT  W "________________________________________________________________________________" D NLN Q:%QT
+SEC68	;
+	G SEC78:'(SDTYPE="OPTION")
+	I $Y>%PL D NPG Q
+	D:%PG'=1 NLN Q:%QT
+	D NLN Q:%QT
+	W ?-$ZL("OPTIONS",%RPKPIT)\2+39,"OPTIONS"
+SEC78	;
+	S %OLDSN=SDNM
+	D NLN Q:%QT
+	Q
+T1	S %HD=0 D NPG:$Y>%PL G SEC79:'(SDTYPE="DATA")
+	D NPG:$Y>%PL S:%SCP %SCP=1 D NLN,NPG:'%SCP Q:%QT
+	D BGN^%DAUSIMG
+SEC79	;
+	D NLN Q:%QT
+	Q
+H2	Q
+T2	Q
+H3	Q
+T3	Q
+H4	Q
+T4	Q
+D	S %HD=0 D NPG:$Y>%PL
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFDN=$P(%T2,";",4),DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DASD(SDNM,"D","F",SDFN,"D")),SDFDES="" S:%#10 SDFDES=^("D")
+	D NPG:$Y>%PL
+	D NPG:$Y>%PL S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),SDFDN="" S:%#10 SDFDN=$P(^("P"),";",4) S DDNM=$S(SDFDN]"":SDFDN,1:" ")
+SEC12	;
+	S %=$D(^DADD(DDNM,"B")),DDTMPL="" S:%#10 DDTMPL=$P(^("B"),";",3) S TMNM=$S(DDTMPL]"":DDTMPL,1:" ")
+	D NPG:$Y>%PL S %=$D(^DADD(DDNM,"B")),DDTMPL="" S:%#10 DDTMPL=$P(^("B"),";",3) S TMNM=$S(DDTMPL]"":DDTMPL,1:" ")
+SEC13	;
+	D NPG:$Y+7>%PL,NLN Q:%QT
+	W "Field Name: "_SDFN,?29,"Data Name: "_SDFDN D NLN Q:%QT
+	W "Description: ",SDFDES G SEC14:'(SDFYP]"")
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFJUS=$P(%T2,";",5),SDFLEN=$P(%T2,";",3),%=$D(^DADD(DDNM,"DF","E")),%T1="" S:%#10 %T1=^("E") S DDLEN=$P(%T1,";")
+	S %=$D(^DADDT(TMNM,"DF","E")),%T7="" S:%#10 %T7=^("E") S TMLEN=$P(%T7,";"),%=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFPR=$P(%T2,";",6),%=$D(^DADD(DDNM,"DF","E")),%T1=""
+	S:%#10 %T1=^("E") S DDPR=$P(%T1,";",2),%=$D(^DADDT(TMNM,"DF","E")),%T7="" S:%#10 %T7=^("E") S TMPR=$P(%T7,";",2),%=$D(^DASD(SDNM,"D","F",SDFN,"H","S")),SDFHS="" S:%#10 SDFHS=^("S")
+	S %=$D(^DADD(DDNM,"DF","E")),%T1="" S:%#10 %T1=^("E") S DDHELPS=$P(%T1,";",3),%=$D(^DADDT(TMNM,"DF","E")),%T7="" S:%#10 %T7=^("E") S TMHELPS=$P(%T7,";",3)
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"H","T")),SDFHT="" S:%#10 SDFHT=^("T") S %=$D(^DADD(DDNM,"DF","HT")),DDHELP="" S:%#10 DDHELP=^("HT") S %=$D(^DADDT(TMNM,"DF","HT")),TMHELP="" S:%#10 TMHELP=^("HT")
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"AT",1)),SDFATT1="" S:%#10 SDFATT1=^(1) S %=$D(^DADD(DDNM,"DF","AT",1)),DDATT1="" S:%#10 DDATT1=^(1) S %=$D(^DADDT(TMNM,"DF","AT")),TMATT1="" S:%#10 TMATT1=^("AT")
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"VA",1)),SDFVAL1="" S:%#10 SDFVAL1=^(1) S %=$D(^DADD(DDNM,"DF","V",1)),DDVALID="" S:%#10 DDVALID=^(1) S %=$D(^DADDT(TMNM,"DF","V")),TMVALID="" S:%#10 TMVALID=^("V")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Line: "_SDFYP,?17,"Column: "_SDFXP,?34,"Justify: "_SDFJUS,?58,"Data Length: "_SDFLEN W:SDFLEN]"" " " W:DDLEN]"" "("_DDLEN_")" W:DDLEN=""&(TMLEN]"") "("_TMLEN_")"
+	G SEC15:'(SDFPR]""!(DDPR]"")!(TMPR]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Prompt: " G SEC16:'(SDFPR]"")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(SDFPR,%RPKPIT)
+	G SEC17:'(%ZZ1>69)
+	D NPG:$Y>%PL
+	S %ZZ2=$E(SDFPR,1,$ZP(SDFPR,69,%RPKPIT))
+	S %1=$P(SDFPR," ",1,$L(%ZZ2," ")-1) S:$ZL(%1)<50 %1=%ZZ2
+	W """"_%1 D NLN Q:%QT
+	W ?8,$P(SDFPR,%1,2)_""""
+SEC17	;
+	W:%ZZ1'>69 """"_SDFPR_"""" G SEC18:'(DDPR]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	S %ZZ1=$ZL(DDPR,%RPKPIT)
+	G SEC19:'(%ZZ1>69)
+	D NPG:$Y>%PL
+	S %ZZ2=$E(DDPR,1,$ZP(DDPR,69,%RPKPIT))
+	S %1=$P(DDPR," ",1,$L(%ZZ2," ")-1) S:$ZL(%1)<50 %1=%ZZ2
+	W ?8,"("_%1 D NLN Q:%QT
+	W ?8,$P(DDPR,%1,2)_")"
+SEC19	;
+	W:%ZZ1'>69 ?8,"("_DDPR_")"
+SEC18	;
+	G SEC20:'(DDPR=""&(TMPR]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	S %ZZ1=$ZL(TMPR,%RPKPIT)
+	G SEC21:'(%ZZ1>69)
+	D NPG:$Y>%PL
+	S %ZZ2=$E(TMPR,1,$ZP(TMPR,69,%RPKPIT))
+	S %1=$P(TMPR," ",1,$L(%ZZ2," ")-1) S:$ZL(%1)<50 %1=%ZZ2
+	W ?8,"("_%1 D NLN Q:%QT
+	W ?8,$P(TMPR,%1,2)_")"
+SEC21	;
+	W:%ZZ1'>69 ?8,"("_TMPR_")"
+SEC20	;
+SEC16	;
+	G SEC22:'(SDFPR="")
+	D NPG:$Y>%PL G SEC23:'(DDPR]"")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(DDPR,%RPKPIT)
+	G SEC24:'(%ZZ1>69)
+	D NPG:$Y>%PL
+	S %ZZ2=$E(DDPR,1,$ZP(DDPR,69,%RPKPIT))
+	S %1=$P(DDPR," ",1,$L(%ZZ2," ")-1) S:$ZL(%1)<50 %1=%ZZ2
+	W ?8,"("_%1 D NLN Q:%QT
+	W ?8,$P(DDPR,%1,2)_")"
+SEC24	;
+	W:%ZZ1'>69 ?8,"("_DDPR_")"
+SEC23	;
+	G SEC25:'(DDPR="")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(TMPR,%RPKPIT)
+	G SEC26:'(%ZZ1>69)
+	D NPG:$Y>%PL
+	S %ZZ2=$E(TMPR,1,$ZP(TMPR,69,%RPKPIT))
+	S %1=$P(TMPR," ",1,$L(%ZZ2," ")-1) S:$ZL(%1)<50 %1=%ZZ2
+	W ?8,"("_%1 D NLN Q:%QT
+	W ?8,$P(TMPR,%1,2)_")"
+SEC26	;
+	W:%ZZ1'>69 ?8,"("_TMPR_")"
+SEC25	;
+SEC22	;
+SEC15	;
+	S %1=0
+	G SEC27:'(SDFHS]""!(DDHELPS]"")!(TMHELPS]""))
+	D NPG:$Y>%PL
+	S %1=1
+SEC27	;
+	G SEC28:'(%1)
+	D NPG:$Y>%PL G SEC29:'(SDFHT]""!(DDHELP]"")!(TMHELP]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Help Text: " W:SDFHT]""&($ZL(SDFHT,%RPKPIT)<42) """"_SDFHT_"""" W:SDFHT=""&(DDHELP]"")&($ZL(DDHELP,%RPKPIT)<42) "("_DDHELP_")" W:SDFHT=""&(DDHELP="")&($ZL(TMHELP,%RPKPIT)<42) "("_TMHELP_")"
+SEC29	;
+	W ?47,"Help Screen: " W:SDFHS]"" """"_SDFHS_"""  " W:DDHELPS]"" "("_DDHELPS_")" W:SDFHS=""&(DDHELPS]"") "  " W:SDFHS=""&(TMHELPS]"") "("_TMHELPS_")" G SEC30:'(SDFHT]""!(DDHELP]"")!(TMHELP]""))
+	D NPG:$Y>%PL G SEC31:'(SDFHT]"")
+	D NPG:$Y>%PL G SEC32:'($ZL(SDFHT,%RPKPIT)'<42)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W """"_SDFHT_""""
+SEC32	;
+	G SEC33:'(DDHELP]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_DDHELP_")"
+SEC33	;
+	G SEC34:'(DDHELP=""&(TMHELP]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_TMHELP_")"
+SEC34	;
+SEC31	;
+	G SEC35:'(SDFHT="")
+	D NPG:$Y>%PL G SEC36:'($ZL(DDHELP,%RPKPIT)'<42)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_DDHELP_")"
+SEC36	;
+	G SEC37:'(TMHELP]""&(DDHELP]""!($ZL(TMHELP,%RPKPIT)'<42)))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_TMHELP_")"
+SEC37	;
+SEC35	;
+SEC30	;
+SEC28	;
+	G SEC38:'(SDFHT]""!(DDHELP]"")!(TMHELP]"")&'%1)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Help Text: " W:SDFHT]""&($ZL(SDFHT,%RPKPIT)<68) """"_SDFHT_"""" W:SDFHT=""&(DDHELP]"")&($ZL(DDHELP,%RPKPIT)<68) "("_DDHELP_")" W:SDFHT=""&(DDHELP="")&($ZL(TMHELP,%RPKPIT)<68) "("_TMHELP_")"
+	G SEC39:'(SDFHT]"")
+	D NPG:$Y>%PL G SEC40:'($ZL(SDFHT,%RPKPIT)'<68)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W """"_SDFHT_""""
+SEC40	;
+	G SEC41:'(DDHELP]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_DDHELP_")"
+SEC41	;
+	G SEC42:'(DDHELP=""&(TMHELP]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_TMHELP_")"
+SEC42	;
+SEC39	;
+	G SEC43:'(SDFHT="")
+	D NPG:$Y>%PL G SEC44:'($ZL(DDHELP,%RPKPIT)'<68)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_DDHELP_")"
+SEC44	;
+	G SEC45:'(TMHELP]""&(DDHELP]""!($ZL(TMHELP,%RPKPIT)'<68)))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "("_TMHELP_")"
+SEC45	;
+SEC43	;
+SEC38	;
+	G SEC46:'(SDFATT1]""!(DDATT1]"")!(TMATT1]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Attributes: " G SEC47:'(SDFATT1]"")
+	D NPG:$Y>%PL W SDFATT1 G SEC48:'(DDATT1]"")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(SDFATT1,%RPKPIT)+$ZL(DDATT1,%RPKPIT)
+	G SEC49:'(%ZZ1>63)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W ?11,"("_DDATT1_")"
+SEC49	;
+	W:%ZZ1'>63 "  ("_DDATT1_")"
+SEC48	;
+	G SEC50:'(DDATT1=""&(TMATT1]""))
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(SDFATT1,%RPKPIT)+$ZL(TMATT1,%RPKPIT)
+	G SEC51:'(%ZZ1>63)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W ?11,"("_TMATT1_")"
+SEC51	;
+	W:%ZZ1'>63 "  ("_TMATT1_")"
+SEC50	;
+SEC47	;
+	G SEC52:'(SDFATT1="")
+	D NPG:$Y>%PL G SEC53:'(DDATT1]"")
+	D NPG:$Y>%PL W "("_DDATT1_")"
+	S %ZZ1=$ZL(DDATT1,%RPKPIT)+$ZL(TMATT1,%RPKPIT)
+	G SEC54:'(TMATT1]""&(%ZZ1>61))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W ?11,"("_TMATT1_")"
+SEC54	;
+	W:TMATT1]""&(%ZZ1'>61) "  ("_TMATT1_")"
+SEC53	;
+	W:DDATT1="" "("_TMATT1_")"
+SEC52	;
+SEC46	;
+	G SEC55:'(SDFVAL1]""!(DDVALID]"")!(TMVALID]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Validations: " G SEC56:'(SDFVAL1]"")
+	D NPG:$Y>%PL W SDFVAL1 G SEC57:'(DDVALID]"")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(SDFVAL1,%RPKPIT)+$ZL(DDVALID,%RPKPIT)
+	G SEC58:'(%ZZ1>63)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W ?12,"("_DDVALID_")"
+SEC58	;
+	W:%ZZ1'>63 "  ("_DDVALID_")"
+SEC57	;
+	G SEC59:'(DDVALID=""&(TMVALID]""))
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(SDFVAL1,%RPKPIT)+$ZL(TMVALID,%RPKPIT)
+	G SEC60:'(%ZZ1>63)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W ?12,"("_TMVALID_")"
+SEC60	;
+	W:%ZZ1'>63 "  ("_TMVALID_")"
+SEC59	;
+SEC56	;
+	G SEC61:'(SDFVAL1="")
+	D NPG:$Y>%PL G SEC62:'(DDVALID]"")
+	D NPG:$Y>%PL W "("_DDVALID_")" G SEC63:'(TMVALID]"")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZL(DDVALID,%RPKPIT)+$ZL(TMVALID,%RPKPIT)
+	G SEC64:'(%ZZ1>61)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W ?12,"("_TMVALID_")"
+SEC64	;
+	W:%ZZ1'>61 "  ("_TMVALID_")"
+SEC63	;
+SEC62	;
+	G SEC65:'(DDVALID=""&(TMVALID]""))
+	D NPG:$Y>%PL W ?12,"("_TMVALID_")"
+SEC65	;
+SEC61	;
+SEC55	;
+SEC14	;
+	G SEC66:'($D(^DASD(SDNM,"D","F",SDFN,"AC",1)))
+	D NPG:$Y>%PL,NPG:$Y+3>%PL,NLN Q:%QT
+	W ?4,"-------------------------------",?36,"Actions",?44,"-------------------------------" S SDFCT=""
+REPL67	S SDFCT=$O(^DASD(SDNM,"D","F",SDFN,"AC",SDFCT)) G REP67:SDFCT="" S %=$D(^DASD(SDNM,"D","F",SDFN,"AC",SDFCT)),SDFACT="" S:%#10 SDFACT=^(SDFCT)
+	D NLN Q:%QT
+	W ?4,SDFACT
+	G REPL67
+REP67	;
+	D NLN Q:%QT  W ?4,"-----------------------------------------------------------------------" D NLN Q:%QT
+SEC66	;
+	D:'$D(^DASD(SDNM,"D","F",SDFN,"AC",1)) NLN Q:%QT  W:'$D(^DASD(SDNM,"D","F",SDFN,"AC",1)) ?4,"_______________________________________________________________________" D:'$D(^DASD(SDNM,"D","F",SDFN,"AC",1)) NLN Q:%QT
+SEC11	;
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%F2,%S2,%F3,%S3,%F4,%S4,%S5,%T1,%T2,%T3,%T4,%T5,%T6,%T7
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N DDATT1,DDHELP,DDHELPS,DDLEN,DDPR,DDTMPL,DDVALID,SDACT1,SDACT2,SDACT3,SDATT,SDATTCT,SDCCOM,SDCLC,SDDES,SDFACT,SDFATT1,SDFCT,SDFDES,SDFDN
+	N SDFHS,SDFHT,SDFJUS,SDFL,SDFLEN,SDFN,SDFPR,SDFVAL1,SDFXP,SDFYP,SDGROUP,SDHC,SDHE,SDHLC,SDHLE,SDHV,SDLL,SDMR,SDNM,SDOPCF
+	N SDOPHD,SDTYPE,TMATT1,TMHELP,TMHELPS,TMLEN,TMPR,TMVALID
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1 Q:%F1  D H2 Q:%F2  D H3 Q:%F3  D H4
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

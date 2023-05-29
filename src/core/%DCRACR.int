@@ -1,0 +1,160 @@
+ROUTINE %DCRACR [Type=INT,LanguageMode=6]
+%DCRACR	;V6.1;19-Nov-92  6:06 PM;UTPRT Multiple Template Definitions
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRACR" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S TMNM=""
+K1	S TMNM=$O(^DADDT(TMNM)) I TMNM="" G K0
+	S %FND=$D(^DATG($J,"U","T",TMNM))
+	G K1:'%FND
+	S %V=TMNM D CVT S %S1=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%CNT)=TMNM
+	G K1
+K0	S ^DATG($J,"R")="UTPRT,"_%DTR_","_%TMR_","_%CNT
+	K TMNM,%S1
+PRT	D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRACR",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S TMNM=^DATG($J,"R",%S1,%S2)
+	S %=$D(^DADDT(TMNM,"A")),TMDES="" S:%#10 TMDES=$P(^("A"),";",2) S %=$D(^DADDT(TMNM,"H")),%T1="" S:%#10 %T1=^("H") S TMHIC=$P(%T1,";",2),TMHIE=$P(%T1,";",3),TMHILE=$P(%T1,";",4),TMHILET=$P(%T1,";",5)
+	S TMHIV=$P(%T1,";"),%=$D(^DADDT(TMNM,"B")),%T3="" S:%#10 %T3=^("B") S TMACT=$P(%T3,";"),TMTYPE=$P(%T3,";",2),%=$D(^DADDT(TMNM,"DF","E")),%T2="" S:%#10 %T2=^("E") S TMLEN=$P(%T2,";"),TMPR=$P(%T2,";",2)
+	S %=$D(^DADDT(TMNM,"DF","AT")),TMATT1="" S:%#10 TMATT1=^("AT") S %=$D(^DADDT(TMNM,"DF","V")),TMVALID="" S:%#10 TMVALID=^("V") S %=$D(^DADDT(TMNM,"TR","I")),TMTRIN="" S:%#10 TMTRIN=^("I")
+	S %=$D(^DADDT(TMNM,"TR","O")),TMTROUT="" S:%#10 TMTROUT=^("O") S %=$D(^DADDT(TMNM,"DF","HT")),TMHELP="" S:%#10 TMHELP=^("HT") S %=$D(^DADDT(TMNM,"DF","E")),%T2="" S:%#10 %T2=^("E")
+	S TMHELPS=$P(%T2,";",3)
+	I %F1 D C1,H1 S %F1=0 G S0:%QT
+	D D G S0:%QT,S2
+C1	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%S2,%T1,%T2,%T3,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRACR",%ECNT=%ECNT+1 G S2
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZWidth("DASL",%RPKPIT)\2+39,"DASL",?-$ZWidth("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZWidth("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZWidth("テンプレート 定義",%RPKPIT)\2+39,"テンプレート 定義" D NLN0 Q:%QT  W "________________________________________________________________________________" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+H1	Q
+T1	Q
+D	S %HD=0 D NPG:$Y>%PL,NPG:$Y+7>%PL,NPG:$Y+7>%PL,NLN Q:%QT
+	W "Template Name: "_TMNM,?35,"Description: "_TMDES D NLN Q:%QT
+	W "Created by: "_TMHIC,?19,"Edited by: "_TMHIE," on " S %DTI=TMHILE D DTIX^%DAUDTTM W %DTX," " S %TMI=TMHILET D TMIX^%DAUDTTM W %TMX,?59,"Version: "_TMHIV D NLN Q:%QT
+	W "Active? "_TMACT,?19,"Data Type: "_TMTYPE,?44,"Data Length: "_TMLEN G SEC11:'(TMPR]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Prompt: """
+	S %ZZ1=$ZWidth(TMPR,%RPKPIT)
+	G SEC12:'(%ZZ1=71)
+	D NPG:$Y>%PL W $P(TMPR," ",1,$L(TMPR," ")-2) D NLN Q:%QT
+	W ?9,$P(TMPR," ",$L(TMPR," ")-1,99)
+SEC12	;
+	W:%ZZ1<71 TMPR W """"
+SEC11	;
+	G SEC13:'(TMATT1]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Attributes: "_TMATT1
+SEC13	;
+	G SEC14:'(TMVALID]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Validation: "_TMVALID
+SEC14	;
+	G SEC15:'(TMTRIN]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Input Transform: "
+	S %ZZ1=$ZWidth(TMTRIN,%RPKPIT)
+	G SEC16:'(%ZZ1>63)
+	D NPG:$Y>%PL
+	S %ZZ2=$L($E(TMTRIN,1,$ZPosition(TMTRIN,63,%RPKPIT))," ")-1
+	S %1=$P(TMTRIN," ",1,%ZZ2)
+	W %1 D NLN Q:%QT
+	W ?16,$P(TMTRIN,%1,2)
+SEC16	;
+	W:%ZZ1'>63 TMTRIN
+SEC15	;
+	G SEC17:'(TMTROUT]"")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Output Transform: "
+	S %ZZ1=$ZWidth(TMTROUT,%RPKPIT)
+	G SEC18:'(%ZZ1>62)
+	D NPG:$Y>%PL
+	S %ZZ2=$L($E(TMTROUT,1,$ZPosition(TMTROUT,62,%RPKPIT))," ")-1
+	S %1=$P(TMTROUT," ",1,%ZZ2)
+	W %1 D NLN Q:%QT
+	W ?17,$P(TMTROUT,%1,2)
+SEC18	;
+	W:%ZZ1'>62 TMTROUT
+SEC17	;
+	G SEC19:'(TMHELP]""!(TMHELPS]""))
+	D NPG:$Y>%PL,NLN Q:%QT
+	W:TMHELP]"" "Help Text: " G SEC20:'(TMHELPS="")
+	D NPG:$Y>%PL
+	S %ZZ1=$ZWidth(TMHELP,%RPKPIT)
+	G SEC21:'(%ZZ1>69)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W TMHELP
+SEC21	;
+	W:%ZZ1'>69 TMHELP
+SEC20	;
+	G SEC22:'(TMHELP="")
+	D NPG:$Y>%PL W "Help Screen: "_TMHELPS
+SEC22	;
+	G SEC23:'(TMHELP]""&(TMHELPS]""))
+	D NPG:$Y>%PL
+	S %ZZ1=$ZWidth(TMHELP,%RPKPIT)
+	W:%ZZ1'>46 TMHELP W ?59,"Help Screen: "_TMHELPS G SEC24:'(%ZZ1>46)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W TMHELP
+SEC24	;
+SEC23	;
+SEC19	;
+	G SEC25:'($D(^DADDT(TMNM,"CM")))
+	D NPG:$Y>%PL,NLN Q:%QT
+	S TMCLC=""
+REPL26	S TMCLC=$O(^DADDT(TMNM,"CM",TMCLC)) G REP26:TMCLC="" S %=$D(^DADDT(TMNM,"CM",TMCLC)),TMCCOM="" S:%#10 TMCCOM=^(TMCLC)
+	D NLN Q:%QT
+	W TMCCOM
+	G REPL26
+REP26	;
+SEC25	;
+	D NLN Q:%QT  W "________________________________________________________________________________" D NLN Q:%QT
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%S2,%T1,%T2,%T3
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N TMACT,TMATT1,TMCCOM,TMCLC,TMDES,TMHELP,TMHELPS,TMHIC,TMHIE,TMHILE,TMHILET,TMHIV,TMLEN,TMNM,TMPR,TMTRIN,TMTROUT,TMTYPE,TMVALID
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12",%PC=1&('%SCP):"$C(0)",1:"#,$C(0)")
+	D H0 Q:%F0  D H1
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZCVT(%V,"U")
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

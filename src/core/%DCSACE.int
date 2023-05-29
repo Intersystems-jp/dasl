@@ -1,0 +1,222 @@
+ROUTINE %DCSACE [Type=INT,LanguageMode=6]
+%DCSACE	;V6.1;19-May-93  4:12 PM;HDISPLA Help text for DISPLAY
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=5:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %beA="" F %Z=0,5:1:23 S $P(%beA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HDISPLA",%L(5)="%DCSACE",%L(24)="",%MSG="",%beD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "フォーマット（ Format ）                             ",!
+	W !
+	W "    DISPLAY｛/修飾子｝｛<SP>｛フィールド｛:後付け条件｝｝｝    （ 短縮形: DS ）",!
+	W !
+	W "        パラメータ",!
+	W !
+	W "              /修飾子    ： 決められた修飾子のいずれか",!
+	W !
+	W "              後付け条件 ： オプションの後付け条件式",!
+	W !
+	W "              フィールド ： オプションの表示仕様を変更するフィールド名",!
+	W !
+	W "        DISPLAYアクションは、フィールドに対するデフォルトのビデオ出力特性を変",!
+	W "      更します。",!
+	W !
+	W "        例（ Examples ）         DISPLAY/BOLD AGE:(%RES>50)",!
+	W !
+	W "                                 DISPLAY/REVERSE",!
+	G RET
+2	;
+	W "        DISPLAY修飾子は以下のものです。",!
+	W !
+	W "          /BELL     -- ベルと共に表示",!
+	W !
+	W "          /BLINK    -- 点滅文字で表示",!
+	W !
+	W "          /BOLD     -- 高輝度文字で表示",!
+	W !
+	W "          /REVERSE  -- 反転表示",!
+	W !
+	W "          /UNDER    -- 下線を表示",!
+	W !
+	W "          /NORMAL   -- 通常の表示",!
+	F %=14:1:18 W !
+	G RET
+3	;
+	W "        DISPLAYアクションとビデオアトリビュート",!
+	W !
+	W "            DISPLAYおよびその修飾子は、BLINK、BOLD、UNDERおよびREVERSE表示アト",!
+	W "          リビュートと同じアクションを実行します。しかし、以下の点で異なります",!
+	W !
+	W "             o  表示アトリビュートのいずれか1つを用いる場合、DASLソフトウェア",!
+	W "                は、そのフィールドへと分岐する時には、毎回そのアトリビュートを",!
+	W "                用いてフィールドを表示します。",!
+	W !
+	W "             o  DISPLAYアクションを使用する場合、初回の表示の際には、DASLソフ",!
+	W "                トウェアは、指定の表示アトリビュートでフィールドを表示しますが",!
+	W "                次回からの表示においては、DISPLAYアクションを再発行しない限り、",!
+	W "                そうした表示特性でフィールドを表示することはありません。",!
+	F %=14:1:18 W !
+	G RET
+4	;
+	W "        DISPLAYスクリーン・アクション",!
+	W !
+	W "            DISPLAYアクションをスクリーン・アクションとして使用の際には、フィ",!
+	W "          ールド引数を指定しなければなりません。",!
+	W !
+	W "            DISPLAYをフィールド引数付きで使用すると、DASLソフトウェアは指定の",!
+	W "          フィールドの表示の特性を設定します。",!
+	W !
+	W "        DISPLAYフィールド・アクション",!
+	W !
+	W "            フィールド・アクションとして使用の際には、フィールド引数を指定する",!
+	W "          必要はありません。",!
+	W !
+	W "            DISPLAYを引数なしで使用すると、DASLソフトウェアは、現フィールドの",!
+	W "          表示の特性を設定します。",!
+	F %=16:1:18 W !
+	G RET
+5	;
+	W "            DISPLAYによって影響を受ける値は、フィールドのデータ長によって異な",!
+	W "          ります。",!
+	W !
+	W "            o  フィールドがゼロ（0）のデータ長を持つ場合、DISPLAY修飾子はプロ",!
+	W "               ンプトに対してのみ用いられます。",!
+	W !
+	W "            o  フィールドが1以上のデータ長を持つ場合、DISPLAY修飾子は、フィー",!
+	W "               ルドの値に対してしか用いられません。",!
+	W !
+	W "        要求フィールドは、以下の場合に限りスクリーンに表示されます。",!
+	W !
+	W "           o  NXTFLDコマンドで分岐される場合",!
+	W !
+	W "           o  DISPLAYアクションで表示される場合",!
+	W !
+	W "        フィールドがDISPLAYアクションで表示されている場合には、ERASEアクション",!
+	W "      で消去されるまで表示は続きます。",!
+	F %=17:1:17 W !
+RET	S %beC="5 ページ中 "_%beD_" ページ; <RETURN> を押すと "_$S(%beD=5:"終了",1:"続行")_"します。"
+	W %E,"[",40-($Zwidth(%beC)+1\2),"C",%beC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %beE=%beD
+READ	S %beB=1,%beB(0)="E",%W="1;23;"_(41+($Zwidth(%beC)+1\2)+($Zwidth(%beC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %beD=$S(%beD=1:1,1:%beD-1)
+	E  I %RES?1N.N S %beD=$S(%RES>5:5,+%RES=0:1,1:+%RES)
+	E  S %beD=%beD+1
+	I %beD>5 G E
+	I %beD=%beE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%beD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSACE" G @("R^"_%L(%Z))
+	W %E,"[5;1H"
+	F %Z=5:1:23 S %O(0)=1
+	G @%beD
+E	I %O W %E,"[5;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,5:1:23 S %O(%Z)=0,%L(%Z)=$P(%beA,",",%Z+1)
+	K %beA,%beB,%beE,%beD,%beC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l5;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="5;23"!($E(%SCN)'="l") W %E,"[5;23r"
+	S %SCN="l5;23",%LL=80 Q
+I	I $D(%beB(%beB-1)),%beB(%beB-1)=$P(%W,";",5) S %beB=%beB-1
+	E  S %beB(%beB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSACE" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$Zwidth(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$Zposition(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$Zwidth(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPZFWCHARZZHWKATAZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$Zwidth(%RES)+1,$S(%W<$Zwidth(%OLD):%W,1:$Zwidth(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%beB(0)=%beB(%beB) %beB(1)=%beB(0),%beB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$Zwidth(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %beB=%beB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$Zposition(%,%W)),$S(%W-$Zwidth(%)'<1:$E(%U(%U),1,%W-$Zwidth(%)),1:"") Q
+J	S:$Zwidth(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$Zposition(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%beB(%beB)=%beB(0),@%beB(0)
+	I %F="44"&%F S:%beB>1 %beB=%beB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%beB(%beB)'="" @%beB(%beB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q
