@@ -1,0 +1,412 @@
+ROUTINE %DCSAUK [Type=INT,LanguageMode=6]
+%DCSAUK	;V6.1;19-May-93  5:00 PM;TABLEX Edit query table - FKEY
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	S %tkB="" F %Z=0,1:1:23 S $P(%tkB,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="%TABLEX" F %Z=1,4,6,8,10,12,14,16:1:20,22,23 S %L(%Z)="%DCSAUK"
+	S %L(24)="",%U=2,%TM=%TMO W %E,"[1;1H",%E,"[J"
+U0	D U,Q G W
+S	G E:%EX,U0:'%O U 0:PACK D Q1:%SCN'="l;"
+	I %O(23) W:%tkH %E,"[23;16H",$J("",29) W:%tkN %E,"[23;17H",$J("",64) W:%tkV %E,"[23;60H",$J("",21)
+	D U D:'%O(1) 1 D:'%O(4) 4 D:%O(4) ES,CS D:'%O(6) 6 D:%O(6) EC D:'%O(8) 8 D:%O(8) DQ D:'%O(10) 10 D:%O(10) DU D:'%O(12) 12 D:%O(12) FE D:'%O(14) 14 D:'%O(16) 16
+	D:%O(16) AW D:'%O(17) 17 D:%O(17) BA D:'%O(18) 18 D:%O(18) BE D:'%O(19) 19 D:%O(19) BI D:'%O(20) 20 D:%O(20) BM D:'%O(23) 23 D:%O(23) DE U 0:NOPACK F %Z=1,4,6,8,10,12,14,16:1:20,22,23 S %O(%Z)=1
+W	S %MSG="",%tkA=1,%tkA(0)="AT"
+	S (%MODTBL,%CLTBL)=0,%NM="Table" S:'$D(%FPV) %FPV="@" G ET
+U	S TBCSC1="",TBCSC2="",TBCSC3="",TBCSC4="",TBCSC5="",%tkD=0,%tkC="",%tkF=0,%tkE="",%tkH=0,%tkG="",%tkJ=0,%tkI="",TBDES="",%tkK=0,GNEQ="",%tkM=1
+	S %tkL="",TBFKEY="",TBGROUP="",TBKEY="",%tkN=0,%tkP=0,%tkO="",%tkR=0,%tkQ="",TBNM="",%tkT=0,%tkS="C",TBPRV="",%tkU=0,GNSEQ="",%tkV=0,TBHC="",TBHE=""
+	S USRID="" Q
+AA	S %T="",%D=$D(^DASYU("U","D",USR,"E"))#2 S:%D %T=^("E") S %V=%T Q
+AB	S %T="",%D=$D(^DATD(TBNM,"H"))#2 S:%D %T=^("H") S %V=%T Q
+AC	S %T="",%D=$D(^DATD(TBNM,"REF"))#2 S:%D %T=^("REF") S %V=%T Q
+AD	S %T="",%D=$D(^DATD(TBNM,"SC1"))#2 S:%D %T=^("SC1") S %V=%T Q
+AE	S %T="",%D=$D(^DATD(TBNM,"SC2"))#2 S:%D %T=^("SC2") S %V=%T Q
+AF	S %T="",%D=$D(^DATD(TBNM,"SC3"))#2 S:%D %T=^("SC3") S %V=%T Q
+AG	S %T="",%D=$D(^DATD(TBNM,"SC4"))#2 S:%D %T=^("SC4") S %V=%T Q
+AH	S %T="",%D=$D(^DATD(TBNM,"SC5"))#2 S:%D %T=^("SC5") S %V=%T Q
+1	F %I=0,1 W %E,"[",1+%I,";13H",%E,"#",3+%I,"",%E,"[1mDefine Tables",%E,"[0m"
+	Q
+4	W %E,"[4;3HTable Name: ",$E(TBNM,1,$ZP(TBNM,18)),$S(18-$ZL(TBNM)'<1:$E(%U(2),1,18-$ZL(TBNM)),1:""),%E,"[4;36HDescription: "
+	W $E(TBDES,1,$ZP(TBDES,35)),$S(35-$ZL(TBDES)'<1:$E(%U(2),1,35-$ZL(TBDES)),1:"") Q
+6	W %E,"[6;7HPrimary Key(s): ",$E(TBKEY,1,$ZP(TBKEY,40)),$S(40-$ZL(TBKEY)'<1:$E(%U(2),1,40-$ZL(TBKEY)),1:"") Q
+8	W %E,"[8;7HForeign Key(s): ",$E(TBFKEY,1,$ZP(TBFKEY,40)),$S(40-$ZL(TBFKEY)'<1:$E(%U(2),1,40-$ZL(TBFKEY)),1:"") Q
+10	W %E,"[10;13HGroup(s): ",$E(TBGROUP,1,$ZP(TBGROUP,43)),$S(43-$ZL(TBGROUP)'<1:$E(%U(2),1,43-$ZL(TBGROUP)),1:"") Q
+12	W %E,"[12;7HPrivilege Code: ",$E(TBPRV,1,$ZP(TBPRV,25)),$S(25-$ZL(TBPRV)'<1:$E(%U(2),1,25-$ZL(TBPRV)),1:"") Q
+14	W %E,"[14;18H",%E,"[1mComments that display on Schema Diagram",%E,"[0m" Q
+16	D AW Q
+17	D BA Q
+18	D BE Q
+19	D BI Q
+20	D BM Q
+22	D EK,EO,BY,EW,CO,FQ,DA,CG Q
+23	D DE,CK,EG,FY Q
+	;CEDIT
+AP	;
+	S %TBNM=TBNM D ^%DCSALY,Q G EL
+	;CLEAN
+AT	;
+	S %CLTBL=1 G DZ:%MODTBL L:TBNM]"" -(^DATD(TBNM))
+	K GNLKMSG,GNWAIT,TBCSC1,TBCSC2,TBCSC3,TBCSC4,TBCSC5,TBDES,TBFKEY,TBGROUP,TBHC,TBHE,TBHLE,TBHLET,TBKEY,TBNM,TBPRV,USRID
+	K DDNM,TMNM,%NM,%MODTBL,%CLTBL,%RESEQ,%NEWT,%MODCOL,%RESEQ,%TBNEW S GRNM="" G E
+	;COM1
+AW	W %E,"[16;4H",$E(TBCSC1,1,$ZP(TBCSC1,75)),$S(75-$ZL(TBCSC1)'<1:$E(%U(2),1,75-$ZL(TBCSC1)),1:"") Q
+AX	S %W="75;16;4;2;AX;S;COM1;;59;1;",%OLD=TBCSC1 U 0:NOCON D I G F:%F,AY:%T
+	G AY:%REST?.E S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G AX
+AY	D B
+	S %LE="" S TBCSC1=%RES ;
+	G BB:%RES'="",FR:%RES=""&(TBCSC2="") S TBCSC1=TBCSC2 D AW S TBCSC2=TBCSC3 D BA S TBCSC3=TBCSC4 D BE S TBCSC4=TBCSC5 D BI S TBCSC5="" D BM G AX
+	;COM2
+BA	W %E,"[17;4H",$E(TBCSC2,1,$ZP(TBCSC2,75)),$S(75-$ZL(TBCSC2)'<1:$E(%U(2),1,75-$ZL(TBCSC2)),1:"") Q
+BB	S %W="75;17;4;2;BB;S;COM2;;59;1;",%OLD=TBCSC2 U 0:NOCON D I G F:%F,BC:%T
+	G BC:%REST?.E S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G BB
+BC	D B
+	S %LE="" S TBCSC2=%RES ;
+	G BF:%RES'="",FR:%RES=""&(TBCSC3="") S TBCSC2=TBCSC3 D BA S TBCSC3=TBCSC4 D BE S TBCSC4=TBCSC5 D BI S TBCSC5="" D BM G BB
+	;COM3
+BE	W %E,"[18;4H",$E(TBCSC3,1,$ZP(TBCSC3,75)),$S(75-$ZL(TBCSC3)'<1:$E(%U(2),1,75-$ZL(TBCSC3)),1:"") Q
+BF	S %W="75;18;4;2;BF;S;COM3;;59;1;",%OLD=TBCSC3 U 0:NOCON D I G F:%F,BG:%T
+	G BG:%REST?.E S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G BF
+BG	D B
+	S %LE="" S TBCSC3=%RES ;
+	G BJ:%RES'="",FR:%RES=""&(TBCSC4="") S TBCSC3=TBCSC4 D BE S TBCSC4=TBCSC5 D BI S TBCSC5="" D BM G BF
+	;COM4
+BI	W %E,"[19;4H",$E(TBCSC4,1,$ZP(TBCSC4,75)),$S(75-$ZL(TBCSC4)'<1:$E(%U(2),1,75-$ZL(TBCSC4)),1:"") Q
+BJ	S %W="75;19;4;2;BJ;S;COM4;;59;1;",%OLD=TBCSC4 U 0:NOCON D I G F:%F,BK:%T
+	G BK:%REST?.E S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G BJ
+BK	D B
+	S %LE="" S TBCSC4=%RES ;
+	G BN:%RES'="",FR:%RES=""&(TBCSC5="") S TBCSC4=TBCSC5 D BI S TBCSC5="" D BM G BJ
+	;COM5
+BM	W %E,"[20;4H",$E(TBCSC5,1,$ZP(TBCSC5,75)),$S(75-$ZL(TBCSC5)'<1:$E(%U(2),1,75-$ZL(TBCSC5)),1:"") Q
+BN	S %W="75;20;4;2;BN;S;COM5;;59;1;",%OLD=TBCSC5 U 0:NOCON D I G F:%F,BO:%T
+	G BO:%REST?.E S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G BN
+BO	D B
+	S %LE="" S TBCSC5=%RES ;
+	G FR
+	;COMH
+	;COMMENT
+BV	;
+	D ^%DCSAMG,Q G EL
+	;COPY
+BY	W:%tkD %E,"[22;21HCopy to: ",$E(%tkC,1,$ZP(%tkC,30)),$S(30-$ZL(%tkC)'<1:$E(%U(2),1,30-$ZL(%tkC)),1:"") Q
+BZ	I '%EX S %tkD=1_(%tkD#10) D BY:%tkD=10
+	S %W="30;22;30;2;BZ;;COPY;;59;1;",%OLD=%tkC D I G F:%EX,CA:%T!%F
+	G CA:%REST?1U.13UN S %MSG="形式が不適当です。"
+	D J1 S:%MSG'="" %LE=%RES G BZ
+CA	I '%F D B
+	S %LE="" S %tkD=%tkD#10 W:'%tkD %E,"[22;21H",$J("",39)
+	G F:%F S %tkC=%RES ;
+	G EL:%RES="" S %TBNEW=%RES
+	I %RES=TBNM S %F=0,%MSG="テーブル'"_TBNM_"'は自分自身にはコピーできません。",%tkA=%tkA-1,%tkC=%OLD D J1,BY G BZ
+	G CD:'$D(^DATD(TBNM,"C","C",%RES))#2 S %tkG=%RES_" は既に定義されています。" D CK S %tkH=1 D CK W $C(7) G CH
+	;COPY2
+CD	;
+	S %tkV=1 D FY S ^%JOURNAL="1;TABLEX,COPY2;"_%OPN D TCOPY^%DAQDUTL S ^%JOURNAL="0;TABLEX,COPY2;"_%OPN W:%tkV %E,"[23;60H",$J("",21) S %tkV=0,%tkC="" U 0:PACK
+	D BY U 0:NOPACK G EL
+	;COPYD
+CG	W:%tkF %E,"[22;45HOk to overwrite? ",$E(%tkE,1,$ZP(%tkE,1)),$S(1-$ZL(%tkE)'<1:$E(%U(2),1,1-$ZL(%tkE)),1:"") Q
+CH	I '%EX S %tkF=1_(%tkF#10) D CG:%tkF=10
+	S %W="1;22;62;2;CH;R;COPYD;;59;1;",%OLD=%tkE D I G F:%EX,CI:%T!%F
+	D L G CI:$T
+	D J1 S:%MSG'="" %LE=%RES G CH
+CI	I '%F D B
+	S %LE="" S %tkF=%tkF#10 W:'%tkF %E,"[22;45H",$J("",18)
+	G F:%F S %tkE=%RES ;
+	W:%tkH %E,"[23;16H",$J("",29) S %tkH=0,%tkG="",%tkE="" U 0:PACK D CG U 0:NOPACK G CD:%RES="Y" S %tkC="" U 0:PACK D BY U 0:NOPACK G EL
+	;COPYMSG
+CK	W:%tkH %E,"[23;16H",%E,"[1m",$E(%U(1),1,$ZP(%U(1),29-$ZL(%tkG))),%tkG,%E,"[0m" Q
+CKx	W %E,"[23;16H",%E,"[1m",$E(%tkG,1,$ZP(%tkG,29)),$S(29-$ZL(%tkG)'<1:$E(%U(1),1,29-$ZL(%tkG)),1:""),%E,"[0m" Q
+	;DEL
+CO	W:%tkJ %E,"[22;27HOK to delete this table? ",$E(%tkI,1,$ZP(%tkI,1)),$S(1-$ZL(%tkI)'<1:$E(%U(2),1,1-$ZL(%tkI)),1:"") Q
+CP	I '%EX S %tkJ=1_(%tkJ#10) D CO:%tkJ=10
+	S %W="1;22;52;2;CP;R;DEL;;59;1;",%OLD=%tkI D I G F:%EX,CQ:%T!%F
+	D L G CQ:$T
+	D J1 S:%MSG'="" %LE=%RES G CP
+CQ	I '%F D B
+	S %LE="" S %tkJ=%tkJ#10 W:'%tkJ %E,"[22;27H",$J("",26)
+	G F:%F S %tkI=%RES ;
+	S %tkI="" U 0:PACK D CO U 0:NOPACK G EL:%RES="N" S ^%JOURNAL="1;TABLEX,DEL;"_%OPN D TDEL^%DAQDUTL S ^%JOURNAL="0;TABLEX,DEL;"_%OPN,%MODTBL=0 G FJ
+	;DESC
+CS	W %E,"[4;49H",$E(TBDES,1,$ZP(TBDES,35)),$S(35-$ZL(TBDES)'<1:$E(%U(2),1,35-$ZL(TBDES)),1:"") Q
+CT	S %W="35;4;49;2;CT;R;DESC;;59;1;",%OLD=TBDES U 0:NOCON D I G F:%F
+CU	D B
+	S %LE="" S TBDES=%RES ;
+	G ED
+	;DEVICE
+CX	;
+	S %QUTL=%PGMR=0
+	I %PGMR D ^%DCSAAW
+	I '%PGMR D ^%DCSAHZ
+	K %PARM G EL
+	;EQ
+DA	W:%tkK %E,"[22;32HE.修正  Q.終了: ",$E(GNEQ,1,$ZP(GNEQ,1)),$S(1-$ZL(GNEQ)'<1:$E(%U(2),1,1-$ZL(GNEQ)),1:"") Q
+DB	I '%EX S %tkK=1_(%tkK#10) D DA:%tkK=10
+	S %W="1;22;48;2;DB;R;EQ;;59;1;",%OLD=GNEQ D I G F:%EX,DC:%T!%F
+	S %=",E,Q," D T G DC:%MSG=""
+	D J1 S:%MSG'="" %LE=%RES G DB
+DC	I '%F D B
+	S %LE="" S %tkK=%tkK#10 W:'%tkK %E,"[22;32H",$J("",17)
+	G F:%F S GNEQ=%RES ;
+	G FJ:%RES="Q" S GNEQ="" U 0:PACK D DA U 0:NOPACK S %tkA(0)="DB" G CT
+	;ERR
+DE	W:%tkM %E,"[23;1H",$E(%U(1),1,$ZP(%U(1),79-$ZL(%tkL)\2)),%tkL,$E(%U(1),1,$ZP(%U(1),80-$ZL(%tkL)\2)) Q
+DEx	W %E,"[23;1H",$E(%tkL,1,$ZP(%tkL,79)),$S(79-$ZL(%tkL)'<1:$E(%U(1),1,79-$ZL(%tkL)),1:"") Q
+	;EVAL
+DJ	;
+	D AC S %FND=%D G DJ1:'%D S TBGROUP=$P(%T,";"),TBKEY=$P(%T,";",2),TBDES=$P(%T,";",3),TBPRV=$P(%T,";",4) D AD S TBCSC1=%T D AE S TBCSC2=%T D AF
+	S TBCSC3=%T D AG S TBCSC4=%T D AH S TBCSC5=%T U 0:PACK D CS,EC,DU,FE,AW,BA,BE,BI,BM U 0:NOPACK
+DJ1	;
+	G EL
+	;FILE
+DN	;
+	S %MODTBL=1,^%JOURNAL="1;TABLEX,FILE;"_%OPN D AC S $P(%V,";",1,4)=TBGROUP_";"_TBKEY_";"_TBDES_";"_TBPRV S:%V'=%T!'%F ^DATD(TBNM,"REF")=%V
+	D AD S:TBCSC1'=%T!'%F ^DATD(TBNM,"SC1")=TBCSC1
+	D AE S:TBCSC2'=%T!'%F ^DATD(TBNM,"SC2")=TBCSC2
+	D AF S:TBCSC3'=%T!'%F ^DATD(TBNM,"SC3")=TBCSC3
+	D AG S:TBCSC4'=%T!'%F ^DATD(TBNM,"SC4")=TBCSC4
+	D AH S:TBCSC5'=%T!'%F ^DATD(TBNM,"SC5")=TBCSC5
+	S ^%JOURNAL="0;TABLEX,FILE;"_%OPN G EL
+	;FKEY
+DQ	W %E,"[8;23H",$E(TBFKEY,1,$ZP(TBFKEY,40)),$S(40-$ZL(TBFKEY)'<1:$E(%U(2),1,40-$ZL(TBFKEY)),1:"") Q
+DR	S %W="40;8;23;2;DR;;FKEY;;59;1;",%OLD=TBFKEY D I
+	I %F=24 S (%F,%T)="",%RES="*"
+	G F:%F,DS:%T
+	S %CD="L,",%PR="Foreign Key(s): ",%XL="^DADD;KEY;",%XT="         Name      Description",%XD="DDNM",%XA=""
+	S %XL(1)="??24,$P($G(^DADD(DDNM,""A"")),"";"",2)"
+	S %XV(1)="?$P($G(^DADD(DDNM,""B"")),"";"")'=""Y"""
+	S %XPOP="13,5,11,48" D ^%DASDLU,Q G F:%EX
+DS	D J S:%MSG]"" %LE=%RES G:%MSG]"" DR D B
+	S %LE="" S TBFKEY=%RES ;
+	G DV
+	;GROUP
+DU	W %E,"[10;23H",$E(TBGROUP,1,$ZP(TBGROUP,43)),$S(43-$ZL(TBGROUP)'<1:$E(%U(2),1,43-$ZL(TBGROUP)),1:"") Q
+DV	S %W="43;10;23;2;DV;R;GROUP;;59;1;",%OLD=TBGROUP D I
+	I %F=24 S (%F,%T)="",%RES="*"
+	G F:%F,DW:%T
+	S %CD="L,",%PR="Group(s): ",%XL="^DAGR;KEY;",%XT="         Name      Description",%XD="GRNM",%XA=""
+	S %XL(1)="??20,$P($G(^DAGR(GRNM,""E"")),"";"")"
+	S %XV(1)="?$P($G(^DAGR(GRNM,""E"")),"";"",2)'=""Y"""
+	S %XPOP="13,5,11,45" D ^%DASDLU,Q G F:%EX,DW:%MSG="" G DW:%RES="*"&(%MSG]"")
+	S %MSG="" D GRP^%DASDUTL G F:%EX
+DW	D J S:%MSG]"" %LE=%RES G:%MSG]"" DV D B
+	S %LE="" S TBGROUP=%RES ;
+	G FF
+	;HISTORY
+DZ	;
+	S TBHLE=+$H,TBHLET=$P($H,",",2),USRID="",%MODTBL=0,USR=%USR
+	G DZ1:'(%USR]"") D AA S %FND=%D G DZ1:'%D S USRID=$P(%T,";") D AB S TBHC=$P(%T,";",2),TBHE=$P(%T,";",3)
+DZ1	;
+	S:%USR]"" TBHE=USRID S:TBHC="" TBHC=USRID S ^%JOURNAL="1;TABLEX,HISTORY;"_%OPN D AB S $P(%V,";",2,4)=TBHC_";"_TBHE_";"_TBHLE,$P(%V,";",6)=TBHLET
+	S:%V'=%T!'%F ^DATD(TBNM,"H")=%V
+	S ^%JOURNAL="0;TABLEX,HISTORY;"_%OPN G AT:%CLTBL L:TBNM]"" -(^DATD(TBNM)) G S
+	;KEY
+EC	W %E,"[6;23H",$E(TBKEY,1,$ZP(TBKEY,40)),$S(40-$ZL(TBKEY)'<1:$E(%U(2),1,40-$ZL(TBKEY)),1:"") Q
+ED	S %W="40;6;23;2;ED;;KEY;;59;1;",%OLD=TBKEY D I
+	I %F=24 S (%F,%T)="",%RES="*"
+	G F:%F,EE:%T
+	S %CD="L,",%PR="Primary Key(s): ",%XL="^DADDX(""DDREF"");KEY;",%XT="",%XD="TBKEY",%XA=""
+	S %XPOP="13,5,11,50" D ^%DASDLU,Q G F:%EX
+EE	D J S:%MSG]"" %LE=%RES G:%MSG]"" ED D B
+	S %LE="" S TBKEY=%RES ;
+	G DR
+	;LOCKED
+EG	W:%tkN %E,"[23;17H現在、他のユーザーが使用中です。しばらくの後、再度行って下さい。" Q
+EH	;
+	S %tkN=1 D EG W $C(7) G ET
+	;MENU
+EK	W:%tkP %E,"[22;17HTable edit, Column edit, Utilities, or Quit: ",$E(%tkO,1,$ZP(%tkO,1)),$S(1-$ZL(%tkO)'<1:$E(%U(2),1,1-$ZL(%tkO)),1:"") Q
+EL	I '%EX S %tkP=1_(%tkP#10) D EK:%tkP=10
+	S %tkA=1,%W="1;22;62;2;EL;R;MENU;;59;1;",%OLD=%tkO D I S %tkA(0)="AT" G F:%EX,EM:%T!%F
+	S %=",T,C,U,Q," D T G EM:%MSG=""
+	D J1 S:%MSG'="" %LE=%RES G EL
+EM	I '%F D B
+	S %LE="" S %tkP=%tkP#10 W:'%tkP %E,"[22;17H",$J("",46)
+	G F:%F S %tkO=%RES ;
+	G FJ:%RES="Q" W:%tkM %E,"[23;1H",$J("",79) S %tkM=0,%tkL="",%tkO="" U 0:PACK D EK U 0:NOPACK S %tkA(0)="EL" G AP:%RES="C",EP:%RES="U" S %tkA(0)="FR"
+	G CT
+	;MENU2
+EO	W:%tkR %E,"[22;20HEdit comments, Delete, Copy, or Print: ",$E(%tkQ,1,$ZP(%tkQ,1)),$S(1-$ZL(%tkQ)'<1:$E(%U(2),1,1-$ZL(%tkQ)),1:"") Q
+EP	I '%EX S %tkR=1_(%tkR#10) D EO:%tkR=10
+	S %W="1;22;59;2;EP;;MENU2;;59;1;",%OLD=%tkQ D I S %tkA(0)="EL" G F:%EX,EQ:%T!%F
+	S %=",E,D,C,P," D T G EQ:%MSG=""
+	D J1 S:%MSG'="" %LE=%RES G EP
+EQ	I '%F D B
+	S %LE="" S %tkR=%tkR#10 W:'%tkR %E,"[22;20H",$J("",40)
+	G F:%F S %tkQ=%RES ;
+	G EL:%RES="" S %tkQ="" U 0:PACK D EO U 0:NOPACK S %tkA(0)="EP" G EX:%RES="P"&%PGMR,FB:%RES="P"&'%PGMR,BV:%RES="E",CP:%RES="D",BZ
+	;NAME
+ES	W %E,"[4;15H",$E(TBNM,1,$ZP(TBNM,18)),$S(18-$ZL(TBNM)'<1:$E(%U(2),1,18-$ZL(TBNM)),1:"") Q
+ET	S %W="18;4;15;2;ET;;NAME;;59;1;",%OLD=TBNM D I S %tkA(0)="AT"
+	I %F=24 S (%F,%T)="",%RES="*"
+	G F:%F,EU:%T
+	S %CD="LP,",%PR="Table Name: ",%XL="^DATD;KEY;",%XT="         Table name          Description",%XD="TBNM",%XA=""
+	S %XL(1)="??30,$P($G(^DATD(TBNM,""REF"")),"";"",3)"
+	S %XPOP="13,5,11,55" D ^%DASDLU,Q G F:%EX,EU:%MSG="" G EU:%RES="*"&(%MSG]"")
+	S %MSG="" D NAME^%DAQDUTL G F:%EX
+EU	D J S:%MSG]"" %LE=%RES G:%MSG]"" ET D B
+	S %LE="" S TBNM=%RES ;
+	G AT:%RES="" W:%tkN %E,"[23;17H",$J("",64) S %tkN=0,%NEWT='%FND L:%OLD]"" -(^DATD(%OLD)) L +^DATD(TBNM):9 S %FND=$T G EH:'%FND,DJ:'%NEWT S %tkA(0)="DB"
+	G CT
+	;PRINT
+EW	W:%tkT %E,"[22;23HSort by data name or column name? ",$E(%tkS,1,$ZP(%tkS,1)),$S(1-$ZL(%tkS)'<1:$E(%U(2),1,1-$ZL(%tkS)),1:"") Q
+EX	I '%EX S %tkT=1_(%tkT#10) D EW:%tkT=10
+	S %W="1;22;57;2;EX;;PRINT;;59;1;",%OLD=%tkS D I G F:%EX,EY:%T!%F
+	S %=",C,D,N," D T G EY:%MSG=""
+	D J1 S:%MSG'="" %LE=%RES G EX
+EY	I '%F D B
+	S %LE="" S %tkT=%tkT#10 W:'%tkT %E,"[22;23H",$J("",35)
+	G F:%F S %tkS=%RES ;
+	S %RPNAME=$S(%RES="D":"%TABLED",%RES="N":"%TABLEN",1:"%TABLE"),%PARM=TBNM G CX
+	;PRINT1
+FB	;
+	S %RPNAME="%UTBOV",%PARM=TBNM G CX
+	;PRIV
+FE	W %E,"[12;23H",$E(TBPRV,1,$ZP(TBPRV,25)),$S(25-$ZL(TBPRV)'<1:$E(%U(2),1,25-$ZL(TBPRV)),1:"") Q
+FF	S %W="25;12;23;2;FF;;PRIV;;59;1;",%OLD=TBPRV U 0:NOCON D I
+	I %F=24 S (%F,%T)="",%RES="*"
+	G F:%F,FG:%T
+	S %CD="L,",%PR="Privilege Code: ",%XL="^DASY(""P"",""D"");KEY;",%XT="        Code  Description",%XD="USRPRV",%XA=""
+	S %XL(1)="??15,$G(^DASY(""P"",""D"",USRPRV,""E""))"
+	S %XPOP="13,5,11,45" D ^%DASDLU,Q G F:%EX,FG:%MSG="" G FG:%RES="*"&(%MSG]"")
+	S %MSG="" D VPRIV^%DASDUTL G F:%EX
+FG	D J S:%MSG]"" %LE=%RES G:%MSG]"" FF D B
+	S %LE="" S TBPRV=%RES ;
+	G AX
+	;SAME
+FJ	;
+	G DZ:%MODTBL L:TBNM]"" -(^DATD(TBNM)) G S
+	;SEQ
+FQ	W:%tkU %E,"[22;28HS.保存  E.修正  Q.終了: ",$E(GNSEQ,1,$ZP(GNSEQ,1)),$S(1-$ZL(GNSEQ)'<1:$E(%U(2),1,1-$ZL(GNSEQ)),1:"") Q
+FR	I '%EX S %tkU=1_(%tkU#10) D FQ:%tkU=10
+	S %W="1;22;52;2;FR;R;SEQ;;59;1;",%OLD=GNSEQ D I G F:%EX,FS:%T!%F
+	S %=",S,E,Q," D T G FS:%MSG=""
+	D J1 S:%MSG'="" %LE=%RES G FR
+FS	I '%F D B
+	S %LE="" S %tkU=%tkU#10 W:'%tkU %E,"[22;28H",$J("",25)
+	G F:%F S GNSEQ=%RES ;
+	G FJ:%RES="Q" S GNSEQ="" U 0:PACK D FQ U 0:NOPACK S %tkA(0)="FR" G DN:%RES="S",CT
+	;TITLE
+	;WAIT
+FY	W:%tkV %E,"[23;60H少々お待ち下さい ... " Q
+E	I %O W %E,"[1;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	S %O=0 F %Z=0,1:1:23 S %O(%Z)=0,%L(%Z)=$P(%tkB,",",%Z+1)
+	K %tkB,%tkA,%tkD,%tkC,%tkF,%tkE,%tkH,%tkG,%tkJ,%tkI,%tkK,%tkM,%tkL,%tkN,%tkP,%tkO,%tkR,%tkQ,%tkT,%tkS,%tkU,%tkV Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l;" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'=";"!($E(%SCN)'="l") W %E,"[;r"
+	S %SCN="l;",%LL=80 Q
+R	I %L(%Z)'="%DCSAUK" G @("R^"_%L(%Z))
+	F %X=1,4,6,8,10,12,14,16:1:20,22,23 I '%O(%X),%L(%X)="%DCSAUK" S %O(%X)=1 D @%X
+	Q
+I	I $D(%tkA(%tkA-1)),%tkA(%tkA-1)=$P(%W,";",5) S %tkA=%tkA-1
+	E  S %tkA(%tkA)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAUK" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$ZL(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$ZP(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$ZL(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPKZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$ZL(%RES)+1,$S(%W<$ZL(%OLD):%W,1:$ZL(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%tkA(0)=%tkA(%tkA) %tkA(1)=%tkA(0),%tkA=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	S:%RES'="" %LE=%RES
+	S %=^%DASDH("TABLEX",%tkA(%tkA)),%HF=$P(%,$C(0)),%MSG=$P(%,$C(0),2)
+	I %MSG="" G I7:%HF]"" S %MSG="ヘルプ情報はありません。"
+	D M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$ZL(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %tkA=%tkA+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZP(%,%W)),$S(%W-$ZL(%)'<1:$E(%U(%U),1,%W-$ZL(%)),1:"") Q
+J	S:$ZL(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$ZL(%MSG)),$E(%MSG,1,$ZP(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%tkA(%tkA)=%tkA(0),@%tkA(0)
+	I %F="44"&%F S:%tkA>1 %tkA=%tkA-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%tkA(%tkA)'="" @%tkA(%tkA) G E
+L	I %RES="Y"!(%RES="N") S %MSG="" Q
+	S %MSG="'Y' または 'N' を入力してください。" Q
+T	I %RES'[",",%[(","_%RES_",") S %MSG="" Q
+	S %MSG="項目を一つ入力して下さい : "_$E(%,2,$L(%)-1)_" : "_%RES Q
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

@@ -1,0 +1,268 @@
+ROUTINE %DCSAVG [Type=INT,LanguageMode=6]
+%DCSAVG	;V6.1;19-May-93  4:23 PM;HNF7 New Functions
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=4:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %ugA="" F %Z=0,4:1:23 S $P(%ugA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HNF7",%L(4)="%DCSAVG",%L(24)="",%MSG="",%ugD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "     Query Driver",!
+	W !
+	W "     New Query Driver features include the following:",!
+	W !
+	W "     The DASL software includes a new entry point for callable queries.",!
+	W "     You can now use pointer syntax within table columns to point to ",!
+	W "     other tables.",!
+	W !
+	W "     Callable Queries",!
+	W !
+	W "     The DASL software contains a new entry point that allows you to",!
+	W "     submit a query statement to the DASL database from outside the DASL ",!
+	W "     application. The DASL entry point takes the following syntax:",!
+	F %=14:1:19 W !
+	G RET
+2	;
+	W "     SQL^%DAQ(PARM1,PARM2,PARM3,PARM4,PARM5)",!
+	W !
+	W "     where:",!
+	W !
+	W "     SQL^%DAQ is the required tag and entry point to the DASL Query Driver",!
+	W "     PARM1 indicates the location of the query statement, either a global ",!
+	W "     reference or an array name.",!
+	W "     PARM2 contains a short description of the query PARM3 indicates the ",!
+	W "     location of the results table, either a global reference or a file name.",!
+	W "     If you do not specify an extension for the file name, the DASL software ",!
+	W "     assigns it the .DAT extension.",!
+	W "     PARM4 indicates the location of an error message, either a variable or ",!
+	W "     a global reference describes the security attached to the query ",!
+	W "     includes a user name and password from the User Dictionary of the",!
+	W "     Security System Menu in the Application Environment.",!
+	F %=16:1:19 W !
+	G RET
+3	;
+	W "     The parameter specified in PARM1 through PARM5 can be either a variable",!
+	W "     or a string. If the parameter is a string, you must enclose the string",!
+	W "     within quotation marks. In the following example, each parameter is a",!
+	W "     string:",!
+	W !
+	W "     SQL^%DAQ(""ARRAY"",""QUERY1"",""^G(""""RESULTS"""")"",""^G(""""ERROR"""")"",""APL,TEST"")",!
+	W !
+	W "     In the previous example, PARM1 indicates that the query statement is ",!
+	W "     found in an array named ARRAY. The following example shows the contents",!
+	W "     of ARRAY:",!
+	W !
+	W "     ARRAY(1)=""SELECT NAME,SEX,AGE""",!
+	W "     ARRAY(2)=""FROM PATIENT""",!
+	W !
+	W "     Notice that the query statement breaks across two lines in ARRAY.",!
+	W "     You can write the query statement on one line in an array or a global.",!
+	W "     However, if you write the query statement in multiple lines, you must",!
+	W "     break the line on a complete word.",!
+	F %=19:1:19 W !
+	G RET
+4	;
+	W "     The following program provides an example of a query statement that",!
+	W "     uses a global for the location of the query statement and uses ",!
+	W "     variables for PARM1 through PARM5.",!
+	W !
+	W "     S LOC=""^GAIL(""""QUERY"""")""",!
+	W "     S ^GAIL(""QUERY"",1)=""SELECT NAME FROM PATIENT""",!
+	W "     S ^GAIL(""QUERY"",2)=""WHERE AGE > 20 AND SEX""",!
+	W "     S ^GAIL(""QUERY"",3)=""=""""F""""""",!
+	W "     S DESC=""This is a test""",!
+	W "     S RES=""^GAIL(""""RESULTS"""")""",!
+	W "     S ERR=""ERROR""",!
+	W "     S SEC=""GLP,TEST""",!
+	W "     D SQL^%DAQ(LOC,DESC,RES,ERR,SEC)",!
+	W "     U 0 W:$D(ERROR) !,ERROR Q",!
+	F %=15:1:19 W !
+	G RET
+5	;
+	W "     In the previous example, the following actions occur:",!
+	W !
+	W "     The local variable LOC indicates the location of the query statement ",!
+	W "     (in the global ^GAIL(""QUERY"")).",!
+	W "     The following three lines set the query statement in the ^GAIL(""QUERY"")",!
+	W "     global.",!
+	W "     The local variable DESC indicates the description of the query statement.",!
+	W "     The local variable RES indicates the location of the result table.",!
+	W "     The local variable ERR indicates the location of the error message",!
+	W "     (in another local variable ERROR).",!
+	W "     The local variable SEC contains the user name (GLP) and password (TEST)   ",!
+	W " ",!
+	W "     for the query statement.",!
+	W "     This line calls the Query Driver to process the query statement. Note",!
+	W "     that PARM1 through PARM5 are the local variables set previously in this",!
+	W "     example.",!
+	F %=17:1:19 W !
+	G RET
+6	;
+	W "     Pointers Within Table Columns",!
+	W !
+	W "     When you define tables with the Define Tables option of the Query",!
+	W "     Driver Menu, you can construct a pointer chain to form a ",!
+	W "     relationship between globals and create a database table that",!
+	W "     accesses information across globals.",!
+	W !
+	W "     You specify the pointer chain in the Data Name: field when you define ",!
+	W "     columns. The pointer chain takes the following syntax:",!
+	W !
+	W "     data name<pointer",!
+	W " ",!
+	W "     Note that you can only use one pointer in the pointer chain in the",!
+	W "     Query Driver.",!
+	F %=15:1:19 W !
+	G RET
+7	;
+	W "     For example, suppose you have the following globals defined",!
+	W "     in the database:",!
+	W !
+	W "     ^PAT(PATID)=NAME;STREET;CITY;STATE;ZIP;PHYS1",!
+	W "                                                 /",!
+	W "              ----------------------------------/",!
+	W "             V  ",!
+	W "     ^PHYS(PHYSID)=PHYSNAME;PHYSADD",!
+	W !
+	W "     In this example, the dependent data name PHYS1 in the ^PAT(PATID)",!
+	W "     global is a pointer to the key data name PHYSID in the ^PHYS(PHYSID) ",!
+	W "     global.",!
+	W "     To include the data name PHYSNAME in a table that has a primary key",!
+	W "     of PATID and includes NAME,STREET,CITY,STATE,and ZIP data names, you",!
+	W "     can define a column that includes a pointer as follows:",!
+	F %=16:1:19 W !
+	G RET
+8	;
+	W "     Data Name: PHYSNAME<PHYS1",!
+	W !
+	W "     The resulting database table includes PHYSNAME as a column.",!
+	W !
+	W "     Using a pointer chain to define a table eliminates the need",!
+	W "     for users to construct a WHERE statement to extract information",!
+	W "     from tables based on data residing in different globals.",!
+	F %=7:1:18 W !
+RET	S %ugC="8 ページ中 "_%ugD_" ページ; <RETURN> を押すと "_$S(%ugD=8:"終了",1:"続行")_"します。"
+	W %E,"[",40-($ZL(%ugC)+1\2),"C",%ugC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %ugE=%ugD
+READ	S %ugB=1,%ugB(0)="E",%W="1;23;"_(41+($ZL(%ugC)+1\2)+($ZL(%ugC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %ugD=$S(%ugD=1:1,1:%ugD-1)
+	E  I %RES?1N.N S %ugD=$S(%RES>8:8,+%RES=0:1,1:+%RES)
+	E  S %ugD=%ugD+1
+	I %ugD>8 G E
+	I %ugD=%ugE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%ugD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSAVG" G @("R^"_%L(%Z))
+	W %E,"[4;1H"
+	F %Z=4:1:23 S %O(0)=1
+	G @%ugD
+E	I %O W %E,"[4;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,4:1:23 S %O(%Z)=0,%L(%Z)=$P(%ugA,",",%Z+1)
+	K %ugA,%ugB,%ugE,%ugD,%ugC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l4;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="4;23"!($E(%SCN)'="l") W %E,"[4;23r"
+	S %SCN="l4;23",%LL=80 Q
+I	I $D(%ugB(%ugB-1)),%ugB(%ugB-1)=$P(%W,";",5) S %ugB=%ugB-1
+	E  S %ugB(%ugB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAVG" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$ZL(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$ZP(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$ZL(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPKZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$ZL(%RES)+1,$S(%W<$ZL(%OLD):%W,1:$ZL(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%ugB(0)=%ugB(%ugB) %ugB(1)=%ugB(0),%ugB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$ZL(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %ugB=%ugB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZP(%,%W)),$S(%W-$ZL(%)'<1:$E(%U(%U),1,%W-$ZL(%)),1:"") Q
+J	S:$ZL(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$ZL(%MSG)),$E(%MSG,1,$ZP(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%ugB(%ugB)=%ugB(0),@%ugB(0)
+	I %F="44"&%F S:%ugB>1 %ugB=%ugB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%ugB(%ugB)'="" @%ugB(%ugB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q

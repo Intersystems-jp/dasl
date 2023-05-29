@@ -1,0 +1,134 @@
+ROUTINE %DCSATL [Type=INT,LanguageMode=6]
+%DCSATL	;V6.1;19-May-93  4:45 PM;POPUP First Popup in the West !
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	N %RES,%OLD,%P,%POPX,%POPY,%POPW,%POPF,%POPS S (%POPD,%POPK)="",%FND=0 S:'$D(%POPA) %POPA="" S %POPX=$P(%POPA,";"),%POPY=$P(%POPA,";",2),%POPW=$P(%POPA,";",3),%POPS=$P(%POPA,";",4),%POPF=$P(%POPA,";",5)
+	S:%POPX<1 %POPX=5 S:%POPY<1 %POPY=5 S:%POPW<1 %POPW=5 S:%POPS'=80&(%POPS'=132) %POPS=80
+	D OPGET
+	S %U=2,%TM=%TMO S:%POPX+%slD+5>%POPS %POPX=%POPS-%slD-5 S:%POPY+%POPW+1>23 %POPY=23-%POPW-1 S %slB=%POPY,%slC=%POPY+%POPW+1
+	S (%slH,%slL)=1,(%slM,%slI)=0,%slN=""
+	D CLEAR,RP,PDSP(1),DSP
+READ	S %FND=0,%OLD=""
+	D I I '%F G:%RES="" E G READ
+	I (%F="41"&%F)!%EX S %slH=0 G E
+	I %F="48" D CDSP,^@%RES,Q,CLEAR,RP,PDSP(%slH-%slL+1),DSP G READ
+	I %POPW=1 S:%F="25" %F="17" S:%F="26" %F=18
+	I %F="17"!(%F="18") D DO G READ
+	I %F="25" D PREVP G READ
+	I %F="26" D NEXTP G READ
+	S %MSG="不適当な文字が入力されました。",%F=0 D M G READ
+OPGET	K %slG S (%slG,%slD)=0 Q:%EX
+	S %slG(1)="1;I was just wondering if this type of screen could be used as a",%slG(2)="2;help screen however I don't really want to pick any items I "
+	S %slG(3)="3;just want to read it and then move to the next page.  I really",%slG(4)="4;don't want a line to be displayed in BOLD either.  I am not"
+	S %slG(5)="5;really sure how these screens are to be used, and how much ",%slG(6)="6;overlap with popup lookup lists they have.  It would be nice "
+	S %slG(7)="7;to have fancy help screens now that we have fancy lookup lists.",%slG=7,%slD=63 K %slO S $P(%slO," ",%slD+5)=""
+	S:%POPW>%slG %POPW=%slG Q
+PREVP	S %MSG="" D M S %slM=%slL,%slI=%slH
+	D  I %MSG="" D ERS,PDSP(%slK),DSP
+	.S %slK=%slI-%slM+1
+	.I %slK=1 S %F=0,%MSG="最初のページにいます。" D M Q
+	.I %slK-%POPW+1>0 S %slJ=%slK,%slK=%slK-%POPW+1,%slL=%POPW,%slH=%slJ Q
+	.S %slK=1 I %slI'>%POPW S %slH=%slI,%slL=%slI Q
+	.S %slH=%POPW,%slL=%POPW
+	Q
+NEXTP	S %MSG="" D M S %slM=%slL,%slI=%slH
+	D  I %MSG="" D ERS,PDSP(%slK),DSP
+	.S %slJ=%POPW-%slM+%slI
+	.I %slG=%slJ S %F=0,%MSG="最終ページにいます。" D M Q
+	.I %slJ+%POPW-1'>%slG S %slL=1,(%slH,%slK)=%slJ Q
+	.S %slK=%slG-%POPW+1
+	.I %slI>%slK S %slH=%slI,%slL=%slI-%slK+1
+	.E  S %slH=%slK,%slL=1
+	Q
+DO	S %MSG="" D M,PNT
+	I %slN="UP" D PDSP(%slH)
+	I %slN="DOWN" D PDSP(%slH-%POPW+1)
+	D ERS,DSP Q
+PNT	Q:%F'="17"&(%F'="18")  S %slM=%slL,%slI=%slH,%slN=""
+	I %F="17" D
+	.S %slL=%slL-1 I %slL<1 S %slL=1,%slM=0,%slN="UP"
+	.S %slH=%slH-1 I %slH<1 S %F=0,%MSG="カーソルが先頭位置にあります。" D M S %slH=1,%slI=0,%slN=""  ;
+	I %F="18" D
+	.S %slL=%slL+1 I %slL>%POPW S %slL=%POPW,%slM=0,%slN="DOWN"
+	.S %slH=%slH+1 I %slH>%slG S %F=0,%MSG="カーソルが最終位置にあります。" D M S %slH=%slG,%slI=0,%slN=""  ;
+	Q
+ERS	Q:'%slI!('%slM)
+	S %P="["_(%POPY+%slM)_";"_(%POPX+1)_"H"
+	S %slP=$P(%slG(%slI),";",2),%slQ=$Zwidth(%slP) 
+	S:%slQ>%slD %slP=$E(%slP,1,%slD)
+	W %E,%P,"  ",%slP,$E(%slO,1,%slD+1-$Zwidth(%slP)) Q
+DSP	S %P="["_(%POPY+%slL)_";"_(%POPX+2)_"H"
+	S %slP=$P(%slG(%slH),";",2),%slQ=$Zwidth(%slP)
+	S:%slQ>%slD %slP=$E(%slP,1,%slD)
+	W %E,%P,%E,"[7m ",%slP,$E(%slO,1,%slD+1-$Zwidth(%slP)),%E,"[m"," " Q
+RP	K %slA S $P(%slA,"q",%slD+5)=""
+	W %E,"[",%POPY,";",%POPX,"H",%E,"(0l",%slA,"k",%E,"(B"
+	F %slE=1:1:%POPW W %E,"[",(%POPY+%slE),";",%POPX,"H",%E,"(0x",%E,"(B",%E,"[",%POPY+%slE,";",%POPX+%slD+5,"H",%E,"(0x",%E,"(B"
+	W %E,"[",(%POPY+%POPW+1),";",%POPX,"H",%E,"(0m",%slA,"j",%E,"(B" Q
+PDSP(XXP)	Q:%EX  U 0:PACK
+	F %slE=1:1:%POPW D
+	.S %slP=$P(%slG(XXP+%slE-1),";",2),%slQ=$Zwidth(%slP)
+	.S:%slQ>%slD %slP=$E(%slP,1,%slD)
+	.W %E,"[",(%POPY+%slE),";",%POPX+3,"H",%slP,$E(%slO,1,%slD+1-$Zwidth(%slP))
+	U 0:NOPACK Q
+HLP	S %MSG="上下矢印キーで選択。<RETURN> で確定。または <EXIT> で終了。" Q  ;
+CLEAR	W %E,"[?25l"
+CLEAR2	U 0:PACK
+	F %slE=0:1:%POPW+1 W %E,"[",(%POPY+%slE),";",%POPX,"H",%slO,"  "
+	Q
+E	I %slH S %POPK=$P(%slG(%slH),";"),%POPD=$P(%slG(%slH),";",2),%FND=1
+	E  S (%POPK,%POPD)="",%FND=0
+	I %POPF'["NP"!(%POPF["NP"&'%FND) D CLEAR2
+	F %slE=%slB:1:%slC S %O(%slE)=0
+	S %MSG="" D M,CDSP
+E2	K %XO,%XR,%POPA,%POPDT,%POPX,%POPY,%POPW,%POPF,%POPA,%POPS
+	K %slA,%slB,%slC,%slE,%slF,%slG,%slH,%slI,%slL,%slM,%slN,%slO
+	K %slD,%slK,%slJ,%slP,%slQ
+	Q
+Q0	S %SCN=$E(%SCN) W %E,"[2J" F %slE=1:1:24 S %O(%slE)=0
+Q	Q:%EX  U 0:PACK D Q1:$E(%SCN)'=$S(%POPS=80:"l",1:"h") F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D @("R^"_%L(%Z))
+	U 0:NOPACK S %O=1 Q
+Q1	W:$E(%SCN)'=$S(%POPS=80:"l",1:"h") %E,"[2J",%E,"[?3"_$S(%POPS=80:"l",1:"h")
+	U 0:EXIN=PARAM="WIDTH="_%POPS W:%SCN[";" %E,"[r" S %SCN=$S(%POPS=80:"l",1:"h"),%LL=%POPS Q
+I	U 0:NOECHO
+I0	S (%F,%Z,%ZB)=0 I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP="",%INPP=1
+I1	S $ZT="I9^%DCSATL" U 0 W %E,%P
+I4	R %RES#1:%TM I  S %ZB=$ZB,%T=$ZB#256,%F=$ZB\256
+	E  S %F="41"
+	I %F="24" S %F=0,%T=13
+	G I2:%F
+	I $L(%RES)!(%T=5)!(%T=8)!(%T=10)!(%T=127) D HLP,M G I1
+	I %T=23 D Q0,CLEAR,RP,PDSP(%slH-%slL+1),DSP G I0
+	S:%RES="?" %F="48"     
+I2	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="46" S %MODE=$$MODE^%DAZCALL S %MSG=$S($E($T(+0))="%"&('%MODE):"",1:$T(+1)),%F=-1 K %MODE D M G I0
+	I %F,%F="33" S %F="48"
+	G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	U 0:(ESC:CON:ECHO)
+	Q
+I7	I %HF]"" S %RES=%HF G I3
+	S %HF="" D HLP,M G I0
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F S %RES="48" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F 
+	I %="M" S %EX=1
+	I %="T" S %MODE=$$MODE^%DAZCALL S %MSG=$S($E($T(+0))="%"&('%MODE):"",1:$T(+1)),%F=-1 K %MODE D M G I12 
+I11	D I13 G I3
+I12	D I13 G I0
+I13	W %E,">" Q
+CDSP	W %E,"[?25h" Q
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$Zwidth(%MSG)),$E(%MSG,1,$ZPosition(%MSG,%LL)) I '%F S %HF="" W *7 
+	Q

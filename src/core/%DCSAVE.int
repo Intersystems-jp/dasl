@@ -1,0 +1,322 @@
+ROUTINE %DCSAVE [Type=INT,LanguageMode=6]
+%DCSAVE	;V6.1;19-May-93  4:23 PM;HNF5 New Functions
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	Q:%EX
+	F %Z=4:1:23 S %O(%Z)=0 W %E,"[",%Z,";1H",%E,"[2K",%E,"#5"
+	S %ueA="" F %Z=0,4:1:23 S $P(%ueA,",",%Z+1)=%L(%Z),%L(%Z)="",%O(%Z)=0
+	S %L(0)="HNF5",%L(4)="%DCSAVE",%L(24)="",%MSG="",%ueD=1,%TM=%TMO
+	D Q G WAIT
+1	;
+	W "     Screen Driver Features",!
+	W !
+	W "     Screen Driver features include the following:",!
+	W !
+	W "     /POPUP qualifier to the LOOKUP validation",!
+	W "     SCROLL/INDEX=BACKWARD action",!
+	W "     FKEY screen and field attribute",!
+	W "     Copy Fields Across Screens utility",!
+	W "     Longer screen names allowed ",!
+	W "     Changes to lookups ",!
+	W "     Changes to Define Data Screens screen and Define Option Screens",!
+	W "     screen to allow continuation in action line",!
+	F %=13:1:19 W !
+	G RET
+2	;
+	W "     /POPUP Qualifier to LOOKUP Validation",!
+	W !
+	W "     You can use the /POPUP qualifier to specify a popup lookup screen",!
+	W "     to display when users request a lookup. The popup lookup screen is a",!
+	W "     scroll screen that overlays a specified portion of the current screen.",!
+	W "     Users can press Next Screen, Prev Screen, and the arrow keys to ",!
+	W "     move within the popup lookup screen, and press Select to choose an",!
+	W "     item from the lookup list.",!
+	F %=9:1:19 W !
+	G RET
+3	;
+	W "     The /POPUP qualifier takes the following syntax:",!
+	W !
+	W "     LOOKUP/POPUP=(x1,y1,height,width)",!
+	W !
+	W "     where:",!
+	W !
+	W "     x1 is the x coordinate of the upper left",!
+	W "     corner (column position))",!
+	W "     y1 is the y coordinate of the upper left",!
+	W "     corner (line position))",!
+	W "     height is the number of rows in height",!
+	W "     width is the number of columns in width",!
+	F %=13:1:19 W !
+	G RET
+4	;
+	W "     SCROLL/INDEX=BACKWARD Action",!
+	W !
+	W "     The SCROLL/INDEX=BACKWARD action makes the previous sequential scroll",!
+	W "     line the active line. This action is the reverse of the SCROLL/INDEX ",!
+	W "     action.",!
+	W !
+	W "     The syntax for this action is:",!
+	W !
+	W "     SCROLL/INDEX=BACKWARD",!
+	F %=10:1:19 W !
+	G RET
+5	;
+	W "     FKEY Screen and Field Attribute",!
+	W !
+	W "     The FKEY screen and field attribute allows you to specify which",!
+	W "     function keys an application user can press at a specified field ",!
+	W "     or for an entire screen. When a user presses a defined function key, ",!
+	W "     input at that field is terminated. The DASL software validates the ",!
+	W "     input as usual. ",!
+	W !
+	W "     The syntax for the FKEY screen and field attribute is:",!
+	W !
+	W "     FKEY<key>(SP)keylist｛:postcond｝",!
+	W !
+	W "     where:",!
+	W !
+	W "     keylist is a list of one or more function keys separated by a comma. ",!
+	W "     The keylist can consist of key mnemonics or the $ZB/256 value of the ",!
+	W "     key.)",!
+	W "     ",!
+	W "     postcond is an optional postconditional expression",!
+	G RET
+6	;
+	W "     The key mnemonics you can specify are:",!
+	W !
+	W "	F7	F8	F9	F10",!
+	W "	F11	F12	F13	F14",!
+	W "	Help	 Do	F17	F18",!
+	W "	F19	F20	Find	Insert",!
+	W "	Remove	Select	Prev	Next",!
+	W "	Up	Down	Left	Right",!
+	W "	PF1	PF2	PF3	PF4",!
+	W !
+	W !
+	W "     The Key Definitions option of the Set Parameters Menu in the ",!
+	W "     Development Environment provides a Function & Gold Key Map that ",!
+	W "     shows the number assigned to each function key. ",!
+	F %=15:1:19 W !
+	G RET
+7	;
+	W "     For example, if you want to allow users to press Select or press",!
+	W !
+	W "     the following:",!
+	W !
+	W "     FKEY SELECT,UP",!
+	W !
+	W "     or",!
+	W !
+	W "     FKEY 24, 17",!
+	W !
+	W !
+	W "     When you specify the FKEY attribute, information about which key you",!
+	W "     type at that field is returned in the special variables:",!
+	W !
+	W "     %FKN - contains the key mnemonic of the key that you type",!
+	W "     %FKV - contains the $ZB/256 value of the key that you type",!
+	W "     %ZB  - contains the $ZB value of the key that you type",!
+	F %=18:1:19 W !
+	G RET
+8	;
+	W "     For example, suppose you specify the Select key with the FKEY SELECT",!
+	W "     attribute. If you then you enter ABC and press Select, the special",!
+	W "     variables contain the following information:",!
+	W !
+	W "                           %FKN=""SELECT""",!
+	W "                           %FKV=24",!
+	W "                           %ZB=6171",!
+	W !
+	W "     Copy Fields Across Screens Utility",!
+	W !
+	W "     You can use the Copy Fields Across Screens utility to copy one or more",!
+	W "     fields from one screen to another screen. If the screen to which ",!
+	W "     you are copying a field already contains a field of the same name, the",!
+	W "     utility indicates that the field name already exists, and does not ",!
+	W "     complete the copy operation. With this utility, you can also rename ",!
+	W "     a field when you copy it.",!
+	F %=17:1:19 W !
+	G RET
+9	;
+	W "     Longer Screen Names",!
+	W !
+	W "     The Screen Driver now allows screen names of 14 characters. ",!
+	W "     You specify the screen name in the Define Data Screens, Define",!
+	W "     Option Screens, and Define Text Screens screens.",!
+	W !
+	W "     Changes to Lookup Lists)",!
+	W !
+	W "     You can now do the following:",!
+	W !
+	W "     Press Select to view a lookup list. You can also enter an asterisk (*)",!
+	W "     to view a lookup list.",!
+	W "     View a lookup list in a popup screen, if the lookup list is",!
+	W "     generated by fields with the LOOKUP/POPUP validation.",!
+	W "     Press Prev Screen to move back one screen and press Next Screen to ",!
+	W "     move forward one screen in a lookup list. If you press Prev Screen or ",!
+	W "     Next Screen in a popup lookup screen, the DASL software moves one ",!
+	W "     scroll screen in the specified direction.",!
+	F %=19:1:19 W !
+	G RET
+10	;
+	W "     The following table describes the function keys that you can use ",!
+	W "     within a popup lookup list.",!
+	W !
+	W !
+	W "                Key             Action",!
+	W "    ",!
+	W "           Prev Screen     Scrolls backward one scroll screen",!
+	W "           Next Screen     Scrolls forward one scroll screen",!
+	W "                           (direction indicated by the arrow)",!
+	W "           Select          Selects an item from the lookup list",!
+	W "           Return          Selects an item from the lookup list",!
+	W "           Exit            Exits the lookup list without making a selection",!
+	W !
+	W !
+	W "     The legends in lookup screens and popup lookup lists are identical.",!
+	F %=16:1:19 W !
+	G RET
+11	;
+	W "     Continuation in Action Lines in Define Data Screens Screen",!
+	W !
+	W "     You can now include a continuation character (-) to continue ",!
+	W "     action lines in Actions fields of the Define Data Screens screen and",!
+	W "     the Define Option Screens screen. For example, you can include many",!
+	W "     fields to be filed in one FILES action line as follows:",!
+	W !
+	W "     FILES NAME,STREET,CITY,STATE,COUNTRY,ZIP,PHONE,PHHOME,DOCTOR,DRSTREET-",!
+	W "     ,DRCITY,DRSTATE",!
+	W !
+	W "     Follow these rules in continuation lines:",!
+	W !
+	W "     Do not break the line in the middle of a field or data name.",!
+	W "     Do not place a comma before the continuation character. Place the",!
+	W "     comma at the beginning of the next continuation line.",!
+	W "     The first line is parsed ignoring the continuation character and must",!
+	W "     be able pass the parser.  The next line is appended to the first and",!
+	W "     they are parsed together, and so on.",!
+	F %=18:1:18 W !
+RET	S %ueC="11 ページ中 "_%ueD_" ページ; <RETURN> を押すと "_$S(%ueD=11:"終了",1:"続行")_"します。"
+	W %E,"[",40-($ZL(%ueC)+1\2),"C",%ueC Q
+HLP	S %MSG="<RETURN>（続行）,<B>（前ページ）,ページ番号 または <EXIT>（終了）" Q
+WAIT	S %ueE=%ueD
+READ	S %ueB=1,%ueB(0)="E",%W="2;23;"_(41+($ZL(%ueC)+1\2)+($ZL(%ueC)+1#2))_";1;READ;;0",%OLD=""
+	D I S:%F=17 %RES="B",%F=0,%T=13 S:%F=18 %F=0,%T=13 G F:%F
+	I %RES="B" S %ueD=$S(%ueD=1:1,1:%ueD-1)
+	E  I %RES?1N.N S %ueD=$S(%RES>11:11,+%RES=0:1,1:+%RES)
+	E  S %ueD=%ueD+1
+	I %ueD>11 G E
+	I %ueD=%ueE W %E,%P,%E,"[K" G WAIT
+	U 0:PACK W %E,"[23;1H",%E,"[K"
+	D @%ueD U 0:NOPACK G WAIT
+R	I %L(%Z)'="%DCSAVE" G @("R^"_%L(%Z))
+	W %E,"[4;1H"
+	F %Z=4:1:23 S %O(0)=1
+	G @%ueD
+E	I %O W %E,"[4;1H",%E,"[J",%E,"[;r" S %SCN=$E(%SCN)
+	F %Z=0,4:1:23 S %O(%Z)=0,%L(%Z)=$P(%ueA,",",%Z+1)
+	K %ueA,%ueB,%ueE,%ueD,%ueC Q
+Q0	S %SCN=""
+Q	Q:%EX&%OP   U 0:PACK D Q1:%SCN'="l4;23" F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D R
+	U 0:NOPACK S %O=1 Q
+Q1	I $E(%SCN)'="l" W %E,"[2J",%E,"[?3l" U 0 F %=1:1:24 S %O(%)=0
+	I $E(%SCN,2,9)'="4;23"!($E(%SCN)'="l") W %E,"[4;23r"
+	S %SCN="l4;23",%LL=80 Q
+I	I $D(%ueB(%ueB-1)),%ueB(%ueB-1)=$P(%W,";",5) S %ueB=%ueB-1
+	E  S %ueB(%ueB)=$P(%W,";",5)
+	D I6
+I0	S (%F,%Z,%ZB,%FKV)=0,%FKN="" I %EX S %F="41",(%MSG,%RES)="" G I3
+	S %INP=$S($P(%W,";",6)["E":%OLD,1:""),%INPP=1
+	S %=$P(%W,";",6),%ZT=(%["M")
+	S %KD="48;H;40;M;41;E;44;;45;;54;C;25;P;26;N;22;I;23;D;46;T;33;24;S;43;L"
+I1	S $ZT="I9^%DCSAVE" U 0 W %E,%P
+I4	I '%ZT D EDIT^%DASDFED
+	I %ZT D TERM^%DASDFED
+	I $P(%W,";",8)'="" D
+	.S %FKV=%F I (","_$P(%W,";",8))[(","_%F_",") S %F=0,%T=13
+	.S %FKN=$P(^DASY("PARM","FKEY"),";",%FKV+1)
+	I $P(%W,";",10) S:%F=17 %T=8,%F=0 S:%F=18 %T=13,%F=0
+	I %ZT,%kjxx G I5:'%F!(%F=19)!(%F=20) D I8 G I2
+	D I14 G I2:%F
+	I +%W<$ZL(%RES),$P(%W,";",6)'["M" S %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) D M S %INP=$E(%RES,1,$ZP(%RES,+%W)) W %E,%P W:%U %INP,$S(%W>$ZL(%INP):$E(%U(%U)),1:"") G I1
+	I %T=5 G:%ZT I5 D I8 S %INP=%OLD,%INPP=1 G I1
+	I %T=8 S %F="44" G I2
+	I %T=10 S %F="45" G I2
+	I %T=23 D Q0 G I0
+	I %T=127 G I4:%RES="" S %INP=$E(%RES,1,$L(%RES)-1),%Z=%Z>1+1 W $S(%U&($P(%W,";",3)+$L(%INP)>79):$E(%U(%U)),%U:%E_"[D"_$E(%U(%U))_%E_"[D",1:"") G I4
+	I %ZT,%REST'?.ANPKZ G I5
+	I %RES="",'%Z,%INP="" S %RES=%OLD D I14 S %=%RES D G
+	E  I (%Z<2)&($P(%W,";",6)'["N") S %=%RES_$E(%U(%U),$ZL(%RES)+1,$S(%W<$ZL(%OLD):%W,1:$ZL(%OLD))) D G
+	S:%RES="?" %F="48"
+I2	I '%F S %INP=%RES D I22 I %F=-1 S %F=0,%=%OLD D M,G G I0
+	I %MSG]"" S %MSG="" D M
+	I %F=19,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=2 Q
+	.S %INP=%RES,%INPP=0 U 0 W *7 Q
+	I %F=20,'%ZT D  G I1
+	.I %RES=""&(%OLD'="") S %INP=%OLD,%INPP=1 Q
+	.S %INP=%RES,%INPP=1 U 0 W *7 Q
+	I %ZT,%F=19,%RES'="" S %=%RES,%CP=$L(%RES)+1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=19 G:%RES=""&(%OLD="") I4 D I8 S %CP=2,%RES=%OLD D G,^%DASDFED,I14 G I2
+	I %ZT,%F=20,%RES="",%OLD'="" S %RES=%OLD,%CP=1 D ^%DASDFED,I14 G I2
+	I %ZT,%F=20 G:%RES="" I4 S %=%RES,%CP=$L(%RES) D G,^%DASDFED,I14 G I2
+	I %F,%F="40" S %EX=1,%F="41" G I3
+	I %F,%F="43",'%ZT,$G(%LE)="" D I8 S %INP=%OLD,%INPP=1 G I1
+	I %F,%F="43",'%ZT,$G(%LE)'=""  S (%,%INP)=%LE,%INPP=1 D G G I1
+	I %F,%F="45" S %Z=2,%="" D G S %INP="" G I1
+	I %F,%F="46" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1)_" - "_$P(%W,";",7)),%F=-1 D M G I0
+	I %F,%F="33" S %F="48"
+	D I8:%F G I7:%F="48"&%F
+	I %F=32 U 0:NOECHO W %E,"=",%E,%P G I10
+I3	S %TM=%TMO,%HF="",%T=%RES=""
+	S:%ueB(0)=%ueB(%ueB) %ueB(1)=%ueB(0),%ueB=1
+	U 0:(ESC:CON:ECHO)
+	Q
+I6	S %U=$P(%W,";",4),%P="["_$P(%W,";",2,3)_"H" Q
+I7	I %HF]"" S %RES=%HF G I3
+	D HLP,M G I0
+I8	S %=%OLD G G
+	Q
+I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
+I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
+I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
+	E  S %F="41" G I11
+	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3
+	S:%?1L %=$C($A(%)-32)
+	I ",H,M,E,C,P,N,I,D,T,"'[(","_%_",")!%T!%F S %MSG="ファンクションが分かりません。",%F=0 D M G I12
+	S %F=$S("EM"[%:"41",%="D":"23",%="I":"22",%="P":"25",%="N":"26",%="H":"48",1:"54")
+	G I7:%F="48"&%F
+	I %="M" S %EX=1
+	I %="T" S %MSG=$S($E($T(+0))="%"&('$$MODE^%DAZCALL):"",1:$T(+1))_" - "_$P(%W,";",7),%F=-1 D M G I12
+I11	D I13 G I3
+I12	D I13 U:$P(%W,";",6)'["N" 0:ECHO G I0
+I13	W %E,">" Q
+I14	S %REST=%RES
+	Q
+I22	S %=$P(%W,";",6),%X=0
+	I %'["S" S:%["T" %X=8 S:%["L" %X=%X+128
+	I %'["S",%'["T",%'["L" S %X=136
+	S:%["Q" %X=%X+288
+	S:%X %RES=$$BASEDIT^%DAIO(%RES,%X)
+	I %RES="" S:%["R" %MSG="入力が必要です。",%F=-1 Q
+	I %["F",$ZL(%RES)<%W S %MSG=+%W_" 文字入力して下さい。: "_%RES,%F=-1 Q
+	S %=$P(%W,";",9)
+	F %I=1:1 S %Y=$P(%,".",%I) Q:%Y=""  S @("%Y=$C("_%Y_")") I %RES[%Y S %MSG="値"""_%Y_"""を含んではいけません。",%F=-1 Q
+	Q
+B	S:%F'="41" %ueB=%ueB+1 Q:%RES=%INP  S %=%RES
+G	Q:'%U  W:$P(%W,";",11,99)]"" %E,"[",$P(%W,";",11,99),"m" W %E,%P,$E(%,1,$ZP(%,%W)),$S(%W-$ZL(%)'<1:$E(%U(%U),1,%W-$ZL(%)),1:"") Q
+J	S:$ZL(%RES)>%W %MSG=+%W_" 文字以内のデータを入力してください。: "_$E(%RES,1,50) Q:%MSG=""
+J1	D M S %=%OLD G G
+M	W %E,"[24;1H" I %MSG="" W %E,"[K" Q
+	X:$E(%MSG)="%"&($L(%MSG)<4) ^%DAMSG(%FLANG,$E(%MSG,2,3))
+	W $J("",%LL-$ZL(%MSG)),$E(%MSG,1,$ZP(%MSG,%LL)) I '%F S %HF="" W *7
+	Q
+F	I (%F="41"&%F)!%EX G E:%ueB(%ueB)=%ueB(0),@%ueB(0)
+	I %F="44"&%F S:%ueB>1 %ueB=%ueB-1
+	E  I %F'="48" S %F=0 S %MSG="不適当な文字が入力されました。" D M
+	E  D ^@%RES,Q
+	G:%ueB(%ueB)'="" @%ueB(%ueB) G E
+P	F %X=1:1 Q:($E(%RES,%X)'=" ")&($E(%RES,%X)'="。。")
+	F %Y=$L(%RES):-1 Q:($E(%RES,%Y)'=" ")&($E(%RES,%Y)'="。。")
+	S %RES=$E(%RES,%X,%Y) Q
