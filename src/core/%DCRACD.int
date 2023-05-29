@@ -1,0 +1,84 @@
+ROUTINE %DCRACD [Type=INT,LanguageMode=6]
+%DCRACD	;V6.1;15-Oct-92  3:49 PM;USOMENU Option structure
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRACD" G SAVE
+PRT	S %CNT=0 D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S %CNT=%CNT+1 D EVAL
+K0	S ^DATG($J,"R")="USOMENU,"_%DTR_","_%TMR_","_%CNT
+	D T0
+	G S0
+EVAL	S $ZT="PERR^%DCRACD",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	D D Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+KILLI	K %F0,%S1,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRACD",%ECNT=%ECNT+1 G S0
+ERR	S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W %TMR,?-$ZL("Menu Sub-Tree",%RPKPIT)\2+39,"Menu Sub-Tree",?69,%DTR D NLN0 Q:%QT  W "--------------------------------------------------------------------------------" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+D	S %HD=0 D NPG:$Y>%PL
+	;  INITIALIZE SDNM,TYPE,DES
+	S LL=1,(SDNM,PRI)="" S SDNM=$O(%PARM(SDNM))
+	S PP=SDNM
+	S TYPE=^DASD(SDNM,"SCR"),DES=$P(^DASD(SDNM,"A"),";",2)
+	;  INITIALIZE A LEVEL.
+INI	S LL(LL)=0,PP(LL)=PP,Z="",RF="^DASD("""_PP_""",""O"",""O"
+	;  LAST OPTION.
+LAST	W ?LL-(TYPE="OPTION")*10,PP," (",$E(DES,1,30),") ",PRI
+	D NLN Q:%QT
+	;  NEXT OPTION.
+NXT	S Z=$O(@(RF_""","""_Z_""")")) G POP:Z=""
+	S PP=$P(^(Z),";",2) G NXT:PP=""
+	S PRI=$P(^(Z),";",1)
+	;  SET DESCRIPTION AND TYPE DEPEND ON THE ACTION ITEM.
+	S LL(LL)=LL(LL)+1,Z(LL)=Z
+	I PP["^" S TYPE="",DES=$P(^(Z),";",3)
+	E  S TYPE=$P(@("^DASD("""_PP_""",""SCR"")"),";",1)
+	E  S DES=$P(@("^DASD("""_PP_""",""A"")"),";",2)
+	;  PRINT MENU IF TYPE IS NOT OPTION.
+	I TYPE'="OPTION" G LAST
+	;  PUSH DOWN
+	S LL=LL+1
+	S:%SCP %SCP=1 D NLN,NPG:'%SCP Q:%QT
+	G INI
+	;  POP UP
+POP	S LL=LL-1 G KIL:'LL
+	S PP=PP(LL),Z=Z(LL),RF="^DASD("""_PP_""",""O"",""O"
+	G NXT
+	Q
+KIL	K PRI,OPTL,SDNM,LL,PP,TYPE,DES,PP,RF,J,Z,C,O
+	Q
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%S1
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	G PRT
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

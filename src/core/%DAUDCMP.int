@@ -1,0 +1,64 @@
+ROUTINE %DAUDCMP [Type=INT,LanguageMode=6]
+%DAUDCMP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	;
+	K %PRINT
+	S %DDNM1=%PARM("DDNM1"),%DDNM2=%PARM("DDNM2"),%COUNT=0
+	S %ND1=^DADD(%DDNM1,"A"),%ND2=^DADD(%DDNM2,"A")
+	I %ND1'=%ND2 F %PCE=1,2 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Group;Description",";",%PCE) D BUILDW
+	S %ND1=^DADD(%DDNM1,"B"),%ND2=^DADD(%DDNM2,"B")
+	I %ND1'=%ND2 F %PCE=1:1:3 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Active Flag;Data Type;Template Name",";",%PCE) D BUILD
+	S %ND1=^DADD(%DDNM1,"H"),%ND2=^DADD(%DDNM2,"H")
+	F %PCE=1:1:4,6 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Version;Created By;Edited By;Edit Date; ;Edit Time",";",%PCE) D CVT:%PCE>3,BUILD
+	S %ND1=^DADD(%DDNM1,"DF","E"),%ND2=^DADD(%DDNM2,"DF","E")
+	I %ND1'=%ND2 F %PCE=1:1:3 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Length;Prompt;Help Screen",";",%PCE) D BUILD:%PCE'=2,BUILDW:%PCE=2
+	S %DN1=^DADD(%DDNM1,"DF","HT"),%DN2=^DADD(%DDNM2,"DF","HT")
+	I %DN1'=%DN2 S %PROMPT="Help Text" D BUILDW
+	S %DN1=^DADD(%DDNM1,"DF","AT",1),%DN2=^DADD(%DDNM2,"DF","AT",1)
+	I %DN1'=%DN2 S %PROMPT="Attribute" D BUILDW
+	S %DN1=^DADD(%DDNM1,"DF","V",1),%DN2=^DADD(%DDNM2,"DF","V",1)
+	I %DN1'=%DN2 S %PROMPT="Validation" D BUILDW
+	S %ND1=^DADD(%DDNM1,"LK"),%ND2=^DADD(%DDNM2,"LK")
+	I %ND1'=%ND2 F %PCE=1:1:9 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 D LOOKUP
+	S %ND1=^DADD(%DDNM1,"REF"),%ND2=^DADD(%DDNM2,"REF")
+	I %ND1'=%ND2 F %PCE=1:1:9 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 D REF
+	S %DN1=^DADD(%DDNM1,"TR","I"),%DN2=^DADD(%DDNM2,"TR","I")
+	I %DN1'=%DN2 S %PROMPT="Input transform" D BUILDW
+	S %DN1=^DADD(%DDNM1,"TR","O"),%DN2=^DADD(%DDNM2,"TR","O")
+	I %DN1'=%DN2 S %PROMPT="Output transform" D BUILDW
+	S %DN1=^DADD(%DDNM1,"TR","X"),%DN2=^DADD(%DDNM2,"TR","X")
+	I %DN1'=%DN2 S %PROMPT="Cross-reference Transform" D BUILDW
+CVT	;
+	I %PCE=6 G CVTIME
+	I %DN1]"" S %DTI=%DN1 D DTIX^%DAUDTTM S %DN1=%DTX
+	I %DN2]"" S %DTI=%DN2 D DTIX^%DAUDTTM S %DN2=%DTX
+	Q
+CVTIME	;
+	I %DN1]"" S %TMI=%DN1 D TMIX^%DAUDTTM S %DN1=%TMX
+	I %DN2]"" S %TMI=%DN2 D TMIX^%DAUDTTM S %DN2=%TMX
+	Q
+KILL	K %DN1,%DN2,%ND1,%ND2,%DDNM1,%DDNM2,%PCE,%COUNT,%PROMPT
+	Q
+LOOKUP	;
+	S %PROMPT=$P("Legend;Additional DDN1;Position DDN1;Additional DDN2;Position DDN2;Additional DDN3;Position DDN3;Additional DDN4;Position DDN4",";",%PCE)
+	I %PCE=1 D BUILDW Q
+	D BUILD
+	Q
+REF	;
+	S %PROMPT=$P("Reference;Piece;Extract;Cross Reference;Cross Ref Type;Primary Key;Alias;Trigger;Kwic Stop Word Ref",";",%PCE)
+	I %PCE=1!(%PCE=4)!(%PCE=9) D BUILDW Q
+	D BUILD
+	Q
+BUILD	;
+	S %COUNT=%COUNT+1
+	S %PRINT(%COUNT,"P1")=%PROMPT_": "_%DN1,%PRINT(%COUNT,"P2")=%PROMPT_": "_%DN2
+	Q
+BUILDW	;
+	S %COUNT=%COUNT+1
+	S %PRINT(%COUNT,"P1")=%PROMPT_":",%PRINT(%COUNT,"P2")=%PROMPT_":"
+	S %PRINT(%COUNT,"V1",1)=$E(%DN1,1,$ZP(%DN1,35)),%PRINT(%COUNT,"V2",1)=$E(%DN2,1,$ZP(%DN2,35)) ;	;%%Z1-G
+	I $ZL(%DN1)<36,$ZL(%DN2)<36 Q  ;	;%%Z1-G
+	S %PRINT(%COUNT,"V1",2)=$E(%DN1,$ZP(%DN1,35)+1,$ZP(%DN1,70)),%PRINT(%COUNT,"V2",2)=$E(%DN2,$ZP(%DN2,35)+1,$ZP(%DN2,70)) ;	;%%Z1-G
+	I $ZL(%DN1)>70!($ZL(%DN2)>70) S %PRINT(%COUNT,"V1",3)=$E(%DN1,$ZP(%DN1,70)+1,$ZP(%DN1,105)),%PRINT(%COUNT,"V2",3)=$E(%DN2,$ZP(%DN2,70)+1,$ZP(%DN2,105)) ;	;%%Z1-G
+	Q

@@ -1,0 +1,86 @@
+ROUTINE %DCRAAU [Type=INT,LanguageMode=6]
+%DCRAAU	;V6.1;15-Oct-92  3:45 PM;SECSTAT Security System Status Dictionary Listing
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRAAU" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S USRSTN=""
+K1	S USRSTN=$O(^DASYU("S","D",USRSTN)) I USRSTN="" G K0
+	S USRSTC=""
+K2	S USRSTC=$O(^DASYU("S","D",USRSTN,"S",USRSTC)) I USRSTC="" G K1
+	S %=$D(^DASYU("S","D",USRSTN,"S",USRSTC)),USRSTP="" S:%#10 USRSTP=^(USRSTC) S USRPRV=$S(USRSTP]"":USRSTP,1:" ")
+	S %V=USRSTP D CVT S %S1=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%CNT)=USRSTC_$C(0)_USRSTN_$C(0)_USRSTP
+	G K2
+K0	S ^DATG($J,"R")="SECSTAT,"_%DTR_","_%TMR_","_%CNT
+	K USRSTC,USRSTN,USRSTP,%S1
+PRT	D INIT
+	S %=$D(^DASYU("I","NAME")),%T1="" S:%#10 %T1=^("NAME") S SYSNAM1=$P(%T1,";"),SYSNAM2=$P(%T1,";",2)
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRAAU",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S %=^DATG($J,"R",%S1,%S2),USRSTC=$P(%,$C(0),1),USRSTN=$P(%,$C(0),2),USRSTP=$P(%,$C(0),3),USRPRV=$S(USRSTP]"":USRSTP,1:" ")
+	I %F1 D C1,H1 S %F1=0 G S0:%QT
+	D D G S0:%QT,S2
+C1	S %=$D(^DASYU("S","D",USRSTN,"E")),USRSTD="" S:%#10 USRSTD=^("E")
+	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%S2,%T1,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRAAU",%ECNT=%ECNT+1 G S2
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL(SYSNAM1,%RPKPIT)\2+39,SYSNAM1,?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL(SYSNAM2,%RPKPIT)\2+39,SYSNAM2 D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	W ?-$ZL("System Status Report",%RPKPIT)\2+39,"System Status Report" D NLN0 Q:%QT  W ?4,"_______________________________________________________________________" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	W ?4,"Status Name",?39,"Description" D NLN0 Q:%QT
+	W ?20,"Privilege Name" D NLN0 Q:%QT  W ?4,"_______________________________________________________________________" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+H1	I $Y>%PL D NPG Q
+	W ?4,USRSTN,?39,USRSTD D NLN Q:%QT
+	Q
+T1	S %HD=0 D NPG:$Y>%PL,NLN Q:%QT
+	D NLN Q:%QT
+	Q
+D	S %HD=0 D NPG:$Y>%PL W ?24,USRSTP S USRPRV=$S(USRSTP]"":USRSTP,1:" "),%=$D(^DASY("P","D",USRPRV,"E")),USRPRN="" S:%#10 USRPRN=^("E") W ?39,USRPRN D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=59,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%S2,%T1
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N SYSNAM1,SYSNAM2,USRPRN,USRPRV,USRSTC,USRSTD,USRSTN,USRSTP
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

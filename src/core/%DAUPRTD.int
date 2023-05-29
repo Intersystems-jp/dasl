@@ -1,0 +1,28 @@
+ROUTINE %DAUPRTD [Type=INT,LanguageMode=6]
+%DAUPRTD	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+TARGET	;
+	S MTENT=""
+	F  S MTENT=$O(^%DASY("MUMPS",SYSTEM,MTENT)) Q:MTENT=""  D  
+	. S ^%DASY("MUMPS",MTARGET,MTENT)=""
+	Q
+ENTRY	;
+	N NX S NX=""
+	F  S NX=$O(^%DASY("MUMPS",NX)) Q:NX=""  D  
+	. S ^%DASY("MUMPS",NX,MTENT)=""
+	q
+DEL	;
+	N NX S NX=""
+	F  S NX=$O(^%DASY("MUMPS",NX)) Q:NX=""  D  
+	. K ^%DASY("MUMPS",NX,MTENT)
+	Q
+COPY	;
+	K ^DASS(SSNAMEX) S ^DASS(SSNAMEX,"F")=^DASS(SSNAME,"F")
+	F N="G","S","R","RO"  F I=1:1 Q:'$D(^DASS(SSNAME,N,I))  D
+	.S ^DASS(SSNAMEX,N,I)=^DASS(SSNAME,N,I)
+	Q 
+LOOK	;
+	S %XS="S:MTENTX'?1""ZZ"".E %MSG=1"
+	S %MSG=1
+	Q

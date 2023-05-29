@@ -1,0 +1,89 @@
+ROUTINE %DAZCALL [Type=INT]
+%DAZCALL	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1991 All rights reserved. - 1992  ;;       1991 All rights reserved.
+BASEDIT(P1,P2)	
+	;I '$D(P2) S P2=""
+	;+%%Z3-P
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" N %zzbit,%zzi D  Q $ZC(%BASEDIT,P1,P2)
+	;. S %zzbit=1 F %zzi=0:1:8 S %zzbit(%zzi)=P2\%zzbit#2 S %zzbit=%zzbit*2
+	;. I %zzbit(5)=1,%zzbit(8)=0 S P2=P2-32,P1=$ZC(%ZUPCASE,P1)
+	;. I %zzbit(5)=1,%zzbit(8)=1 S P2=P2-288,P1=$ZC(%UPCASEQ,P1)
+	;-%%Z3-P
+	Q $$BASEDIT^%DAIO(P1,P2)
+CDATASC(P1,P2)	;
+	;**TM**;Q $ZC(%CDATASC,P1,P2)
+	Q $zd(P1,P2)
+CTIMASC(P1,P2)	;
+	;**TM**;Q $ZC(%CTIMASC,P1,P2)
+	Q $zt(P1,P2)
+EDT(P1)	;
+	;**TM** Cache,IRIS対応
+	;+%%Z3-N
+	;I $ZV["DSM for ULTRIX" Q $ZC(%SHELL,"vi "_P1)
+	;VAX DSM
+	;N %zz S %zz=$ZC(%TRNLOG,"DSM$DASL_EDITOR")
+	;Q $S(%zz="JEDI":$ZC(%JEDI,P1),%zz="EVEJ":$ZC(%JTPU,"JTPU "_P1),1:$ZC(%EDT,P1))
+	;-%%Z3-N
+	Q $ZF(-1,"notepad "_P1) ; **TM** Windowsのみ対応
+GETDVI(P1,P2,P3)	
+	I '$D(P3) S P3=""
+	set ^mina($I(^mina))="GETDVI^%DAZCALL("_P1_","_P2_","_P3_")"
+	Q "" ;$ZC(%GETDVI,P1,P2,P3)
+GETJPI(P1,P2,P3)	
+	I '$D(P3) S P3=""
+	set ^mina($I(^mina))="GETJPI^%DAZCALL("_P1_","_P2_","_P3_")"
+	Q "" ;$ZC(%GETJPI,P1,P2,P3)
+PARSE(P1,P2,P3,P4,P5)	
+	I '$D(P2) S P2=""
+	I '$D(P3) S P3=""
+	I '$D(P4) S P4=""
+	I '$D(P5) S P5=""
+	set ^mina($I(^mina))="PARSE^%DAZCALL("_P1_","_P2_","_P3_","_P4_","_P5_")"
+	Q "" ;$ZC(%PARSE,P1,P2,P3,P4,P5)
+SETUCI(P1,P2,P3)	
+	I '$D(P2) S P2=""
+	I '$D(P3) S P3=""
+	set ^mina($I(^mina))="SETUCI^%DAZCALL("_P1_","_P2_","_P3_")"
+	Q "" ;$ZC(%SETUCI,P1,P2,P3)
+SETX(P1)	
+	set ^mina($I(^mina))="SETX^%DAZCALL("_P1_")"
+	Q "" ;$ZC(%SETX,P1)
+SPAWN(P1)	
+	set ^mina($I(^mina))="SPAWN^%DAZCALL("_P1_")"
+	Q "" ;$ZC(%SPAWN,P1)
+SQRT(P1)	
+	set ^mina($I(^mina))="SQRT^%DAZCALL("_P1_")"
+	Q $ZSQR(P1)
+	;+%%Z3-Y
+SIN(P1)	;**TM**;I $ZV["VAX DSM" Q $ZC(%SIN,P1)
+	Q $zsin(P1)
+	;-%%Z3-Y
+TRNLOG(P1,P2)	
+	;I $ZV["DSM for ULTRIX" Q ""
+	;I '$D(P2) Q $ZC(%TRNLOG,P1)
+	;Q $ZC(%TRNLOG,P1,P2)
+	Q "" ; Cache,IRISの場合もNULL
+UCI	;
+	Q $znspace
+UPCASE(P1)	;
+	;**TM**;Q $ZC(%ZUPCASE,P1) ;	;%%Z3-P
+	Q $zcvt(P1,"U") ;	;%%Z3-P
+UPCASEQ(P1)	;
+	;**TM**;Q $ZC(%UPCASEQ,P1)
+	Q $zcvt(P1,"U")
+LOWCASE(P1)	
+	;**TM**;I $ZV["VAX DSM" Q P1
+	;**TM**;Q $ZC(%LOWCASE,P1)
+	Q $zcvt(P1,"L")
+SUBMIT(P1,P2)	
+	;Q $ZC(%SUBMIT,P1,P2)
+	Q $zf(-1,P1,P2)
+SPOOL(P1)	;
+	I $ZV["VAX DSM" Q ""
+	Q "" ;$ZC(%STAT,"/usr/spool/_""_P1_""","IFDIR")
+MODE()	;
+	;I $ZV["VAX DSM" Q $V($ZK(JSTAT_L_OPTION))\$ZK(JSO_M_DASL)#2
+	;I $ZV["DSM for ULTRIX" Q $$OPTION^%SYSUTL("DASL_CUSTOMIZE")
+	Q $get(^%DASLCUSTOMIZE)=$JOB

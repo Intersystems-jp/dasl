@@ -1,0 +1,108 @@
+ROUTINE %DCRABM [Type=INT,LanguageMode=6]
+%DCRABM	;V6.1;15-Oct-92  3:47 PM;UDXRF Data Name Usage Report
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRABM" G SAVE
+PRT	S %CNT=0 D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S %CNT=%CNT+1 D EVAL
+K0	S ^DATG($J,"R")="UDXRF,"_%DTR_","_%TMR_","_%CNT
+	D T0
+	G S0
+EVAL	S $ZT="PERR^%DCRABM",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	D D Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+KILLI	K %F0,%S1,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRABM",%ECNT=%ECNT+1 G S0
+ERR	S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZL("データネーム使用レポート",%RPKPIT)\2+39,"データネーム使用レポート" F %V=1:1:2 D NLN0 Q:%QT
+	G SEC17:'(%PG=1)
+	I $Y>%PL D NPG Q
+	D ^%DAUDXRF
+	W ?4,"Searching for: " S %DNM=""
+REPL18	S %DNM=$O(^DATG($J,"U","DDN",%DNM)) G REP18:%DNM=""
+	S %LIST=^DATG($J,"U","DDN",%DNM)
+	W:%LIST]"" ?21,%LIST D:%LIST]"" NLN0 Q:%QT
+	G REPL18
+REP18	;
+SEC17	;
+	D NLN0 Q:%QT
+	W "Components",?14,"Name" G SEC19:'(%SORT="D")
+	I $Y>%PL D NPG Q
+	W ?29,"Data Name",?44,"Field/Level"
+SEC19	;
+	G SEC20:'(%SORT="F")
+	I $Y>%PL D NPG Q
+	W ?29,"Field/Level",?44,"Data Name"
+SEC20	;
+	W ?59,"Sub-fld/Line/Col" D NLN0 Q:%QT  W "________________________________________________________________________________" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	S %HD=0 D NPG:$Y>%PL
+	K %DNM,^DATG($J,"U"),^DATG($J,"R")
+	D NLN Q:%QT
+	Q
+D	S %HD=0 D NPG:$Y>%PL
+	;  Print report from ^DATG($J,"R",..)
+	;  %N1 - "S" for screen "R" for report "D" for data name
+	;  %N2 - Screen or Report name
+	;  %N3 - Data name
+	;  %N4 - Field name or level
+	;  %N5 - Sub field name
+	S %N1=""
+REPL11	S %N1=$O(^DATG($J,"R",%N1)) G REP11:%N1="" W:%N1="S" %N1_"creen" W:%N1="R" %N1_"eport" W:%N1="D" %N1_"ata Name" W:%N1="TB" "Table" S %N2=""
+REPL12	S %N2=$O(^DATG($J,"R",%N1,%N2)) G REP12:%N2="" W ?14,%N2 S %N3=""
+REPL13	S %N3=$O(^DATG($J,"R",%N1,%N2,%N3)) G REP13:%N3="" W:%N1'="D" ?29,%N3 S %N4=""
+REPL14	S %N4=$O(^DATG($J,"R",%N1,%N2,%N3,%N4)) G REP14:%N4="",SEC15:'(%N4'="XXX")
+	D NPG:$Y>%PL W:%N1'="D" ?44,%N4
+SEC15	;
+	S %N5=""
+REPL16	S %N5=$O(^DATG($J,"R",%N1,%N2,%N3,%N4,%N5)) G REP16:%N5="" W:%N5'="0" ?59,%N5 D NLN Q:%QT
+	G REPL16
+REP16	;
+	G REPL14
+REP14	;
+	G REPL13
+REP13	;
+	D NLN Q:%QT
+	G REPL12
+REP12	;
+	D NLN Q:%QT
+	G REPL11
+REP11	;
+	; 
+END	KILL %N1,%N2,%N3,%N4,%N5,%ON5,%OCOMP,%COMP,^DATG($J,"R")
+	KILL %FG,%LIST
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%S1
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	G PRT
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

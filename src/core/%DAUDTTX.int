@@ -1,0 +1,130 @@
+ROUTINE %DAUDTTX [Type=INT,LanguageMode=6]
+%DAUDTTX	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	ZT "対話型のルーチンではありません。" ;	;%%Z3-T
+SET	;
+	S FORMAT=$S($D(^DASY("PARM","DTTM")):^("DTTM"),1:"")
+	S DAYS=$S($D(^DASY("PARM","DAY")):^("DAY"),1:"Sunday;Monday;Tuesday;Wednesday;Thursday;Friday;Saturday")
+	S JDAYS=$S($D(^DASY("PARM","JDAY")):^("JDAY"),1:"日;月;火;水;木;金;土")
+	S MONTHS=$S($D(^DASY("PARM","MON")):^("MON"),1:"Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec")
+	S JYEARS=$S($D(^DASY("PARM","JYEAR")):^("JYEAR"),1:"54064,1989,平成,H;31404,1926,昭和,S;26143,1912,大正,T;9862,1868,明治,M") ;	;%%Z1-O
+	K X 
+	D GENTMO S X("XTMO")=X
+	D GENNOW S X("XNOW")=X
+	D GENTNM S X("XTNM")=X
+	D GENDTO S X("XDTO")=X
+	D GENTOD S X("XTOD")=X
+	D GENNUM S X("XNUM")=X
+	D GENSTR S X("XSTR")=X
+	D GENAE S X("XAE")=X
+	D GENDTER S X("XDTER")=X
+	D GENDRER S X("XDRER")=X
+	D GENTMER S X("XTMER")=X
+	D GENTRER S X("XTRER")=X
+	D GENMON S X("XMON")=X
+	D GENDOW S X("XDOW")=X
+	D GENDOWJ S X("XDOWJ")=X ;	;%%Z1-O
+	D GENJY S X("XJY")=X ;	;%%Z1-O
+	K FORMAT,FMT,DAYS,MONTHS,LITF,I,J,C
+	Q
+VTMF	F %=1:1:$L(%RES) I $E(%RES,%)'?1PZ,"AHMNJ"'[$E(%RES,%) S %MSG="不適当な文字です。記号，漢字または'AHMNJ'の中の一つを入力して下さい。" Q  ;	;%%Z1-T
+	I $E(%RES,%)="J" S:"AHMN"'[$E(%RES,%-1)!(%=1) %MSG="'J'の使用が不適当です。A,H,M または N の後に指定して下さい。" Q  ;	;%%Z1-O;%%Z1-T
+	I %RES["N",%RES["A" S %MSG="A(AM/PM) は、N(２４時間フォーマット)と併用することはできません。" ;	;%%Z2-Y
+	Q
+VDTF	N C
+	F %=1:1:$L(%RES) S C=$E(%RES,%) I C'?1PZ D VDTFC Q:%MSG]""  ;	;%%Z1-O
+	Q
+VDTFC	I "DWMNYG"[C Q  ;	;%%Z1-O
+	I "SZ"[C S:"DNI"'[$E(%RES,%+1)!(%=$L(%RES)) %MSG="'"_C_"'の使用が不適当です。D または N の前に指定して下さい。" Q  ;	;%%Z1-T
+	I C="C" S:$E(%RES,%+1)'="Y" %MSG="'C'の使用が不適当です。'Y'の前に指定して下さい。" Q  ;	;%%Z1-T
+	I C="I" S:$E(%RES,%+1)'="Y" %MSG="'I'の使用が不適当です。'Y'の前に指定して下さい。" Q  ;	;%%Z1-O;%%Z1-T
+	I C="J" S:"DWNYG"'[$E(%RES,%-1)!(%=1) %MSG="'J'の使用が不適当です。D,W,N,Y または G の後に指定して下さい。" Q  ;	;%%Z1-O;%%Z1-T
+	S %MSG="文字が不適当です。記号，漢字または'CDGIJMNSWYZ'の内の一つを入力して下さい" Q  ;	;%%Z1-O
+VDTI	I %RES'="YMD",%RES'="YDM",%RES'="DMY",%RES'="MDY" S %MSG="""DMY"",""MDY"",""YMD"",""YDM"" のように日付入力順序を入力して下さい。" ;	;%%Z1-T
+	Q
+	S %MSG="" I $L(%RES,";")'=12 S %MSG=1
+	I '%MSG F %=1:1:12 I $P(%RES,";",%)'?1.AN S %MSG=1 Q
+	I %MSG S %MSG="Enter the 12 months of the year separated by semicolons."
+	Q
+VMON	;
+	F %=1:1:12 I $P(%RES,";",%)'?2A.A S %MSG=1 Q
+	I %MSG S %MSG="';'で区切って'月'の呼び名を入力して下さい。" ;	;%%Z1-T
+	Q
+VDAY	;
+	F %=1:1:7 I $P(%RES,";",%)'?2A.A S %MSG=1 Q
+	I %MSG S %MSG="';'で区切って'曜日'の呼び名を入力して下さい。" ;	;%%Z1-Y;%%Z1-T
+	Q
+VDAYJ	;%%Z1-O
+	S %MSG="" I $L(%RES,";")'=7 S %MSG=1
+	I '%MSG F %=1:1:7 I $P(%RES,";",%)'?1.Z S %MSG=1 Q
+	I %MSG S %MSG="';'で区切って'曜日'の呼び名を漢字で入力して下さい。" ;	;%%Z1-T
+	Q
+	;%%Z1-O
+GENNOW	I $P(FORMAT,";",5)="" S X="XNOW ;" Q
+	S X="XNOW G TMNOW:$E(%1)="""_$P(FORMAT,";",5)_"""" Q
+GENTNM	I $P(FORMAT,";",2)'="N:M" S X="XTNM ;" Q
+	S X="XTNM I %TMX=""12:00"" S %TMI=""43200"" G TIME" Q
+GENTOD	I $P(FORMAT,";",6)="" S X="XTOD ;" Q
+	S X="XTOD G DTTOD:$E(%1)="""_$P(FORMAT,";",6)_"""" Q
+GENTMO	S FMT=$P(FORMAT,";",2) S:FMT="" FMT="H:M A"
+	S X="",LITF=0 F I=1:1:$L(FMT) D GENTMOS
+	D GENNL S X="XTMO S %TMX="_X Q
+GENTMOS	S C=$E(FMT,I) Q:C="J"  I C?1PZ D GENLT Q  ;      ;%%Z1-O
+	D GENNL S:X]"" X=X_"_"
+	;%%Z1-O
+	I C="H" S XX="$J(%TMI\3600-1#12+1,2)" S X=X_$S($E(FMT,I+1)="J":"$ZZ("_XX_")",1:XX) Q
+	I C="N" S XX="$E(86400*'%TMI+%TMI\3600+100,2,3)" S X=X_$S($E(FMT,I+1)="J":"$ZZ("_XX_")",1:XX) Q
+	I C="M" S XX="$E(%TMI\60#60+100,2,3)" S X=X_$S($E(FMT,I+1)="J":"$ZZ("_XX_")",1:XX) Q
+	I C="A" S X=X_$S($E(FMT,I+1)="J":"""午""_$E(""前後"",%TMI>43199+1)",1:"$E(""AP"",%TMI>43199+1)_""M""") Q
+	S %MSG="時間出力フォーマットが不適当です。" ZT %MSG ;	;%%Z1-T
+	;%%Z1-O
+GENDTO	S FMT=$P(FORMAT,";",3) S:FMT="" FMT="SD-M-Y"
+	S X="",LITF=0 F I=1:1:$L(FMT) D GENDTOS
+	D GENNL S X="XDTO S %DTX="_X Q
+GENDTOS	S C=$E(FMT,I) I C?1PZ D GENLT Q  ;	;%%Z1-O
+	D GENNL I "CSZIJ"[C Q  ;	;%%Z1-O
+	S:X]"" X=X_"_"
+	;%%Z1-O
+	I C="M" S X=X_"$P($T(XMON),"";"",%2+2)" Q
+	I C="G" S X=X_"$P(%4,"","","_$S($E(FMT,I+1)="J":"1",1:"2")_")" Q
+	I C="W" S X=X_"$P($T("_$S($E(FMT,I+1)="J":"XDOWJ",1:"XDOW")_"),"";"",%DTI#7+3)" Q
+	I C="Y" D  Q
+	.I $E(FMT,I-1)'="I" S XX=$S($E(FMT,I-1)="C":"%3",1:"$S($E(%3,1,2)=19:$E(%3,3,4),1:%3)") S X=X_$S($E(FMT,I+1)="J":"$ZZ("_XX_")",1:XX) Q
+	.S J=$E(FMT,I-2),XX=$S(J="Z":"$E(100+%5,2,3)",J="S":"$J(%5,2)",1:"%5"),X=X_$S($E(FMT,I+1)="J":"$S(%5=1:"""_$S("ZS"[J:"　",1:"")_"元"",1:$ZZ("_XX_"))",1:XX) Q
+	I C="D" S J=$E(FMT,I-1),XX=$S(J="Z":"$E(100+%1,2,3)",J="S":"$J(%1,2)",1:"%1"),X=X_$S($E(FMT,I+1)="J":"$ZZ("_XX_")",1:XX) Q
+	I C="N" S J=$E(FMT,I-1),XX=$S(J="Z":"$E(100+%2,2,3)",J="S":"$J(%2,2)",1:"%2"),X=X_$S($E(FMT,I+1)="J":"$ZZ("_XX_")",1:XX) Q
+	;%%Z1-O
+	S %MSG="日付出力フォーマットが不適当です。" ZT %MSG ;	;%%Z1-T
+GENLT	I 'LITF S X=X_$S(X="":"",1:"_")_"""",LITF=1
+	S X=X_C Q
+GENNL	I LITF S X=X_"""",LITF=0
+	Q
+GENNUM	S FMT=$P(FORMAT,";",4) S:FMT="" FMT="MDY"
+	I $E(FMT,3)="Y" S X="XNUM I %1?3.N G DTXDN:$L(%1)#2 S %1=$E(%1,1,2)_""/""_$E(%1,3,4)_""/""_$E(%1,5,99)" Q
+	I $E(FMT)="Y" S X="XNUM I %1?3.N S %2=$L(%1) G DTXDN:%2#2 S %1=$E(%1,%2-1,%2)_""/""_$E(%1,%2-3,%2-2)_""/""_$E(%1,1,%2-4)" Q
+	S %MSG="日付入力フォーマットが不適当です。" ZT %MSG ;	;%%Z1-T
+GENSTR	S FMT=$P(FORMAT,";",4) S:FMT="" FMT="MDY"
+	I $E(FMT,3)="Y" S X="XSTR ;" Q
+	I $E(FMT)="Y" S X="XSTR E  S %1=$P(%1,""/"",3)_""/""_$P(%1,""/"",2)_""/""_$P(%1,""/"")" Q
+	S %MSG="日付入力フォーマットが不適当です。" ZT %MSG ;	;%%Z1-T
+GENAE	S FMT=$P(FORMAT,";",4) S:FMT="" FMT="MDY"
+	I $E(FMT,2)="D" S X="XAE E  S %92=%91,%91=%2 ;American" Q
+	I $E(FMT,2)="M" S X="XAE E  S %92=%2 ;European" Q
+	S %MSG="日付入力フォーマットが不適当です。" ZT %MSG ;	;%%Z1-T
+GENDTER	S X="XDTER S %MSG="""_^%DAMSG(%FLANG,"DATE")
+	S C=$P(FORMAT,";",6),J=$P(MONTHS,";",7)
+	S FMT=$P(FORMAT,";",4) S:FMT="" FMT="MDY"
+	I FMT="DMY" S X=X_" 4/7/76, 4-"_J_"-76, "_$S(C="":^%DAMSG(%FLANG,"OR"),1:"")_"040776"_$S(C="":"",1:", "_^%DAMSG(%FLANG,"OR")_" "_C_"-1")_"."" Q" Q
+	I FMT="MDY" S X=X_" 7/4/76, 4-"_J_"-76, "_$S(C="":^%DAMSG(%FLANG,"OR"),1:"")_"070476"_$S(C="":"",1:", "_^%DAMSG(%FLANG,"OR")_" "_C_"-1")_"."" Q" Q
+	I FMT="YMD" S X=X_" 76/7/4, 76-"_J_"-4, "_$S(C="":^%DAMSG(%FLANG,"OR"),1:"")_"760704"_$S(C="":"",1:", "_^%DAMSG(%FLANG,"OR")_" "_C_"-1")_"."" Q" Q
+	I FMT="YDM" S X=X_" 76/4/7, 76-"_J_"-4, "_$S(C="":^%DAMSG(%FLANG,"OR"),1:"")_"760407"_$S(C="":"",1:", "_^%DAMSG(%FLANG,"OR")_" "_C_"-1")_"."" Q" Q
+	S %MSG="日付入力フォーマットが不適当です。" ZT %MSG ;	;%%Z1-T
+GENDRER	S X="XDRER "_^%DAMSG(%FLANG,"DATE1")_" Q" Q
+GENTMER	S C=$P(FORMAT,";",5)
+	S X="XTMER S %MSG="""_^%DAMSG(%FLANG,"TIME")_$S(C="":^%DAMSG(%FLANG,"OR"),1:"")_" 1615"_$S(C="":"",1:", "_^%DAMSG(%FLANG,"OR")_" "_C_"-1")_"."" Q" Q
+GENTRER	S X="XTRER "_^%DAMSG(%FLANG,"TIME1")_" Q" Q
+GENMON	S X="XMON ;;"_MONTHS Q
+GENDOW	S X="XDOW ;;"_$P(DAYS,";",5,7)_";"_$P(DAYS,";",1,4) Q
+GENDOWJ	S X="XDOWJ ;;"_$P(JDAYS,";",5,7)_";"_$P(JDAYS,";",1,4) Q  ;	;%%Z1-O
+GENJY	S X="XJY ;;"_JYEARS Q  ;	;%%Z1-O

@@ -1,0 +1,85 @@
+ROUTINE %DCRABP [Type=INT,LanguageMode=6]
+%DCRABP	;V6.1;15-Oct-92  3:47 PM;UKEYDEF Print DASL key definitions
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRABP" G SAVE
+PRT	S %CNT=0 D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S %CNT=%CNT+1 D EVAL
+K0	S ^DATG($J,"R")="UKEYDEF,"_%DTR_","_%TMR_","_%CNT
+	D T0
+	G S0
+EVAL	S $ZT="PERR^%DCRABP",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	D D Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+KILLI	K %F0,%S1,%T1,%T2,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRABP",%ECNT=%ECNT+1 G S0
+ERR	S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+D	S %HD=0 D NPG:$Y>%PL
+	S %=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDHF=$P(%T2,";"),KDHF2=$P(%T2,";",23),KDHG=$P(%T2,";",2),%=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDNTF=$P(%T1,";")
+	S %=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDMMF=$P(%T2,";",3),KDMMG=$P(%T2,";",4),%=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDPVF=$P(%T1,";",2)
+	S %=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDEF=$P(%T2,";",5),KDEG=$P(%T2,";",6),%=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDZF=$P(%T1,";",3),%=$D(^DASY("PARM","KD")),%T2=""
+	S:%#10 %T2=^("KD") S KDPFF=$P(%T2,";",7),KDPFG=$P(%T2,";",8),%=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDZKF=$P(%T1,";",4),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD")
+	S KDCFF=$P(%T2,";",9),KDCFG=$P(%T2,";",10),%=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDZHF=$P(%T1,";",5),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDCMF=$P(%T2,";",11)
+	S KDCMG=$P(%T2,";",12),%=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDSYF=$P(%T1,";",6),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDPSF=$P(%T2,";",13),KDPSG=$P(%T2,";",14)
+	S %=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDCDF=$P(%T1,";",7),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDNSF=$P(%T2,";",15),KDNSG=$P(%T2,";",16)
+	S %=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDHKF=$P(%T1,";",8),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDILF=$P(%T2,";",17),KDILG=$P(%T2,";",18)
+	S %=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDNOF=$P(%T1,";",9),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDDLF=$P(%T2,";",19),KDDLG=$P(%T2,";",20)
+	S %=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDHF=$P(%T1,";",10),%=$D(^DASY("PARM","KD")),%T2="" S:%#10 %T2=^("KD") S KDSSF=$P(%T2,";",21),KDSSG=$P(%T2,";",22)
+	S %=$D(^DASY("PARM","KDJ")),%T1="" S:%#10 %T1=^("KDJ") S JKDNCF=$P(%T1,";",11),JKDPCF=$P(%T1,";",12),JKDSCF=$P(%T1,";",13),JKDECF=$P(%T1,";",14),JKDCCF=$P(%T1,";",15)
+	D NPG:$Y>%PL W ?-$ZL("ファンクション キー 定義",%RPKPIT)\2+39,"ファンクション キー 定義" F %V=1:1:2 D NLN Q:%QT
+	W ?10,"Function",?20,"Function Key",?34,"Gold Key",?51,"Function",?62,"Function Key" D NLN Q:%QT  W ?2,"___________________________________________________________________________" D NLN Q:%QT
+	W ?14,"Help",?23,KDHF,?26,KDHF2,?36,KDHG,?-$ZL("文節次候補",%RPKPIT)+59,"文節次候補",?66,JKDNTF D NLN Q:%QT
+	W ?9,"Main Menu",?23,KDMMF,?36,KDMMG,?-$ZL("文節前候補",%RPKPIT)+59,"文節前候補",?66,JKDPVF D NLN Q:%QT
+	W ?14,"Exit",?23,KDEF,?36,KDEG,?-$ZL("全角変換",%RPKPIT)+59,"全角変換",?66,JKDZF D NLN Q:%QT
+	W ?4,"Previous field",?23,KDPFF,?36,KDPFG,?-$ZL("全角カタカナ変換",%RPKPIT)+59,"全角カタカナ変換",?66,JKDZKF D NLN Q:%QT
+	W ?7,"Clear Field",?23,KDCFF,?36,KDCFG,?-$ZL("全角ひらがな変換",%RPKPIT)+59,"全角ひらがな変換",?66,JKDZHF D NLN Q:%QT
+	W ?6,"Command Mode",?23,KDCMF,?36,KDCMG,?-$ZL("記号変換",%RPKPIT)+59,"記号変換",?66,JKDSYF D NLN Q:%QT
+	W ?3,"Previous Screen",?23,KDPSF,?36,KDPSG,?-$ZL("コード変換",%RPKPIT)+59,"コード変換",?66,JKDCDF D NLN Q:%QT
+	W ?7,"Next Screen",?23,KDNSF,?36,KDNSG,?-$ZL("半角カタカナ変換",%RPKPIT)+59,"半角カタカナ変換",?66,JKDHKF D NLN Q:%QT
+	W ?7,"Insert Line",?23,KDILF,?36,KDILG,?-$ZL("無変換",%RPKPIT)+59,"無変換",?66,JKDNOF D NLN Q:%QT
+	W ?7,"Delete Line",?23,KDDLF,?36,KDDLG,?-$ZL("半角変換",%RPKPIT)+59,"半角変換",?66,JKDHF D NLN Q:%QT
+	W ?3,"Software Status",?23,KDSSF,?36,KDSSG,?-$ZL("次文節移動",%RPKPIT)+59,"次文節移動",?66,JKDNCF D NLN Q:%QT
+	W ?-$ZL("前文節移動",%RPKPIT)+59,"前文節移動",?66,JKDPCF D NLN Q:%QT
+	W ?-$ZL("文節縮小",%RPKPIT)+59,"文節縮小",?66,JKDSCF D NLN Q:%QT
+	W ?-$ZL("文節拡大",%RPKPIT)+59,"文節拡大",?66,JKDECF D NLN Q:%QT
+	W ?-$ZL("候補選択",%RPKPIT)+59,"候補選択",?66,JKDCCF
+SEC11	;
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%S1,%T1,%T2
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N JKDCCF,JKDCDF,JKDECF,JKDHF,JKDHKF,JKDNCF,JKDNOF,JKDNTF,JKDPCF,JKDPVF,JKDSCF,JKDSYF,JKDZF,JKDZHF,JKDZKF,KDCFF,KDCFG,KDCMF,KDCMG,KDDLF
+	N KDDLG,KDEF,KDEG,KDHF,KDHF2,KDHG,KDILF,KDILG,KDMMF,KDMMG,KDNSF,KDNSG,KDPFF,KDPFG,KDPSF,KDPSG,KDSSF,KDSSG
+	G PRT
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

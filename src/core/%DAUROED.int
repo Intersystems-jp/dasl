@@ -1,0 +1,125 @@
+ROUTINE %DAUROED [Type=INT,LanguageMode=6]
+%DAUROED	;
+	;;     Copyright ?Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+NEWTEST	;
+	I %RES'?1A.7AN&(%RES'?1"%"1A.7AN) S %MSG="|ルーチン名が不適当です。１文字の英字に続く７文字までの英数字を入力して下さい~" Q  ;	;%%Z1-T
+	S NEW=0
+	ZA @%RES:9 E  S %MSG="|このルーチンは他のユーザが使用しています。~" Q  ;	;%%Z1-T
+	S $ZT="TRAP^%DAUROED" X "ZL @%RES S F1=$T(+1),F2=$T(+2)"
+	S $ZT=""
+EVAL	S X=$P(F1,";",2),AUTHOR=$P(X,",",1),PROG=$P(X,",",2),PACK=$P(X,",",3),SYS=$P(X,",",4),DATE=$P(F1,";",3),DESC=$P(F1,";",4),DASL=$P(F2,";",2),MAP=$P(F2,";",3),GROUP=$P(F2,";",4)
+	S FL4=$E(F1,235,255),FL3=$E(F1,157,234),FL2=$E(F1,79,156),FL1=$E(F1,1,78)
+	K X
+	Q
+TRAP	;
+	I $ZE["NOSUCHPGM" S $ZE="",NEW=1,F1=%RES_$C(9)_";,,,;"_%DTX_" "_%TMX_";",F2=$C(9)_";DASL;;" G EVAL
+	S %MSG=$ZE,$ZE=""
+	Q
+EDIT	;               
+	U 0:(NOESC:NOCON:WIDTH=80:CTRAP="":TERM="")
+	S $ZT="ERROR^%DAUROED"
+	N %kjon,%kjof,%knon,%knof S %kjon=$C(124),%kjof=$C(126),%knon=$C(123),%knof=$C(125) ;	;%%Z1-N
+	D NOW^%DAUDTTM
+	S %IOD=ROUTINE_".DAT"
+	I $E(%IOD)="%" S %IOD=$E(%IOD,2,99)
+	;**TM**; Cache,IRISのみ対応; I $ZV["ULTRIX" S %IOD=$ZC(%LOWCASE,%IOD)  ;;%%Z3-ULTRIX
+	I $ZV["ULTRIX" S %IOD=$ZCVT(%IOD,"L")  ;;%%Z3-ULTRIX
+	O %IOD:NEW
+	U %IOD S %INIOD=$ZI
+	W %DTX," ",%TMX,!,"Saved by ^%DAUROED from environment "
+	W $$OPTION^%SYSUTL("ENVIRONMENT"),!
+	W ROUTINE,!
+	S F1=ROUTINE_$C(9)_";"_AUTHOR_","_PROG_","_PACK_","_SYS_";"_%DTX_" "_%TMX_";"_DESC
+	S F2=$C(9)_";DASL;"_MAP_";"_GROUP
+	U 0
+	;**TM**; Cache,IRISのみ対応
+	;;%%Z3-ULTRIX +++
+	;I $ZV["ULTRIX" D
+	;. I 'NEW X "ZL @ROUTINE ZR:($P($T(+2),"";"",2)=""DASL"") +2 ZR +1 ZI F1,F2 U %IOD F F1=1:1 S F2=$T(+F1) Q:F2=""""  S F2=$P(F2,"" "")_$C(9)_$P(F2,"" "",2,255) W F2,!" ;	;%%Z1-O
+	;. I NEW U %IOD W F1,!,F2,!
+	;E  D
+	;. I 'NEW X "ZL @ROUTINE ZR:($P($T(+2),"";"",2)=""DASL"") +2 ZR +1 ZI F1,F2 U %IOD F F1=1:1 S F2=$T(+F1) Q:F2=""""  S F2=$P(F2,"" "")_$C(9)_$P(F2,"" "",2,255) W $S($$DSMCODE^%DASJUTL()=""VMS"":F2,1:$ZC(%KJVMS,F2,%knon,%knof)),!" ;	;%%Z1-O
+	;. I NEW U %IOD W $S($$DSMCODE^%DASJUTL()="VMS":F1,1:$ZC(%KJVMS,F1,%knon,%knof)),!,$S($$DSMCODE^%DASJUTL()="VMS":F2,1:$ZC(%KJVMS,F2,%knon,%knof)),!
+	;;%%Z3-ULTRIX ---
+	I 'NEW X "ZL @ROUTINE ZR:($P($T(+2),"";"",2)=""DASL"") +2 ZR +1 ZI F1,F2 U %IOD F F1=1:1 S F2=$T(+F1) Q:F2=""""  S F2=$P(F2,"" "")_$C(9)_$P(F2,"" "",2,255) W F2,!" ;	;%%Z1-O
+	I NEW U %IOD W F1,!,F2,!
+	;**TM**;
+	U %IOD W ! ;	;%%Z1-O
+	;I 'NEW X "ZL @ROUTINE ZR:($P($T(+2),"";"",2)=""DASL"") +2 ZR +1 ZI F1,F2 U %IOD ZP  W !"
+	;I NEW U %IOD W F1,!,F2,!!
+	U 0 C %IOD
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["ULTRIX" S %MTIME=$ZC(%STAT,%INIOD,"MTIME")  ;;%%Z3-ULTRIX
+	;I $ZV["ULTRIX" W %E,"|"  ;;%%Z3-ULTRIX
+	W $$EDT^%DAZCALL(%IOD)
+	I $ZV["ULTRIX" W %E,"}"  ;;%%Z3-ULTRIX
+	O %IOD:READONLY U %IOD S %OUTIOD=$ZI
+	;;%%Z3-ULTRIX +++
+	U 0
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["ULTRIX",%MTIME=$ZC(%STAT,%INIOD,"MTIME") W !!,"No changes made to ",%INIOD G CLEAN
+	;I $ZV'["ULTRIX",%INIOD=%OUTIOD W !!,"No changes made to ",%INIOD G CLEAN
+	;;%%Z3-ULTRIX ---
+	U %IOD R %DATIM,%HEAD,%NAM
+	U 0 W !!,"Restoring ",%NAM,!! W:%HEAD]"" "Header: ",%HEAD,!!
+	S $ZT="EOFE^%DAUROED" ;	;%%Z1-O
+	;;%%Z3-ULTRIX +++
+	;**TM** Cache,IRISのみ対応
+	K F2 U %IOD F F2=1:1 R F1 D KESC(.F1,.%MSG) S F2(F2)=F1 ;	;%%Z1-O
+	;I $ZV["ULTRIX" D
+	;. K F2 U %IOD F F2=1:1 R F1 D KESC(.F1,.%MSG) S F2(F2)=F1 ;	;%%Z1-O
+	;E  D
+	;. K F2 U %IOD F F2=1:1 R F1 D KESC(.F1,.%MSG) S F2(F2)=$S($$DSMCODE^%DASJUTL()="VMS":F1,1:$ZC(%KJDSM,F1,%knon,%knof)) ;	;%%Z1-O
+	;;%%Z3-ULTRIX ---
+	;**TM**; ENDOFFILEエラーの変更; 
+	;EOFE	I $ZE]"",$ZE'["ENDOFILE" G ERROR  ;	;%%Z1-O
+EOFE	I $ZE]"",$ZE'["ENDOFFILE" G ERROR  ;	;%%Z1-O
+	X "ZR  F F1=1:1:F2-1 ZI F2(F1):0+F1 ZS:(F1=F2-1) @%NAM" C %IOD:DELETE ;	;%%Z1-O
+	;U %IOD X "ZL  ZS @%NAM" C %IOD
+CLEAN	;
+	H 2 W %E,"[2J"
+	S %O=0 F %=1:1:23 S %O(%)=0
+	U 0:(ESC:ECHO:CON:WIDTH=0:TERM=%TRM)
+	;;S F=$ZC(%ZCVODIC) W %E,"[7l",%kjof ;	;%%Z1-O
+	I $D(ROUTINE),ROUTINE]"" ZD @ROUTINE
+	E  ZD
+	K %NAM,%EDT,%DATIM,%HEAD,%INIOD,%IOD,%OUTIOD
+	K F,F1,F2,DASL
+	Q
+ERROR	;
+	U 0 S %MSG=$S($ZE]"":$ZE,1:"Unknown error - %DAUROED")
+	I $D(%IOD) C %IOD
+	G CLEAN
+MAPPED	;
+	S $ZT="MERR^DAUROED"
+	O FILE:NEW U FILE
+	W $P($ZH,",",3) 
+	W !,COMMENT
+	;**TM** ^ ()を^$Routineに変更
+	;S R="" F  S R=$O(^ (R)) Q:R=""  I $E($T(+2^@R),2,8)=";DASL;Y" W !,R
+	S R="" F  S R=$O(^$Routine(R)) Q:R=""  I $E($T(+2^@R),2,8)=";DASL;Y" W !,R
+	U 0 C FILE
+	Q
+MERR	;
+	S %MSG=$ZE,$ZE=""
+	U 0 C COM,RDIR
+	K KEY,X
+	Q
+BADINP	;
+	I $ZE]"",$ZE'["bad input" ZQ
+	S %MSG="'"_%knon_"'または'"_%knof_"'がルーチンに含まれています。他の文字に置換えて下さい。" ;	;%%Z1-T
+	Q
+KESC(L,M)	;%%Z1-O Check kanji ON/OFF invoke sequence : L=source_line,M=message
+	N kj,b,c,p
+	S kj=$ZC(KJOFF)
+	I (L[%kjon)!(L[%kjof) D KESC1
+	S kj=$ZC(KJON)
+	Q
+KESC1	;
+	I L[%kjon,M'[$A(%kjon) S M=M_$S(%MSG]"":"および",1:"")_"$C("_$A(%kjon)_")" ;	;%%Z1-T
+	I L[%kjof,M'[$A(%kjof) S M=M_$S(%MSG]"":"および",1:"")_"$C("_$A(%kjof)_")" ;	;%%Z1-T
+	S b=L,L=""
+	F p=1:1:$L(b) S c=$E(b,p) I (c'=%kjon)&(c'=%kjof) S L=L_c
+	Q
+	;%%Z1-O

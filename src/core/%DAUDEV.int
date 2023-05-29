@@ -1,0 +1,222 @@
+ROUTINE %DAUDEV [Type=INT,LanguageMode=6]
+%DAUDEV	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+REPORT	N %ENTRY S %ENTRY="R"
+	I '$D(%RPNAME) S %MSG="レポート名が未定義です。" Q  ;	;%%Z2-T
+	G PIMMED
+QUERY	N %ENTRY S %ENTRY="Q"
+	I '$D(%QUNAME) S %MSG="検索要素名が未定義です。" Q  ;	;%%Z2-T
+	D ^%DAQC I %MSG]"" Q 
+PIMMED	O %IOD:NEW:10 E  S %MSG="出力デバイス'"_%IOD_"'がオープンできません。" G EXIM ;	;%%Z1-T
+	I $D(%VAR("EXPD")) D CONTIN^%DAUDMP 
+	;**TM**;U %IOD:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %IOD:(KON=%RPKON:KOFF=%RPKOF) I $D(%PP),%PP W %E,"[5i",%E,"[6i",%E,"[66t" ;      ;%%Z1-F
+	; ピッチ等はNLSコマンドを使用
+	set ^mina($I(^mina))="%DAUDEV:%RPKPIT="_%RPKPIT_" %RPKTYP="_%RPKTYP
+	U %IOD D SetPitch^%NLS(%RPKPIT) D SetIO^%NLS(%RPKTYP) I $D(%PP),%PP W %E,"[5i",%E,"[6i",%E,"[66t" ;      ;%%Z1-F
+	I %ENTRY="R" S %NAME=%RPNAME D REPORT^%DARUN 
+	I %ENTRY="Q" S %NAME=%QUNAME D QUERY^%DARUN 
+	I $D(%PP),%PP W #,%E,"[0z",%E,"[1w",%E,"[4i"
+	U 0 C:%IOD'=%PDV %IOD
+EXIM	K %PP,%IOD,%VAR,DEV
+	Q
+RIMMED	;
+	I '$D(%VAR("IMMED")) S %MSG="%VAR(""IMMED"")内のルーチンがないために実行できません。" ZT %MSG ;	;%%Z1-T
+	G @%VAR("IMMED")
+BATCH	;
+	I '$D(%VAR("ROUTINE")) S %VAR("ROUTINE")="GO^%DAUDEV"
+	I '$D(%VAR("BATCHBLD")) S %VAR("BATCHBLD")="BATCH2"
+	D TIMECVT
+	D BATCH^%DANAME S RTNM=%PROGRAM
+	S %SUFFIX=$H#7_$P($H,",",2)
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. 
+	;. I $S('$D(QUEUE):1,QUEUE="":1,1:0) S QUEUE=$$TRNLOG^%DAZCALL("DSM$DASL_BATCH")
+	;. I QUEUE="" S %MSG="'DSM$DASL_BATCH'で定義されたバッチキューがありません。" ZT %MSG ;	;%%Z1-T
+	;. S %DEFAULT=$P($ZC(%PARSE,$ZC(%DIRECTORY)),"]")_"]"
+	;I $ZV["DSM for ULTRIX" S %DEFAULT=$ZC(%DIRECTORY)
+	;*** Cache,IRISの場合デフォルトディレクトリとする
+	; $SYSTEM.Taskを使用する予定
+	; 
+	S ^mina($I(^mina))="BATCH^%DAUDEV"
+	S %DEFAULT=""
+COMFILE	;
+	;I $ZV["VAX DSM" D
+	;. S %COMFILE=%DEFAULT_"DSM$DASL_UTL"_%SUFFIX_".COM"
+	;. S %LOGFILE=%DEFAULT_"DSM$DASL_UTL"_%SUFFIX_".TMP;"
+	;. S %WHO=$ZC(%GETJPI,$J,"USERNAME"),%WHO=$E(%WHO,1,$F(%WHO," ")-2)
+	I $ZV["DSM for ULTRIX" D
+	. S %COMFILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".sh"
+	. S %LOGFILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".log"
+	;**TM**; とりあえずULTRIXと同じ要領
+	I $ZV["IRIS" D
+	. S %COMFILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".sh"
+	. S %LOGFILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".log"
+	I $ZV["Cache" D
+	. S %COMFILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".sh"
+	. S %LOGFILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".log"
+	I $ZSE(%COMFILE)]"" G COMFILE
+RFILE	S %FILE=%DEFAULT_"DSM_DASL_UTL"_%SUFFIX_".ROU"
+	I $ZV["DSM for ULTRIX" S %FILE=%DEFAULT_"/dsm_dasl_utl"_%SUFFIX_".rou"
+	I $ZSE(%FILE)]"" G RFILE
+	S $ZT="OPNERR^%DAUDEV"
+	C %COMFILE O %COMFILE:NEW:10
+	E  S %MSG="バッチ ジョブ プロシージャ ファイルがオープンできません。" G EXIT ;	;%%Z1-T
+	S $ZT=""
+	U %COMFILE 
+	I $ZV["VAX DSM" D
+	. W "$!  Generated Batch Procedure to Run a DASL Batch Job",!
+	. W "$ SET DEFAULT ",%DEFAULT,!
+	. W "$ ASSIGN/USER_MODE ",%LOGFILE," SYS$OUTPUT",!
+	. 
+	. N DSM S DSM=$$DSM^%DARPDRV W DSM_" ^"_RTNM
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["DSM for ULTRIX" D
+	;. W "#  Generated Batch Procedure to Run a DASL Batch Job",!
+	;. W " cd ",%DEFAULT,!
+	;. 
+	;. N DSM S DSM=$$DSM^%DARPDRV,DSM=DSM_"""^"_RTNM_""""_" >& "_%LOGFILE
+	;. S TOT=$L(DSM) D
+	;. . F %NC=65:-1:1 Q:$E(DSM,%NC)=""  D:" "[$E(DSM,%NC)
+	;. . . S STR=$E(DSM,1,%NC)
+	;. . . I %NC<TOT S STR=STR_"\"
+	;. . . U %COMFILE W STR,! U 0 S DSM=$E(DSM,%NC+1,255),%NC=66
+	;. . U %COMFILE W DSM,!
+	;. 
+	;. K STR,%NC,TOT
+	W "#  Generated Batch Procedure to Run a DASL Batch Job",!
+	W " cd ",%DEFAULT,!
+	; 
+	N DSM S DSM=$$DSM^%DARPDRV,DSM=DSM_"""^"_RTNM_""""_" >& "_%LOGFILE
+	S TOT=$L(DSM) D
+	. F %NC=65:-1:1 Q:$E(DSM,%NC)=""  D:" "[$E(DSM,%NC)
+	. . S STR=$E(DSM,1,%NC)
+	. . I %NC<TOT S STR=STR_"\"
+	. . U %COMFILE W STR,! U 0 S DSM=$E(DSM,%NC+1,255),%NC=66
+	. U %COMFILE W DSM,!
+	; 
+	K STR,%NC,TOT
+	U 0
+	C %FILE O %FILE:NEW:10
+	E  S %MSG="Unable to open scratch file." ZT %MSG
+	D NOW^%DAUDTTM U %FILE
+	W RTNM," ; JDASL V3.0 ;",%DTX," ",%TMX,";Batch File" ;	;%%Z3-B
+BREAK	W !," W !,$P($ZH,"","",3)",!," W !!,""Run DASL Batch Job""",!
+	I %VAR("BATCHBLD")="BATCHQ" W " W "" for query ",QUNM,""",!",!
+	E  W " W !!,""Submitted from option: ",%OPN,""",!",!
+	I $D(%RPNAME),%RPNAME]"",$D(%IOD),%IOD]"" D
+	. I $ZV["VAX DSM" W " W !,""Output Device: ",%IOD,""",!!",!
+	. I $ZV["DSM for ULTRIX" W " W !,""Output Device: ",%DEFAULT,"/"_%IOD,""",!!",!
+	W " S $ZT=""ERR^%DAERRT""",! D @%VAR("BATCHBLD") 
+	U %FILE W " W !,$P($ZH,"","",3),!",!," X ""ZR  ZS ",RTNM," H""",!! 
+	U %FILE:DISCON X ("ZR  ZL  ZS "_RTNM)
+	U 0 C %FILE:DEL
+	U %COMFILE
+	I $ZV["VAX DSM" D
+	. W !,"$ MAIL/SUBJECT=""DASL Batch Job Log File"" ",%LOGFILE," ",%WHO,!
+	. W "$ DELETE ",%LOGFILE,!,"$ EXIT",!
+	I $ZV["DSM for ULTRIX" W " rm ",%COMFILE,!," fi",!
+	U 0
+	S $ZT="ERRQUE^%DAUDEV" 
+	;**TM**; Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. C %COMFILE
+	;. S %=$ZC(%SPAWN,"SUBMIT/NOPRINT/NONOTIFY/NOLOG/DELETE/NOIDENT/QUEUE="_QUEUE_$S(TIME]"":"/AFTER="_TIME,1:"")_" "_%COMFILE)
+	;I $ZV["DSM for ULTRIX" D
+	;. I TIME="" S TIME=$&%CTIMASC(($P($H,",",2)+60)#86400,2),TIME=$P(TIME,":")_$P(TIME,":",2)  ;;%%Z3-ULTRIX 
+	;. C %COMFILE:(SUBMIT:QUEUE="at "_TIME:DELETE)
+	I TIME="" S TIME=$ZTIME(($P($H,",",2)+30)#86400,2)
+	C %COMFILE:(SUBMIT:QUEUE="at "_TIME:DELETE)
+EXIT	K TIME,%COMFILE,%SUFFIX,DEV,%VAR,%IOD,RNM
+	K %LOGFILE,%DEFAULT,%WHO,QUEUE,BDATE,BTIME,%FILE,RTNM,%PROGRAM
+	Q
+ERRQUE	;
+	U 0 I $D(%COMFILE) C %COMFILE:DEL
+	S %MSG=$S($ZE]"":$ZE,1:"バッチジョブ'BATCH^%DAUDEV'をキューに送れません。") ;	;%%Z1-T
+	G EXIT
+BATCH2	;
+	I $D(%RPNAME),%RPNAME]"" W " S %NAME=",""""_%RPNAME_"""",! D
+	. I $ZV["VAX DSM" W " S %IOD=",""""_%IOD_"""",!
+	. I $ZV["DSM for ULTRIX" W " S %IOD=",""""_%DEFAULT_"/"_%IOD_"""",!
+	I $D(%VAR("SDTYPE")) W " S %VAR(""SDTYPE"")=",""""_%VAR("SDTYPE")_"""",!
+	I $D(%PGMR) W " S %PGMR=",%PGMR,! 
+	I $D(%RPKPIT) W " S %RPKPIT=",%RPKPIT,! ;	;%%Z1-F
+	I $D(%RPKTYP) W " S %RPKTYP=",""""_%RPKTYP_"""",! ;	;%%Z1-F
+	I $D(%RPKON) W " S %RPKON=",""""_%RPKON_"""",! ;	;%%Z1-F
+	I $D(%RPKOF) W " S %RPKOF=",""""_%RPKOF_"""",! ;	;%%Z1-F
+	I $D(%USR),$D(%FPV) W " S %FPV=",""""_%FPV_"""",!," S %USR=",""""_%USR_"""",!
+	E  W " S %FPV=""""",!," S %USR=""""",!
+	I $D(%PARM)=10!($D(%PARM)=11) S VAR=$Q(%PARM("")) D
+	. F  Q:VAR=""  W " S ",VAR,"=",$$QUOTES(@VAR),! S VAR=$Q(@VAR)
+	I $D(%PARM)#2 W " S %PARM=",$$QUOTES(@%PARM),!
+	I $D(%VAR("EXPD")) S VAR="" F  S VAR=$O(%VAR("EXPD",VAR)) Q:VAR=""  D
+	. W " S %VAR(""EXPD""",","_""""_VAR_"""",")=",%VAR("EXPD",VAR),!
+B0	I $D(%VAR("VARIABLES")) F I=1:1:$L(%VAR("VARIABLES"),",") D
+	. S VAR=$P(%VAR("VARIABLES"),",",I)
+	. I $D(@VAR)#2 W " S ",VAR,"=",$$QUOTES(@VAR),! Q
+	. I $D(@VAR)=10!($D(@VAR)=11) S X=$Q(@VAR@("")) D
+	. . F  Q:X=""  W " S ",X,"=",$$QUOTES(@X),! S X=$Q(@X)
+BUILD	S TYPE="" F  S TYPE=$O(^DATG($J,"U",TYPE)) Q:TYPE=""  D
+	. 
+	. S NAM="" F  S NAM=$O(^DATG($J,"U",TYPE,NAM)) Q:NAM=""  D
+	. . U %FILE W " S ^DATG($J,""U"",""",TYPE,""",""",NAM,""")=",""""_^(NAM)_"""",!
+	I $D(%VAR("EXPD")) D
+	. W " S %MSG="""" D CONTIN^%DAUDMP K %VAR(""EXPD"")"
+	. W " I %MSG]"""" W !,%MSG,! Q",!
+	U %FILE W " D ",%VAR("ROUTINE"),!," K ^DATG($J)",!
+	U 0 K TYPE,DUM,NAM
+	Q
+BATCHQ	;
+	S %NAME=QUNM D QUERY^%DANAME
+	W " S %MSG="""",QUNM="""_QUNM_""" D ^%DAQC"," I %MSG="""" S %IOD="""_%IOD_""""," O %IOD:NEW U %IOD"," D "_%PROGRAM," C %IOD",!
+	Q
+OPNERR	;
+	U 0 S %MSG=$S($ZE]"":$ZE,1:"Unable to open command file BATCH^%DAUDEV.")
+	G EXIT
+GO	;
+	S:'$D(%PP) %PP=0
+	S $ZT="ERRGO^%DAUDEV",(%MSG,$ZE)=""
+BRK	O %IOD:NEW:10 E  U 0 W !,"出力デバイスにアクセスできません。" G GOX ;	;%%Z3-T
+	U %IOD:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %IOD:(KON=%RPKON:KOFF=%RPKOF) D REPORT^%DARUN ;  ;%%Z1-F
+GOX	C:$D(%IOD) %IOD K %IOD,%VAR,^DATG($J,"U")
+	Q
+ERRGO	U 0 W !!,"バッチジョブ実行中にエラーが発生しました。",!! I $ZE]"" W $ZE,!! ;	;%%Z2-T
+	E  W "Unknown error GO^%DAUDEV",!!
+	D ERR^%DAERRT
+	G GOX
+RELOAD	;
+	K ^DATG($J,"U"),%VAR,%PARM,%NAME,%IOD
+	F %=0:0 R %X Q:%X="*"  S @$P(%X,"=")=$P(%X,"=",2,255)
+	I $D(%VAR("EXPD")) D CONTIN^%DAUDMP K %VAR("EXPD")
+	Q
+TIMECVT	;
+	S TIME="" S:'$D(BTIME) BTIME="" S:'$D(BDATE) BDATE=""
+	;**TM** Cache,IRISのみ対応
+	;I $ZV["VAX DSM" D
+	;. I BDATE]"" S TIME=$$CDATASC^%DAZCALL(BDATE,3) S:BTIME]"" TIME=TIME_":"
+	;. I BTIME]"" S TIME=TIME_$$CTIMASC^%DAZCALL(BTIME,3)
+	;I $ZV["DSM for ULTRIX" D
+	;. I BTIME]"" D
+	;. . S TIME=$$CTIMASC^%DAZCALL(BTIME,2)
+	;. . S TIME=$P(TIME,":",1,2)
+	;. . S:BDATE]"" TIME=TIME_" "
+	;. I BDATE]"" S TIME1="" D
+	;. . S TIME1=$$CDATASC^%DAZCALL(BDATE,5)
+	;. . S TIME=TIME_$ZC(%LOWCASE,$P(TIME1," ",2))_" "_+$P(TIME1," ")
+	; *** Cache,IRISの場合
+	I BTIME]"" D
+	. S TIME=$ZTIME(BTIME,2)
+	. S TIME=$P(TIME,":",1,2)
+	. S:BDATE]"" TIME=TIME_" "
+	I BDATE]"" S TIME1="" D
+	. S TIME1=$ZDATE(BDATE,2)
+	. S TIME=TIME_$ZCVT($P(TIME1," ",2),"L")_" "_+$P(TIME1," ")
+	K TIME1
+	Q
+QUOTES(X)	;
+	N P
+	I X'="",X?.N Q X
+	F P=1:1 S P=$F(X,"""",P) Q:'P  S X=$E(X,1,P-1)_$E(X,P-1,999)
+	S X=""""_X_""""
+	Q X

@@ -1,0 +1,108 @@
+ROUTINE %DAUSIMG [Type=INT,LanguageMode=6]
+%DAUSIMG	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	;
+	R !!,"Screen to Image: ",SDNM:120 Q:'$T  I '$D(^DASD(SDNM)) W *7,"  Not defined" G BEGIN
+	S SL(SDNM)="" D DEV
+	K %U,%,%DTY,%IOD,SL,%MSG,%PDV,%ZIOD,SDLL,SDFL,SDNM,SDATT1,%RES
+	Q
+DEV	;
+	K %IOD S (%DEF,%PDV)=$I,%QTY=2 D ^%IOS Q:'$D(%IOD)
+	W !! U %IOD S SDNM="" F %=0:0 S SDNM=$O(SL(SDNM)) Q:SDNM=""  D BGN
+	U 0 I %IOD'=%PDV C %IOD
+	Q
+BGN	;
+	S S=^DASD(SDNM,"SCR") I $P(S,";",1)'="DATA" K S Q
+	K IM,BX S %MSG="",WIDTH=80,SDFL=$P(S,";",2),SDLL=$P(S,";",3),BX=0
+	F S1=1:1 Q:'$D(^DASD(SDNM,"D","S","AT",S1))  D
+	. S %RES=^DASD(SDNM,"D","S","AT",S1)
+	. I %RES]"" S S="" D VST^%DASDPAR,ACTION
+	S BLANKS=$J("",WIDTH),%U(2)="",$P(%U(2),"_",133)=""
+	S SDFN="" F I=0:0 S SDFN=$O(^DASD(SDNM,"D","F",SDFN)) Q:SDFN=""  D FIELD
+	I BX D BOX
+	F LN=1:1:24 D WRTLN:$D(IM(LN)) W !
+EXIT	K BX,IM,A,P,D,L,S,R,U,V,I,X,SDFN,WIDTH,Z
+	K LEN,PR,JUS,D,%DDTMPL,%DDNM,BLANKS,COL,DF,DUM,JS,LINE,LN
+	Q
+FIELD	;
+	S DF=^DASD(SDNM,"D","F",SDFN,"P") Q:'DF
+	S (R,S)="",%RES=^DASD(SDNM,"D","F",SDFN,"AT",1)
+	I %RES]"" D VFT^%DASDPAR,ACTION
+	S S=+S 
+	S LN=DF+SDFL-1 I LN>24 S LN=SDLL+SDFL-1 I LN>24 S LN=24
+	S COL=$P(DF,";",2)
+	S LEN=$P(DF,";",3)
+	S %DDNM=$P(DF,";",4)
+	S JS=$P(DF,";",5)
+	S PR=$P(DF,";",6)
+	I %DDNM]"" D EVALD
+	S:PR="_" PR="" ;	;%%Z1-I
+	I COL["," D 
+	. N BLANKS,DP
+	. S $P(BLANKS," ",132)=" "
+	. S DP=$P(COL,",",2) 
+	. S COL=$P(COL,",") 
+	. S PR=PR_$E(BLANKS,1,DP-COL-$L(PR)) 
+	. 
+	I R]"" D WIDE S COL=COL*2
+	S I=$ZL(PR)+LEN,S=$S(JS="L":COL,JS="R":COL-I+1,1:COL-(I\2)) ;	;%%Z1-G
+	S PR=PR_$E(%U(2),1,$ZP(%U(2),LEN)) ;	;%%Z1-G
+	S IM(LN,S,SDFN)=PR
+	I R="TALL" S IM(LN+1,S,SDFN)=IM(LN,S,SDFN)
+	Q
+WIDE	;
+	S X="" F I=1:1:$L(PR) S X=X_$E(PR,I)_" "
+	S PR=X
+	Q
+EVALD	;
+	S DF=^DADD(%DDNM,"DF","E") S:LEN="" LEN=$P(DF,";",1) S:PR="" PR=$P(DF,";",2)
+	I LEN]"",PR]"" Q
+	S %DDTMPL=$P(^DADD(%DDNM,"B"),";",3)
+	I %DDTMPL]"" S DF=^DADDT(%DDTMPL,"DF","E") S:LEN="" LEN=$P(DF,";",1) S:PR="" PR=$P(DF,";",2)
+	Q
+WRTLN	;
+	S LINE=BLANKS F COL=0:0 S COL=$O(IM(LN,COL)) Q:COL=""  D WRTLN1
+	W LINE
+	Q
+WRTLN1	;
+	S SDFN="" F DUM=0:0 S SDFN=$O(IM(LN,COL,SDFN)) Q:SDFN=""  D WRTFL
+	Q
+WRTFL	;
+	S LINE=$E(LINE,1,$ZP(LINE,COL-1))_$J("",COL-1-$ZL($E(LINE,1,$ZP(LINE,COL-1))))_IM(LN,COL,SDFN)_$E(LINE,$ZP(LINE,COL-1+$ZL(IM(LN,COL,SDFN)))+1,$ZP(LINE,WIDTH)) ;	;%%Z1-G
+	Q
+ACTION	F I=2:1 S A=$P(S,$C(123),I) Q:A=""  S Z=$P(A,$C(125),2) D @$E(A,1,2):$T(@$E(A,1,2))]""
+	Q
+BX	S BX=BX+1,BX(BX)=Z Q
+13	S WIDTH=132 Q
+WD	S:R'="TALL" R="WIDE" Q
+TL	S R="TALL" Q
+BOX	;
+	F BX=0:0 S BX=$O(BX(BX)) Q:BX=""  S A=BX(BX) D BYX
+	K STR,C,Q,K,J
+	Q
+BYX	;
+	;%%Z3-COLOR+
+	S A=$P(A,"$")
+	;%%Z3-COLOR-
+	S COL=+A,LN=$P(A,":",2),STR=$P(A,":",5)
+	G BYXH:$P(A,":",4)=1,BYXV:$P(A,":",3)=1
+	S C=$S(STR]"":STR,1:"_") D BYXC
+	F K=1:1:$P(A,":",3)\$L(C)-2 D BYXC
+	S Q=COL D BYXC 
+	S C=$S(STR]"":STR,1:"!") ;	;%%Z1-I
+	F K=1:1:$P(A,":",4)-1 S LN=LN+1,COL=+A D BYXC S COL=Q D BYXC
+	S COL=1+A,C=$S(STR]"":STR,1:"_") D BYXC
+	F K=1:1:$P(A,":",3)\$L(C)-3 D BYXC
+	Q
+BYXH	;
+	S C=$S(STR]"":STR,1:"_")
+	F K=1:1:$P(A,":",3)\$L(C) D BYXC
+	Q
+BYXV	;
+	S C=$S(STR]"":STR,1:"!"),LN=LN-1 ;	;%%Z1-I
+	F K=1:1:$P(A,":",4) S LN=LN+1,COL=+A D BYXC
+	Q
+BYXC	;
+	F J=1:1:$L(C) S IM(LN,COL,"box")=$E(C,J),COL=COL+1 
+	Q

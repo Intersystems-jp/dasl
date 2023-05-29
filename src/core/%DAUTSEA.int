@@ -1,0 +1,38 @@
+ROUTINE %DAUTSEA [Type=INT,LanguageMode=6]
+%DAUTSEA	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	K ^DATG($J,"R") I '$D(%RL) Q
+	N %CNT
+	F %CNT=0:0 S %CNT=$O(%RL(%CNT)) Q:%CNT=""  S %RL(%CNT)=$$UPCASE^%DAZCALL(%RL(%CNT))
+	S %TMNM="" F %CNT=0:0 S %TMNM=$O(^DATG($J,"U","T",%TMNM)) Q:%TMNM=""  D TEMPL
+	K %TMNM,%BOLD,%NORM,UC,DATA,SORT,%X,%I,%1,%2,%3,%4
+	Q
+TEMPL	;
+	S $ZT="ERROR^%DAUTSEA",$ZE=""
+	S DATA=$P(^DADDT(%TMNM,"B"),";",2) I DATA]"" S SORT="Type" D COMP
+	S DATA=^DADDT(%TMNM,"DF","AT") I DATA]"" S SORT="Attributes" D COMP
+	S %X=^DADDT(%TMNM,"DF","E") F %I=2,3 S DATA=$P(%X,";",%I) I DATA]"" S SORT=$S(%I=2:"Prompt",1:"Help Screen") D COMP
+	S DATA=^DADDT(%TMNM,"DF","HT") I DATA]"" S SORT="Help Text" D COMP
+	S DATA=^DADDT(%TMNM,"DF","V") I DATA]"" S SORT="Validation" D COMP
+	S DATA=^DADDT(%TMNM,"TR","I") I DATA]"" S SORT="Input Transform" D COMP
+	S DATA=^DADDT(%TMNM,"TR","O") I DATA]"" S SORT="Output Transform" D COMP
+	Q
+COMP	;
+	S UC=$S(DATA?.E1L.E:$$UPCASE^%DAZCALL(DATA),1:DATA)
+	F %CNT=0:0 S %CNT=$O(%RL(%CNT)) Q:%CNT=""  I UC[%RL(%CNT) D BUILD Q
+	Q
+BUILD	;
+	I $S('$D(%PDV):1,'$D(%PP):%IOD'=%PDV,'%PP:%IOD'=%PDV,1:1) G SET
+	S %NORM=$C(27)_"[m",%BOLD=$C(27)_"[7m"
+	S %1=$L(UC) K %2 F %CNT=0:0 S %CNT=$O(%RL(%CNT)) Q:%CNT=""  S %3=$L(%RL(%CNT)) D B1
+	F %CNT=0:0 S %CNT=$O(%2(%CNT)) Q:%CNT=""  D B2
+SET	S ^DATG($J,"R",%TMNM,SORT)=DATA
+	Q
+B1	F %4=%3:1:%1 I $E(UC,%4-%3+1,%4)=%RL(%CNT) S %2(%1-%4+1)=$S('$D(%2(%1-%4+1)):%3,%2(%1-%4+1)>%3:%2(%1-%4+1),1:%3)
+	Q
+B2	F %3=0:0 S %4=$O(%2(%CNT)) Q:%4>(%CNT+%2(%CNT))!'$L(%4)  S:%CNT+%2(%CNT)'>(%4+%2(%4)) %2(%CNT)=%4-%CNT+%2(%4) K %2(%4)
+	S DATA=$E(DATA,1,%1-%CNT-%2(%CNT)+1)_%BOLD_$E(DATA,%1-%CNT-%2(%CNT)+2,%1-%CNT+1)_%NORM_$E(DATA,%1-%CNT+2,999)
+	Q
+ERROR	W !!,"Error running template search on: ",%TMNM,!,$ZE,!!
+	Q

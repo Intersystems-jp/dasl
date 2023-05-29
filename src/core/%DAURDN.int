@@ -1,0 +1,158 @@
+ROUTINE %DAURDN [Type=INT,LanguageMode=6]
+%DAURDN	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+NOD	;
+NOD1	S:%DDN'="" %PIECE=^DADD(%DDN,"PIECE") S:%DDN="" %PIECE=""
+	I %PIECE?1N.N S %PIECE=%PIECE_FLAG("SYSDELM")
+	I %PIECE="" S %PIECE=0
+	S DELM=%PIECE
+	N C,I,II,TEMP,DEF,DEL
+	S SUB="NOD(%GLOBAL,%REF)"
+	S NUM=""
+	F I=1:1 S C=$E(DELM,I) Q:C=""  D
+	. I C?1N S NUM=NUM_C Q
+	. I $E(DELM,I,I+2)="$C(" D  Q
+	. . S II=I
+	. . S I=I+2
+	. . F I=I:1 Q:$E(DELM,I)=")"
+	. . S DEL=$E(DELM,II,I)
+	. . S @("DEL="_DEL) 
+	. . S SUB=$E(SUB,1,$L(SUB)-1)_","""_DEL_""","_NUM_")"
+	. . S NUM=""
+	. I C?1PC D  
+	. . S DEL=C
+	. . S SUB=$E(SUB,1,$L(SUB)-1)_","""_DEL_""","_NUM_")"
+	. . S NUM=""
+	S %=$D(^DADD(%DDN,"REF")),%DDXTRCT="" S:%#10 (%DDEXT,%DDXTRCT)=$P(^("REF"),";",3) S:%DDXTRCT="" (%DDEXT,%DDXTRCT)=0 I %FLAG("REBLD") S %DDXTRCT=ND
+	S @SUB@(+%DDEXT,%DDN)=%DDXTRCT
+	K SUB,DEL,DELM,NUM,COM,ND,%DDEXT
+	Q
+	;**TM**;$ZEに値を設定できないので削除
+	;FILE	N DATA,DDN,EX,FPN,LPN,WDELM,LEV S (%MSG,$ZE)=""
+FILE	N DATA,DDN,EX,FPN,LPN,WDELM,LEV S %MSG=""
+	S $ZT="PIECERR^%DAURDN"
+	S GLO="",ARG=""
+	F  S GLO=$O(NOD(GLO)) Q:GLO=""  D  
+	. S REF="" F  S REF=$O(NOD(GLO,REF)) Q:REF=""  D  
+	. . S (LEV,%LEN)=0
+	. . D PIECE("NOD(GLO,REF)")
+	. . S %LEN(0)=%LEN,%LEN=0
+	D ENDL
+	K OPN,LOPN,PLOPN,LV,ODELM,DELM,DLEN,X,GLO,REF,%MDELM,ODLEN,LLPN
+	K ODEL,OLEN
+	Q
+PIECE(SUB)	
+	N PN,DELM,VAR,WDELM,%PCNT,EX
+	S (ODELM,DELM)=$O(@SUB@("")) 
+	S ODELM=$S($E(DELM,1,3)="$C(":DELM,1:DELM)
+	; 		        ; Variable to set
+	; 		        ; loop through each piece
+	D DLEN,ODLEN
+	S (PN,DATA,FPN,LLPN)="",LPN="999",%PCNT=0
+	S OPN=$O(@SUB@(DELM,""))
+	F  S PN=$O(@SUB@(DELM,PN)) Q:PN=""  D
+	. I LEV=0 S %MDELM=1
+	. S:LLPN="" LLPN=PN
+	. I PN=0 D  Q
+	. ;		Mapping level with each piece with in the level
+	. S %PCNT=%PCNT+1,OPN(LEV,%PCNT)=PN
+	. I %PCNT>1,LEV=0 S:PN>OPN %LEN=%LEN+DLEN
+	. S OPN=PN,ODELM=DELM,ODELM(LEV)=DELM D ODLEN
+	. I $O(@SUB@(DELM,PN,""))?.PC D  Q 
+	. . S:LEV>0 LV=LEV-1 S LV=LEV N I D
+	. . . S %FLAG("FIND")=0,I=""
+	. . . F  S I=$O(OPN(LV,I)) Q:I=""!(%FLAG("FIND"))  D
+	. . . . I OPN(LV,I)=OPN S %FLAG("FIND")=1
+	. . . . S:I>1 PLOPN(LV)=OPN(LV,I-1) S:I=1 PLOPN(LV)=1
+	. . S ODELM(LEV)=ODELM,LOPN(LEV)=OPN D ODLEN
+	. . D WRITE 
+	. . S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:""""_DELM_"""")
+	. . S LEV=LEV+1,ODELM=WDELM,OPN=PN D ODLEN
+	. . D PIECE($P(SUB,")",1)_","""_DELM_""","_PN_")")
+	. . S LEV=LEV-1
+	. 
+	. I FPN="" S FPN=PN 
+	. S (OPN,LPN)=PN 
+	. S EX="",%CNT=0 F  S EX=$O(@SUB@(DELM,PN,EX)) Q:EX=""  D  ;;%%Z3-DASLV61_BUGS-16
+	. . I EX?.PC D
+	. . . D WRITE
+	. . . S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:""""_DELM_"""")
+	. . . S LEV=LEV+1
+	. . . D PIECE($P(SUB,")",1)_","""_DELM_""","_PN_")")
+	. . . S LEV=LEV-1
+	. . I EX=0 D
+	. . . S DDN="" F  S DDN=$O(@SUB@(DELM,PN,EX,DDN)) Q:DDN=""  D  ;;%%Z3-DASLV61_BUGS-16
+	. . . . S %CNT=%CNT+1 D LEN
+	. . . . I DATA'="",LLPN+1<PN D
+	. . . . . F I=LLPN+1:1:PN-1 S DATA=DATA_" "_DELM,%LEN=%LEN+DLEN
+	. . . . S DATA=DATA_$S(DATA="":"",%CNT>1:" and ",1:" "_DELM_" ")_DDN
+	. . . . I LEV>0 S %LEN=%LEN+$S(%CNT>1:0,%PCNT=1:0,1:DLEN)
+	. . . . S WDELM=$S($E(DELM,1,3)="$C(":DELM,1:DELM)
+	. . I EX>0 D
+	. . . S DDN="" F  S DDN=$O(@SUB@(DELM,PN,EX,DDN)) Q:DDN=""  D  ;;%%Z3-DASLV61_BUGS-16
+	. . . . S %CNT=%CNT+1,EXT=@SUB@(DELM,PN,EX,DDN) D LEN
+	. . . . S DATA=DATA_$S(DATA="":"",%CNT>1:" and ",1:" "_DELM_" ")_"$E("_DDN
+	. . . . I $P(EXT,"-")'=$P(EXT,"-",2) S DATA=DATA_","_$P(EXT,"-")
+	. . . . I $P(EXT,"-",2)'="" S DATA=DATA_","_$P(EXT,"-",2)
+	. . . . S DATA=DATA_")" K EXT
+	. . . I $X+$L(ARG)>75 D WRITE 
+	. . S LLPN=PN,WDELM=$S($E(DELM,1,3)="$C(":DELM,1:DELM)
+	D WRITE 
+	Q
+WRITE	I DATA="" Q
+	I LEV=0,%PCNT>1 D
+	. 
+	. I %PCNT=2,OPN(LEV,%PCNT-1)'=1 D  Q
+	. . F I=1:1:OPN(LEV,%PCNT-1)-1 S ARG=ARG_" "_DELM,%LEN=%LEN+DLEN
+	. . S %LEN=%LEN-DLEN
+	I LEV>0 D
+	. I LOPN(LEV-1)-1>PLOPN(LEV-1) D
+	. . F I=PLOPN(LEV-1):1:LOPN(LEV-1)-1 S ARG=ARG_" "_ODELM(LEV-1),%LEN=%LEN+ODLEN
+	. . S:%PCNT=1 %LEN=%LEN-ODLEN
+	.I ARG="",%PCNT'=1,$E(DATA)?1U D
+	. . S ODEL=ODELM,OLEN=ODLEN,ODELM=ODELM(0) D ODLEN
+	. . S ARG=ARG_" "_$S(%MDELM:ODELM(0),1:DELM)
+	. . S %MDELM=0,ODELM=ODEL,ODLEN=OLEN
+	S ARG=ARG_" "_DATA
+	I $X+$L(ARG)>70 D
+	. S %I=1 K %DL
+	. F COL=51:-1:1 Q:$E(ARG,COL)=""  D:" "[$E(ARG,COL)
+	. . S %DL(%I)=$E(ARG,1,COL),%I=%I+1
+	. . S ARG=$E(ARG,COL+1,255),COL=52
+	. S:ARG'="" %DL(%I)=ARG
+	. F I=1:1 Q:'$D(%DL(I))  W ?%TAB,%DL(I) D
+	. . I %TAB+$L(%DL(I))>70 W ! S %TAB=%TAB1
+	. . E  S %TAB=$X
+	E  W ?%TAB,ARG S:$X'>70 %TAB=$X S:$X>70 %TAB=%TAB1
+	S (ARG,DATA,LPN,FPN)=""
+	K %DL,COL,%I
+	Q
+DLEN	S DLEN=1,X=DELM I $E(X,1,3)="$C(" S @("DLEN=$L("_X_")")
+	K X
+	Q
+ODLEN	S ODLEN=1,X=ODELM I $E(X,1,3)="$C(" S @("ODLEN=$L("_X_")")
+	K X
+	Q
+LEN	S %TMPL=$P(^DADD(DDN,"B"),";",3),%DDLEN=$P(^("DF","E"),";")
+	I %DDLEN="",%TMPL]"" S %DDLEN=$P(^DADDT(%TMPL,"DF","E"),";")
+	S %=$D(^DADD(DDN,"PIECE")),DDPIECE="" S:%#10 (%PIECE,DDPIECE)=^("PIECE")
+	I EX'=0 S %LEN(DDPIECE)=$S(EXT'["-":1,1:$P(EXT,"-",2)-$P(EXT,"-")+1) Q
+	I '$D(%LEN(DDPIECE)) S %LEN(DDPIECE)=%DDLEN
+	S %LEN(DDPIECE)=$S(%DDLEN>%LEN(DDPIECE):%DDLEN,1:%LEN(DDPIECE))
+	K %TMPL,%DDLEN,%,EXT
+	Q
+ENDL	W:$X ! S COM=""
+	Q
+FILEA	;
+	K ^DATG($J,"R") S NOD="NOD"
+	S X=$Q(@NOD@("")) D
+	. F  Q:X=""  S Z=@X D  S X=$Q(@X) Q:X=""  S Z=@X S NCNT=NCNT+1 D
+	. . S %S1=$P(Z,$C(0),1),%S2=$P(Z,$C(0),2),%S3=$P(Z,$C(0),3),%S5=$P(Z,$C(0),5)
+	. . S:%S3="" %S3=" " S:%S5="" %S5=" "
+	. . S ^DATG($J,"R",%S1,%S2,NCNT,%S5,%S3,NCNT)=Z
+	K Z,%S1,%S2,%S3,%S4
+	Q
+PIECERR	;
+	S %MSG=$S($ZE]"":$ZE,1:"Error processing pieces of pieces, check data definitions.") ZT %MSG
+	Q

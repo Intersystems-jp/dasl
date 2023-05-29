@@ -1,0 +1,243 @@
+ROUTINE %DAUDXRF [Type=INT,LanguageMode=6]
+%DAUDXR	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+INIT	I '$D(%SORT) S %SORT="D"
+	I $D(^DATG($J,"U","TB")) S TYPE="TB" D TBL
+	I $D(^DATG($J,"U","DX")) S TYPE="D" D DDN
+	I $D(^DATG($J,"U","S")) S TYPE="S" D SCREEN
+	I $D(^DATG($J,"U","R")) S TYPE="R" D REPORT
+	D LIST
+	K DUM,%DDNM,%LIST,NM,TYPE
+	Q
+TBL	;
+	S NM="",%SDFN=1 F  S NM=$O(^DATG($J,"U","TB",NM)) Q:NM=""  D
+	. S ITM=^DATD(NM,"REF"),PKEYS=$P(ITM,";",2)
+	. F I=1:1:$L(PKEYS,",") S X=$P(PKEYS,",",I) I $D(^DADD(X)) S S2=0,S1="Pri-Key" D BUILD
+	. 
+	. S COL="" F  S COL=$O(^DATD(NM,"C",COL)) Q:COL=""  S ITM=^DATD(NM,"C",COL),X=$P(ITM,";",3) I $D(^DADD(X)) S S2=$P(ITM,";"),S1="XXX" D BUILD
+	K I,X,COL,S1,S2,PKEYS,%SDFN,ITM
+	Q
+DDN	;
+	S NM="",%SDFN=1 F  S NM=$O(^DATG($J,"U","DX",NM)) Q:NM=""  D DDN1
+	K %SDFN
+	Q
+DDN1	;
+	S ITEM=^DADD(NM,"DF","V",1) Q:ITEM=""  D VALID
+	S NAME=^DADD(NM,"LK") F I=2:2:8 S DATA=$P(NAME,";",I) Q:DATA=""  S S1=1,S2="Lookup "_$S(I=2:"1",I=4:"2",I=6:"3",1:"4") D CHKREP
+	S NAME=^DADD(NM,"REF") F I=1,4,6,7 S DATA=$P(NAME,";",I) Q:DATA=""  S S1=1,S2=$S(I=1:"Refernce",I=4:"X-Ref",I=6:"Xref Key",1:"Pointer") D CHKREP
+	S NAME=^DADD(NM,"TR","X") I NAME]"" S S1=1,S2="Xref-Trans" D CHKREP
+	K AC,ACT,ATT,CMD,DATA,I,ITEM,NAME,S1,S2,VAL,X
+	Q
+LIST	;
+	S (%LIST,%DDNM)=""
+	F  S %DDNM=$O(^DATG($J,"U","D",%DDNM)) Q:%DDNM=""  D
+	. I %LIST="" S %LIST=%DDNM Q
+	. I $L(%LIST)<50 S %LIST=%LIST_", "_%DDNM
+	. E  S ^DATG($J,"U","DDN",$P(%LIST,","))=%LIST,%LIST=%DDNM
+	I '$D(^DATG($J,"U","DDN",$P(%LIST,","))) S ^DATG($J,"U","DDN",$P(%LIST,","))=%LIST
+	Q
+REPORT	;
+	S NM="" F  S NM=$O(^DATG($J,"U","R",NM)) Q:NM=""  D RPS
+	K DATA,I,ITEM,ITM,J,NULL,RPGP,RPNM,S1,S2
+	Q
+RPS	;
+	I $D(^DASD(NM,"V")) S RPNM=NM D LOADVL^%DARPUTL
+	F I=1,2,3 S ITEM=^DARD(NM,"C","FW",I) Q:ITEM=""  F J=1,2 S DATA=$P(ITEM,";",J),S1=$S(J=1:"Key",1:"Cond"),S2=I D CHKREP
+	S DATA=^DARD(NM,"C","S"),S1="Sort" S S2=0 I DATA]"" D CHKREP
+	S RPGP="" F  S RPGP=$O(^DARD(NM,"P",RPGP)) Q:RPGP=""  D
+	.
+	.S S1=$S(RPGP["D":"Data",RPGP["H":"Header",1:"Trailer")_$S(RPGP?1U1N:" "_$E(RPGP,2),1:"")
+	.F S2=0:0 S S2=$O(^DARD(NM,"P",RPGP,"G",S2)) Q:S2=""  S DATA=^(S2,"I") I DATA]"" D CHKREP
+	Q
+SCREEN	;
+	S NM="" F  S NM=$O(^DATG($J,"U","S",NM)) Q:NM=""  D SACTION
+	K %SDFN,I
+	Q
+SACTION	;
+	I $P(^DASD(NM,"SCR"),";",1)'="DATA" S %MSG="スクリーンタイプが不適当です。" Q  ;	;%%Z1-T
+	S %SDFN=0 F ACT=1:1:3 S ITEM=^DASD(NM,"D","S","AC",ACT) Q:ITEM=""  D ACT
+SATTR	;
+	F %J=1:1 Q:'$D(^DASD(NM,"D","S","AT",%J))  D  
+	. S ITEM=^DASD(NM,"D","S","AT",%J) Q:ITEM=""  D ATTR
+FIELD	;
+	S %SDFN="" F  S %SDFN=$O(^DASD(NM,"D","F",%SDFN)) Q:%SDFN=""  D SFDN
+	K AC,ACT,ATT,CMD,DATA,I,ITEM,S1,S2,VAL,X
+	Q
+SFDN	;
+	S S1="DDN" S X=$P(^DASD(NM,"D","F",%SDFN,"P"),";",4) I X]"" D SETVAR,BUILD
+	F ACT=0:0 S ACT=$O(^DASD(NM,"D","F",%SDFN,"AC",ACT)) Q:ACT=""  S ITEM=^(ACT) D ACT
+	S ITEM=^DASD(NM,"D","F",%SDFN,"AT",1) I ITEM'="" D ATTR
+	S ITEM=^DASD(NM,"D","F",%SDFN,"VA",1) I ITEM'="" D VALID
+	Q
+ACT	;
+	I $E(ITEM)=" " S DATA=ITEM D STRIP S ITEM=DATA 
+	I $E(ITEM)="!" Q
+	F DUM=1:1 S AC=$P(ITEM,";",DUM) Q:AC=""  D
+	. S S1="AC",DATA=AC I $E(AC)=" " D STRIP I $E(DATA)="!" Q
+	. S CMD=$S(DATA["/":$P(DATA,"/"),1:$P(DATA," ")),DATA=$S($P($T(SPCMD),";",3)[CMD:$P(DATA,"=",2),1:$P(DATA," ",2,99)),I=0
+	. I DATA]"",$P($T(SCNCMD),";",3)[(","_CMD_",") D
+	.. I $P($T(FLDCMD),";",3)'[(","_CMD_",") D SETVAR,CHKREP Q
+	.. E  I DATA["=" S DATA=$P(DATA,"=",2,99)
+	.. E  S DATA=$P(DATA,":",2,99)
+	.. I DATA]"" D SETVAR,CHKREP
+	Q
+ATTR	;
+	I $E(ITEM)=" " S DATA=ITEM D STRIP S ITEM=DATA
+	F DUM=1:1 S ATT=$P(ITEM,";",DUM) Q:ATT=""  D
+	.S S1="AT",DATA=ATT I $E(ATT)=" " D STRIP
+	.S CMD=$S(DATA["/":$P(DATA,"/"),1:$P(DATA," ")),DATA=$P(DATA," ",2),I=0
+	.I DATA]"",$P($T(SCNATT),";",3)[CMD D SETVAR,CHKREP
+	Q
+VALID	;
+	I $E(ITEM)=" " S DATA=ITEM D STRIP S ITEM=DATA 
+	F DUM=1:1 S VAL=$P(ITEM,";",DUM) Q:VAL=""  D
+	.S S1="VA",DATA=VAL I $E(VAL)=" " D STRIP
+	.S CMD=$S(DATA["/":$P(DATA,"/"),1:$P(DATA," ")),DATA=$P(DATA," ",2)
+	.S I=0 I DATA]"",$P($T(FLDVAL),";",3)[CMD D SETVAR,CHKREP
+	Q
+SETVAR	;
+	S S2=$S(S1["AC":"Action"_" "_ACT,S1["AT":"Attribute",S1="DDN":"Data Name",S1="VA":"Validation",1:"")
+	S S1=$S(%SDFN=0:"Screen",%SDFN=1:1,1:%SDFN)
+	Q
+CHKREP	;
+	N I D SETUP
+	I "@!"[$E(ITM) Q
+	I ITM?1"["1A.ANP1"]" Q
+	I ITM["/EVAL",ITM?1U.6UN1",".UNP D  Q
+	.F QQ=1:1:$L(ITM,",") D EXPR
+	.I $E(ITM,I)=":" S I=I+1 D EXPR
+	D EXPR
+	I $E(ITM,I)=":" D EXPR
+VEND	K COND,II,ITM,K,NULL,QQ,X,Y,SUBS
+	Q
+BUILD	I $D(^DATG($J,"U","D",X)) S:%SORT="D" ^DATG($J,"R",TYPE,NM,X,S1,S2)="" S:%SORT="F" ^DATG($J,"R",TYPE,NM,S1,X,S2)=""
+	Q
+STRIP	F I=1:1 Q:$E(DATA,I)'=" "
+	S DATA=$E(DATA,I,99)
+	Q
+SETUP	;
+	S ITM=$$BASEDIT^%DAZCALL(DATA,296)
+	S I=0
+	Q
+EXPR	;
+NEXT	S I=I+1 D ITEM:$E(ITM,I)]""
+	I ":;"[$E(ITM,I)!($E(ITM,I)=")") Q
+	G NEXT
+ITEM	;
+	Q:$E(ITM,I)=""
+	S X=$E(ITM,I),Y=I
+	I X="""" D STRLIT Q
+	I X?1N D NUM Q
+	I X="%" D NAME,SUBS Q
+	I X="^" D NAME,SUBS Q
+	I X?1A D DNAME Q
+	I X="$" D SPECV,SUBS Q
+	I " '=+-!&"[X S I=I+1 G ITEM 
+	Q
+STRLIT	F I=I:0 S I=$F(ITM,"""",I+1) Q:$E(ITM,I)'=""""
+	Q
+NUM	F I=I+1:1 Q:$E(ITM,I)'?1N
+	I $E(ITM,I)="." F I=I+1:1 Q:$E(ITM,I)'?1N
+	Q
+DNAME	D NAME I TYPE'="R" Q
+	G QUAL:$E(ITM,I)="/" Q:$E(ITM,I)'="("
+	S K=I
+DNLP	S I=I+1
+	S SPTR=$E(ITM,I,$F(ITM,")",I-1)-2),VPTR=$P(SPTR,",") I VPTR]"" D VALIAS 
+	K SPTR,VPTR D NAME
+	G DNLP:$E(ITM,I)="," Q:$E(ITM,I)'="/"
+QUAL	S K=I+1 F I=I+1:1 S:$E(ITM,I)="/" I=I+1 Q:$E(ITM,I)'?1A
+	I $E(ITM,I)=":" S I=I+1,ITM=$E(ITM,I,$L(ITM)) D EXPR
+	Q
+VALIAS	;
+	I $D(%VL(VPTR)) Q
+	I VPTR?1U.6UN,$D(^DADD(VPTR)) D BUILD
+	Q
+NAME	S J=I F I=I+1:1 Q:$E(ITM,I)'?1UN
+	Q:"^%"[$E(ITM,J)&(TYPE="R")
+	S X=$S($E(ITM)="%"&(J=1):$E(ITM,J+1,I-1),1:$E(ITM,J,I-1))
+LOAD	;
+	I $D(%VL(X)) Q
+	I X?1U.6UN,$D(^DADD(X)) D BUILD
+	Q
+SUBS	;
+	Q:$E(ITM,I)'="("  F I=I:0 D EXPR  Q:$E(ITM,I)'=","&($E(ITM,I)'=":")
+	I $E(ITM,I)'=")" Q
+	S I=I+1
+	Q
+SPECV	F I=I+1:1 Q:$E(ITM,I)'?1U
+	S X=$E(ITM,Y+1,I-1) G FUNC:$E(ITM,I)="("
+	I $T(@("V"_X))]"" Q
+	Q
+FUNC	;
+	I $P($T(FUNCL),";",3)'[(","_X_",") Q
+	S II=I I $T(@("F"_X))]"" D @("F"_X) D 
+	.S I=$L(ITM)+1 
+	.K SUB,REF
+	S I=II,I=$F(ITM,")",I)
+	Q
+FREPEAT	;
+	S COND="",QU=0
+	F J=1:1 Q:$E(ITM,J)=""  D
+	.I $E(ITM,J)="""" S QU=QU+1 F J=J:1 S J=$F(ITM,"""",J) Q:$E(ITM,J)'=""""
+	S QU=QU-1
+	.I $E(ITM,J)=":",$E(ITM,J+1)'?1N.N S COND=$E(ITM,J+1,$L(ITM)),J=J+$L(COND)
+	I COND]"" S I=0,ITMX=ITM,ITM=COND D EXPR S ITM=ITMX I %MSG]"" Q
+	S X=$S(COND]"":$E(ITM,$F(ITM,"("),$L(ITM)-($L(COND)+2)),1:$E(ITM,$F(ITM,"("),$L(ITM)-1))
+	I X[":" S X=$P(X,":",1)
+	I X?1U.6UN,$D(^DADD(X)) D BUILD Q
+	I "^%"[$E(X)
+	E  I X?1U.6UN1",".UNP
+	E  I $D(%VL($P(X,"(")))
+	I "^%"[$E(X),X["(" S SUB=$E(X,$F(X,"("),$L(X)-1)
+	I '$D(SUB) S SUB=X
+SUBLOOP	F J=1:1 S REF=$P(SUB,",",J) Q:REF=""  D
+	.I +REF=REF Q
+	.I REF?1"%"1U.6UN Q 
+	.I $D(%VL(REF)) Q 
+	.I REF?1U.6UN,$D(^DADD(REF)) D BUILD Q
+	.
+	.I $E(REF)?1"$".U
+	K ITMX
+	Q
+FLINE	;
+	S J=$E(ITM,I+1,99)
+	Q:J?1.N1")".E
+	Q:J?1""""1P1""")".E
+	Q:J?1""""1P1""","1.N1")".E
+	Q:J?1""""1P1""","1.N1","1.N1")".E
+FREQUIRE	Q:$E(ITM,I+1,99)?1.N1")".E
+FMAX	S I=I+1 D DNAME
+	Q
+FMIN	S I=I+1 D DNAME
+	Q
+FTOTAL	S I=I+1 D DNAME
+	Q
+FAVE	S I=I+1 D DNAME
+	Q
+FSTD	S I=I+1 D DNAME
+	Q
+FMED	S I=I+1 D DNAME
+	Q
+	;	
+NUMARG	;
+	F I=I:1 Q:$E(DATA,I)'=" "
+	S Y=I F I=I:1 Q:$E(DATA,I)'?1N
+	S J=J_$E(DATA,Y,I-1)
+	Q
+NARG	D NUMARG
+	Q
+TARG	D NUMARG
+	Q
+ERROR	W "Error running report for data name usage on: ",!,$ZE,!!
+	Q
+SPECL	;;,LINE,NOLINE,PAGE,DATE,TIME,PAGEN,PAGEC,SETPAGE,COUNT,SECTION,ENDSEC,ENDREP,QUITREP,
+FUNCL	;;,AVE,LINE,MAX,MIN,STD,TOTAL,REQUIRE,REPEAT,
+MUMPV	;;,HOROLOG,IO,JOB,STORAGE,TEST,X,Y,Z,
+MUMPF	;;,ASCII,CHAR,DATA,EXTRACT,FIND,JUSTIFY,LENGTH,NEXT,ORDER,PIECE,RANDOM,SELECT,TEXT,VIEW,Z,FNUMBER,QUERY,TRANSLATE,
+SCNCMD	;;,ASSIGN,COUNT,DISPLAY,DO,DONP,ERASE,ERROR,EVAL,EVALS,EXIT,FILE,FILES,HANG,KILL,LOCK,LOGOFF,LOGON,LOOKUP,MUMPS,NXTFLD,NXTSCN,QUIT,REPAINT,RESET,SET,UNLOCK,XECUTE,AS,CN,DS,ERS,ERR,EV,EVS,FI,FIS,HA,KL,LK,LU,NF,RP,RS,SC,ULK,NS,
+FLDCMD	;;,ASSIGN,AS,COUNT,CN,DISPLAY,DS,DO,DONP,ERASE,ERS,ERROR,ERR,EXIT,EX,HANG,HA,LOGOFF,LOGON,,NXTFLD,NF,NXTSCN,NS,QUIT,REPAINT,RP,RESET,RS,
+SPCMD	;;,EVALS,EVS,FILES,FIS,
+SCNATT	;;,DEFAULT,EXIT,DF,EX,
+FLDVAL	;;,COND,DO,LOOKUP,XECUTE,LU,XE,

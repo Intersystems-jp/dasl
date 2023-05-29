@@ -1,0 +1,60 @@
+ROUTINE %DAUTSCH [Type=INT,LanguageMode=6]
+%DAUTSCH	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+SEARCH	;
+	S STRING=$$UPCASE^%DAZCALL(%VAR("STRING"))
+	S COUNT=1,S1="AC",FN=0
+	F S2=1:1:3 S (LNODE,NODE)=^DASD(SDNM,"D","S",S1,S2) S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB=S1_S2 D BUILD
+	S S1="AT",S2=1 S (LNODE,NODE)=^DASD(SDNM,"D","S",S1,S2) S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB=S1_S2 D BUILD
+	S FN="" F %=0:0 S FN=$O(^DASD(SDNM,"D","F",FN)) Q:FN=""  D ONEFLD
+CLEAN	K FN,NODE,STRING,COUNT,LNODE,SCREEN,SUB,S1,S2
+	Q
+ONEFLD	;
+	S LNODE=$P(^DASD(SDNM,"D","F",FN,"P"),";",4) I LNODE[STRING S SUB="DDN" D BUILD
+	S (NODE,LNODE)=$P(^DASD(SDNM,"D","F",FN,"P"),";",6) S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB="PM" D BUILD
+	S (NODE,LNODE)=^DASD(SDNM,"D","F",FN,"H","S") S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB="HS" D BUILD
+	S (NODE,LNODE)=^DASD(SDNM,"D","F",FN,"H","T") S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB="HT" D BUILD
+	S S1="AC"
+	F S2=0:0 S S2=$O(^DASD(SDNM,"D","F",FN,S1,S2)) Q:S2=""  S (LNODE,NODE)=^(S2) S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB=S1_S2 D BUILD
+	S S2=1
+	F S1="AT","VA" S (LNODE,NODE)=^DASD(SDNM,"D","F",FN,S1,S2) S:NODE?.E1L.E NODE=$$UPCASE^%DAZCALL(NODE) I NODE[STRING S SUB=S1_S2 D BUILD
+	Q
+BUILD	;
+	S SLA(COUNT,"GNDUM1")=$S(FN=0:"Screen",1:FN)
+	S SLA(COUNT,"GNDUM2")=$S(SUB["AC":"Action "_S2,SUB["AT":"Attribute",SUB="DDN":"Data Name",SUB="PM":"Prompt",SUB="HT":"Help Text",SUB="HS":"Help Screen",1:"Validation")
+	S SLA(COUNT,"GNDUM3")=LNODE
+	S SLA(COUNT,"sub")=SUB,COUNT=COUNT+1
+	Q
+CHANGE	;
+	S L="" F %=0:0 S L=$O(SLA(L)) Q:L=""  I $D(SLA(L,"edit")),SLA(L,"edit")=1 D COPY
+	K L,FN,SUB,NODE,X
+	Q
+COPY	;
+	S FN=SLA(L,"GNDUM1"),NODE=SLA(L,"GNDUM3"),SUB=SLA(L,"sub")
+	I SUB="DDN" S $P(^DASD(SDNM,"D","F",FN,"P"),";",4)=NODE Q
+	I SUB="PM" S $P(^DASD(SDNM,"D","F",FN,"P"),";",6)=NODE Q
+	I SUB="HS" S ^DASD(SDNM,"D","F",FN,"H","S")=NODE Q
+	I SUB="HT" S ^DASD(SDNM,"D","F",FN,"H","T")=NODE Q
+	S S1=$E(SUB,1,2),S2=$E(SUB,3,255)
+	I FN="Screen" S ^DASD(SDNM,"D","S",S1,S2)=NODE Q
+	S ^DASD(SDNM,"D","F",FN,S1,S2)=NODE
+	Q
+VALID	;
+	S SUB=SLA(%SP,"sub")
+	I SUB="PM" S %MSG=$S($ZL(%RES)>71:"最大プロンプト長は'71'です。",1:"") Q  ;	;%%Z1-G;%%Z1-T
+	I SUB="HT" S %MSG=$S($ZL(%RES)>79:"最大ヘルプテキスト長は'79'です。",1:"") Q  ;	;%%Z1-G;%%Z1-T
+	I SUB'["AC",%RES?.E1L.E S %RES=$$UPCASE^%DAZCALL(%RES)
+	I SUB="HS" G VALHS
+	I SUB="DDN" G VALDDN
+	I $ZL(%RES)>67&(SUB["VA"!(SUB["AT")) S %MSG="最大フィールド長は'67'です。" Q  ;	;%%Z1-G;%%Z1-T
+	S TAG="V"_$S(GNDUM1="Screen":$S(SUB["AT":"ST",1:"SC"),SUB["AC":"FC",SUB["AT":"FT",1:"FA")
+	K S D @TAG^%DASDPAR K TAG
+	Q
+VALDDN	I %RES'?1U.6UN S %MSG="データネームが不適当です。１大文字に続く６文字までの英数大文字を入力して下さい" Q  ;	;%%Z1-T
+	I '$D(^DADD(%RES)) S %MSG="データネーム'"_%RES_"'が分かりません。" ;	;%%Z1-T
+	Q
+VALHS	I %RES'?1U.6UN S %MSG="スクリーン名が不適当です。１大文字に続く６文字までの英数大文字を入力して下さい" Q  ;	;%%Z1-T
+	I '$D(^DASD(%RES)) S %MSG="スクリーン名'"_%RES_"'が不適当です。" Q  ;	;%%Z1-T
+	I $P(^DASD(%RES,"SCR"),";")'="HELP" S %MSG="スクリーン'"_%RES_"'にはヘルプスクリーンがありません。" ;	;%%Z1-T
+	Q

@@ -1,0 +1,50 @@
+ROUTINE %DAUSSEA [Type=INT,LanguageMode=6]
+%DAUSSEA	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	;
+	K ^DATG($J,"R") I '$D(%RL) Q
+	N %CNT S %CNT="" F  S %CNT=$O(%RL(%CNT)) Q:%CNT=""  S %RL(%CNT)=$$UPCASE^%DAZCALL(%RL(%CNT))
+	S %SDNM="" F  S %SDNM=$O(^DATG($J,"U","S",%SDNM)) Q:%SDNM=""  D ONESCN
+	K %SDNM,%DN,%BOLD,%NORM,FN,UC,DATA,NODE,I,S1,S2,S3,S4,%1,%2,%3,%4
+	Q
+ONESCN	;
+	S $ZT="ERROR^%DAUSSEA",$ZE=""
+	I $P(^DASD(%SDNM,"SCR"),";",1)'="DATA" Q
+	S S3=0
+	F S2=1:1 Q:'$D(^DASD(%SDNM,"D","S","AT",S2))  D
+	. S DATA=^DASD(%SDNM,"D","S","AT",S2) 
+	. I DATA]"" S S4="Attribute "_S2 D COMP
+	F S2=1:1:3 S DATA=^DASD(%SDNM,"D","S","AC",S2) Q:DATA=""  D  
+	. S S4="Action "_S2  D COMP
+	S FN=""
+	F I=1:1 S FN=$O(^DASD(%SDNM,"D","F",FN)) Q:FN=""  S S3=FN D FLD
+	Q
+FLD	S NODE=^DASD(%SDNM,"D","F",FN,"P"),(DATA,%DDNM)=$P(NODE,";",4)
+	I DATA]"" S S4="Data Name" D COMP
+	K %DN I %DDNM]"" D DDN^%DADDLD
+	S DATA=$P(NODE,";",6),DATA=$S(DATA]"":DATA,$D(%DN):"("_%DN(%DDNM,"P")_")",1:"") I DATA]"" S S4="Prompt" D COMP
+	S DATA=^DASD(%SDNM,"D","F",FN,"H","S"),DATA=$S(DATA]"":DATA,$D(%DN):"("_%DN(%DDNM,"HS")_")",1:"") I DATA]"" S S4="Help Screen" D COMP
+	S DATA=^DASD(%SDNM,"D","F",FN,"H","T"),DATA=$S(DATA]"":DATA,$D(%DN):"("_%DN(%DDNM,"HT")_")",1:"") I DATA]"" S S4="Help Text" D COMP
+	S DATA=^DASD(%SDNM,"D","F",FN,"AT",1),DATA=$S(DATA]"":DATA,$D(%DN):"("_%DN(%DDNM,"AT")_")",1:"") I DATA]"" S S4="Attributes" D COMP
+	S DATA=^DASD(%SDNM,"D","F",FN,"VA",1),DATA=$S(DATA]"":DATA,$D(%DN):"("_%DN(%DDNM,"V")_")",1:"") I DATA]"" S S4="Validation" D COMP
+	F S2=0:0 S S2=$O(^DASD(%SDNM,"D","F",FN,"AC",S2)) Q:S2=""  S DATA=^(S2),S4="Action "_S2 D COMP
+	Q
+COMP	;
+	S UC=$S(DATA?.E1L.E:$$UPCASE^%DAZCALL(DATA),1:DATA)
+	S %CNT="" F  S %CNT=$O(%RL(%CNT)) Q:%CNT=""  I UC[%RL(%CNT) D BUILD Q
+	Q
+BUILD	;
+	I $S('$D(%PDV):1,'$D(%PP):%IOD'=%PDV,'%PP:%IOD'=%PDV,1:1) G SET
+	S %NORM=$C(27)_"[m",%BOLD=$C(27)_"[7m"
+	S %1=$L(UC) K %2 S %CNT="" F  S %CNT=$O(%RL(%CNT)) Q:%CNT=""  S %3=$L(%RL(%CNT)) D B1
+	S %CNT="" F  S %CNT=$O(%2(%CNT)) Q:%CNT=""  D B2
+SET	S ^DATG($J,"R",%SDNM,S3,S4)=DATA
+	Q
+B1	F %4=%3:1:%1 I $E(UC,%4-%3+1,%4)=%RL(%CNT) S %2(%1-%4+1)=$S('$D(%2(%1-%4+1)):%3,%2(%1-%4+1)>%3:%2(%1-%4+1),1:%3)
+	Q
+B2	F %3=0:0 S %4=$O(%2(%CNT)) Q:%4>(%CNT+%2(%CNT))!'$L(%4)  S:%CNT+%2(%CNT)'>(%4+%2(%4)) %2(%CNT)=%4-%CNT+%2(%4) K %2(%4)
+	S DATA=$E(DATA,1,%1-%CNT-%2(%CNT)+1)_%BOLD_$E(DATA,%1-%CNT-%2(%CNT)+2,%1-%CNT+1)_%NORM_$E(DATA,%1-%CNT+2,999)
+	Q
+ERROR	W "Error running multiple screen search on: ",%SDNM,!,$ZE,!!
+	Q

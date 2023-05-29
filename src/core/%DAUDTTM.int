@@ -1,0 +1,172 @@
+ROUTINE %DAUDTTM [Type=INT,LanguageMode=6]
+%DAUDTTM	;JEB/DBS,,UTILITY,DASL;4-Mar-92;V6.1 Date/Time Utility
+	;DASL;Y;SYSTEM,ENTRY
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;********************************************************************
+	;*                     !WARNING to Developers!                      *
+	;*   The master copy of this routine is stored under the %DM####    *
+	;*   name.  If any edits are made to this routine the edits MUST    *
+	;*   be made to the %DM routine as well.  Failure to do this will   *
+	;*   lead to errors in Portable Run-time DASL!                      *
+	;*                                                                  *
+	;********************************************************************
+NOW	D TMNW,DTNW Q
+	;; Run-time
+GEN	;  Execute this code to generate a new copy of %DAUDTTM after
+	;  modifications to format parameters (must be before changed lines).
+	S %FLANG=^%DAMSG
+	I '$D(%PRTD) D
+	. I $D(DB),DB S FILE=0 Q
+	. S FILE="DSM_DASL_UT"_(+$H)_$P($H,",",2)_".TMP"
+	. C FILE O FILE:NEW U FILE
+	;  E  S FILE=59,BLK=6633200 O FILE:(0:BLK) U FILE ; PDP-11
+	D SET^%DAUDTTX  ;set up parameters in X(label)
+	F J=1:1 S X=$T(+J) Q:X=""  S:$E(X)="X" X=X($P(X," ")) W X,!
+	W !! Q:FILE=0!($D(%PRTD))
+	;+%%Z3-time
+	; If routines are in a volume set an error will occur when ZSaving
+	; so set the uci=managers uci for the save
+	S OLD=$ZC(%UCI) ; OLD=uci,lib_uci,lib_vol,vol
+	S NEW="S X=$ZC(%SETUCI,"_""""_$P(OLD,",",2)_""","""_$P(OLD,",",3)_""",""R"")"
+	S OLD="S X=$ZC(%SETUCI,"_""""_$P(OLD,",",6)_""","""_$P(OLD,",",7)_""",""R"")"
+	X NEW
+	;-%%Z3-time
+	U FILE:DISCON X "ZR  F I=1:1 R X ZI:X]"""" X I X="""" ZS "_$T()_" Q"
+	C FILE:DEL
+	;+%%Z3-time
+	X OLD
+	;-%%Z3-time
+	K BLK,DB,FILE,I,J,X,NEW,OLD ;	;%%Z3-time
+	Q
+	;; Run-time
+TMNW	;TIME "NOW"
+	S %TMI=$P($H,",",2)
+TMIX	;INTERNAL TIME TO EXTERNAL
+	N %1,%2,%3
+TMIXI	S %TMX="" Q:%TMI'?1N.N!(%TMI>86399)
+TIME	;internal entry to do format conversion
+XTMO	S %TMX=$J(%TMI\3600-1#12+1,2)_":"_$E(%TMI\60#60+100,2,3)_" "_$E("AP",%TMI>43199+1)_"M"
+TMDN	Q  ; K %1,%2,%3 Q
+TMXI	;EXTERNAL TIME TO INTERNAL
+	N %1,%2,%3 
+TMXII	S %1=$zstrip(%TMX,"<>W"),%TMI=""
+XNOW	G TMNOW:$E(%1)="N"
+	I %1?4N,%1,%1<2401,%1#100<60 S %TMI=%1\100#24*60+(%1#100)*60 G TIME
+XTNM	;
+	S %2=$L(%1) I %1<13 S:$E(%1,%2)="M" %2=%2-1 S:"AP"[$E(%1,%2) %2=%2-1
+	G TMDN:'%2 F %2=%2:-1 Q:$E(%1,%2)'=" "
+	S %1=$E(%1,1,%2) F %2=1:1 Q:$E(%1,%2)'?1N
+	S %3=$E(%1,%2) I %3="" S %2="00"
+	E  G TMDN:%3'?.P."H" S %2=$P(%1,%3,2,99),%1=$P(%1,%3)
+	I %1?.N,%1,%1<25,%2?2N,%2<60 S %TMI=$S(%TMX["P"&(%1<12):12+%1,%TMX["A"&(%1=12):0,1:%1)*60+%2*60 G TIME
+	G TMDN
+TMNOW	I $L(%1)>1,"+-"'[$E(%1,2)!($E(%1,3,99)'?1N.N) G TMDN
+	S %1=$E(%1,2,99)*60+$P($H,",",2) G TMDN:%1<0!(%1>86399)
+	S %TMI=%1 G TMIXI
+DTNW	;DATE "NOW"
+	S %DTI=+$H
+DTIX	;INTERNAL DATE TO EXTERNAL
+	N %1,%2,%3,%4,%5,%9,%zz,%zz1,%zz2 ;	;%%Z1-O
+DTIXI	S %DTX="",%1=+%DTI G:%1'=%DTI DTIDN
+	S %3=%1\365+1842
+DT0	S %3=%3-1,%4=%3-1\4-(%3-1\100)+(%3-1\400)-446,%1=-366*%4-(%3-1841-%4*365)+%DTI G DT0:%1<0
+	S %2=1 F %4=31,$S(%3#4:28,%3#100:29,%3#400:28,1:29),31,30,31,30,31,31,30,31,30,31 Q:%1'>%4  S %2=%2+1,%1=%1-%4
+	I '%1 S %3=%3-1,%2=12,%1=31
+DT01	S %4="",%5=%3,%zz1=$P($T(XJY),";",3,255) F %zz=1:1 S %zz2=$P(%zz1,";",%zz) Q:%zz2=""  I %DTI'<$P(%zz2,",",1) S %4=$P(%zz2,",",3,4),%5=%3-$P(%zz2,",",2)+1 Q  ;	;%%Z1-O
+	Q:$D(%9)  ;quit if flag for imbedded call from DTXII
+	D XDTO ;finally convert to standard output format
+DTIDN	Q  ;K %1,%2,%3,%4 Q
+	;
+	;generate %DTX from %1=day, %2=month, %3=year (4 digit)
+XDTO	S %DTX=%1_"-"_$P($T(XMON),";",%2+2)_"-"_$S($E(%3,1,2)=19:$E(%3,3,4),1:%3)
+	Q
+DTXI	;EXTERNAL DATE TO INTERNAL
+	N %1,%2,%3,%4,%9,%91,%92,%93,XMON
+DTXII	S %9=0 G DTGO
+DTXIN	N %1,%2,%3,%4,%9,%91,%92,%93,XMON
+DTXINI	S %9=1 ;INEXACT
+DTGO	S %1=$zstrip(%DTX,"<>W"),%DTI=""
+XTOD	G DTTOD:$E(%1)="T"
+	;reduce punctuation
+	F %2=" ",",","-",".","//" F %3=1:1 Q:%1'[%2  S %1=$P(%1,%2,1)_"/"_$P(%1,%2,2,99)
+	;handle numeric input
+XNUM	I %1?3.N G DTXDN:$L(%1)#2 S %1=$E(%1,1,2)_"/"_$E(%1,3,4)_"/"_$E(%1,5,99)
+	;now non-numeric
+XSTR	;
+	;strip any leading punc (may be left over from XNUM)
+	F %2=1:1 I $E(%1,%2)'="/" S %1=$E(%1,%2,99) Q
+	S (%91,%92,%93)="" ;day, month, year
+	S %2=$P(%1,"/",1) D TYPE G DTXDN:'%2!(%3="E") I %3="Y" G DTXDN:$P(%1,"/",2,99)]""!'%9 S %93=%2,(%92,%91)=1 G DTCV ;type 1 inexact - 1984
+	I %3="M" S %92=%2
+	E  S %91=%2 ;assume day for now
+	S %2=$P(%1,"/",2) D TYPE G DTXDN:%3="E" I %2="" G DTXDN:$P(%1,"/",3,99)]"",DTCV:%91,DTXDN:'%9 S %91=1 G DTCV ;type 2 inexact - Jun
+	I %3="Y" G DTXDN:$P(%1,"/",3,99)]""!'%9 S:'%92 %92=%91 S %91=1,%93=%2 G DTCV ;type 2 - Jun 84
+	I %3="M" G DTXDN:%92 S %92=%2
+	E  I %92 S %91=%2 ;previous was explicit month
+	E  I %2>32 S %92=%91,%91=%2 ;%2 is year, put in day for consistency
+	;next line handles American or European entry
+XAE	E  S %92=%2 ;European
+	S %2=$P(%1,"/",3) D TYPE I %2="" G DTCV:%91<32,DTXDN:'%9 S %93=%91,%91=1 G DTCV ;type 2 - 6/80 or Jun 80
+	G DTXDN:"ME"[%3 S %93=%2
+DTCV	G DTXDN:%91>31!(%92>12)!'%91 I %93="" S %DTI=+$H D DTIXI S %93=%3,%DTI="" S:'%92 %92=%2
+	S:%93<100 %93=1900+%93 S %1=%91,%2=%92,%3=%93 ;save for XDTO later
+	S %9=%93-1\4-(%93-1\100)+(%93-1\400)-446,%91=366*%9+(%93-1841-%9*365)+%91
+	F %9=31,$S(%93#4:28,%93#100:29,%93#400:28,1:29),31,30,31,30,31,31,30,31,30,31 S %92=%92-1 Q:'%92  S %91=%91+%9
+	I %1'>%9 S %DTI=%91 S %9="" D DT01 D XDTO ;test if day of month too large (%%Z1)
+DTXDN	;K %1,%2,%3,%4,%9,%91,%92,%93
+	Q
+	;
+DTTOD	I $L(%1)>1,"+-"'[$E(%1,2)!($E(%1,3,99)'?1N.N) G DTXDN
+	S %1=$H+$E(%1,2,99) G DTXDN:%1<0 S %DTI=%1 K %9 G DTIXI
+	;return data type of %2 in %3: Y(ear), M(onth), N(umber), E(rror), null
+	; %2 returned as day, month, or year number
+TYPE	I %2?1N!(%2?2N) S %2=+%2,%3="N" Q
+	I %2?4N S %3="Y" Q
+	I %2?1A1.2N D  I %3 S %2=%3,%3="Y" Q  ; ;%%Z1-O
+	.S %3=0,%zz1=$P($T(XJY),";",3,255) F %zz=1:1 S %zz2=$P(%zz1,";",%zz) Q:%zz2=""  I $E(%2)=$P(%zz2,",",4) S %3=+$P(%zz2,",",2)+$E(%2,2,3)-1 S:(%zz>1)&(%3>$P($P(%zz1,";",%zz-1),",",2)) %3=0 Q  ;     ;%%Z1-O
+	;**TM**;I %2?1.A S:%2'?.U %2=$zcvt($ZC(%BASEDIT,%2,256),"U") S %4=$ZC(%ZUPCASE,$ZC(%BASEDIT,$T(XMON),256)) F %3=3:1:14 I $P($P(%4,";",%3),%2)="" S %2=%3-2,%3="M" Q
+	I %2?1.A S:%2'?.U %2=$zcvt(%2,"U") S %4=$zcvt($T(XMON),"U") F %3=3:1:14 I $P($P(%4,";",%3),%2)="" S %2=%3-2,%3="M" Q
+	E  S %3=$S(%2="":"",1:"E")
+	Q
+	;convert %2 to 1U2.L
+CVT	S %3=%2,%2=$C($A(%3)#32+64) F %9=2:1:$L(%3) S %2=%2_$C($A(%3,%9)#32+96)
+	Q
+XMON	;;Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec
+XDOW	;;Thursday;Friday;Saturday;Sunday;Monday;Tuesday;Wednesday
+	;%%Z1-O
+XDOWJ	;;木;金;土;日;月;火;水
+XJY	;;54064,1989,平成,H;31404,1926,昭和,S;26143,1912,大正,T;9862,1868,明治,M
+	;%%Z1-O
+	;validation entries
+VDN	S %DTX=%RES D DTXIN G VDT
+VD	S %DTX=%RES D DTXI
+VDT	N %X,%Y,%Y,%T S %MSG="" G XDTER:%DTI="" S %X=%DTI,%Y=%DTX,%Z=""
+	S %DTX=$P(%,"$",1) G DTOUT:%DTX="" S @("%DTX="_%DTX) D DTXINI
+	S %Z=%DTX,%T=%DTI,%DTX=$P(%,"$",2) I %DTX]"" S @("%DTX="_%DTX) D DTXINI G XDRER:%DTI<%X
+	G XDRER:%X<%T
+DTOUT	S %DTI=%X,(%RES,%DTX)=%Y Q
+XDTER	S %MSG="以下のように日付を入力してください: 4/7/76, 4-Jul-76, 040776, または T-1." Q
+XDRER	S %MSG=%Z_" と "_%DTX_" の間の日付を入力して下さい" S:%DTX="" %MSG=%Z_" 以降 の”日付”を入力して下さい" S %MSG=%MSG_": "_%RES Q
+VT	N %X,%Y,%Z,%T
+	S %MSG="",%TMX=%RES D TMXII
+	G XTMER:%TMI="" S %X=%TMI,%Y=%TMX,%Z=""
+	S %TMX=$P(%,"$",1) G TMOUT:%TMX="" S @("%TMX="_%TMX) D TMXII
+	S %Z=%TMX,%T=%TMI,%TMX=$P(%,"$",2) I %TMX]"" S @("%TMX="_%TMX) D TMXII G XTRER:%TMI<%X
+	G XTRER:%X<%T
+TMOUT	S %TMI=%X,(%RES,%TMX)=%Y Q
+XTMER	S %MSG="4:15 PM の様な形式で時間を入力して下さい, 1615, または N-1." Q
+XTRER	S %MSG=%Z_" から "_%TMX_" までの時間を入力して下さい。" S:%TMX="" %MSG=%Z_" 以降の時間を入力して下さい。" S %MSG=%MSG_": "_%RES Q
+	;
+DOW	S %DOW=$P(^DASY("PARM","DAY"),";",%DTI+4#7+1) Q
+	;test entries
+	;
+TESTDO	F I=1:1 R !,"Date: ",%DTX Q:%DTX=""  D DTXIN W " ",%DTI," ",%DTX
+	Q
+TESTDV	F I=1:1 R !,"Date: ",%RES Q:%RES=""  S %="" D VD W " ",%DTX," ",%MSG
+	Q
+TESTTM	F I=1:1 R !,"Time: ",%RES Q:%RES=""  S %="" D VT W " ",%TMX," ",%MSG
+	Q
+	;

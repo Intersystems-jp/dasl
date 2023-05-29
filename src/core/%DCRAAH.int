@@ -1,0 +1,103 @@
+ROUTINE %DCRAAH [Type=INT,LanguageMode=6]
+%DCRAAH	;V6.1;15-Oct-92  3:44 PM;PRTDPRA Print Port/DASL All Target Save Set Definitions
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRAAH" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S SSNAME=""
+K1	S SSNAME=$O(^DASS(SSNAME)) I SSNAME="" G K0
+	S %V=SSNAME D CVT S %S1=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%CNT)=SSNAME
+	G K1
+K0	S ^DATG($J,"R")="PRTDPRA,"_%DTR_","_%TMR_","_%CNT
+	K SSNAME,%S1
+PRT	D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRAAH",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S SSNAME=^DATG($J,"R",%S1,%S2)
+	I %F1 S:%PC'=1 %HD=0 D C1,H1 S %F1=0 S:%PC'=1 %HD=1 G S0:%QT
+	D D G S0:%QT,S2
+C1	S %=$D(^DASS(SSNAME,"F")),%T1="" S:%#10 %T1=^("F") S SSDESC=$P(%T1,";",4),SSTAR=$P(%T1,";"),SSFORMT=$P(%T1,";",2)
+	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%S2,%T1,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRAAH",%ECNT=%ECNT+1 G S2
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZL("Print Target Save Set Definitions",%RPKPIT)\2+39,"Print Target Save Set Definitions" D NLN0 Q:%QT  W "________________________________________________________________________________" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+H1	I $Y>%PL D NPG Q
+	I '%HD S:%SCP %SCP=1 D NLN I '%SCP D NPG Q
+	W ?4,"Save Set Name: "_SSNAME D NLN Q:%QT
+	W ?4,"Description: "_SSDESC D NLN Q:%QT
+	W ?4,"Target System: "_SSTAR D NLN Q:%QT
+	W ?4,"Description:"
+	S %DES=^%DASY("MUMPS",SSTAR)
+	W ?18,%DES D NLN Q:%QT
+	W ?4,"Output to a File or a Global: "_SSFORMT D NLN Q:%QT
+	D NLN Q:%QT
+	Q
+T1	Q
+D	S %HD=0 D NPG:$Y>%PL
+	S %LIST="S,R,RO,G"
+	F %I=1:1:$L(%LIST,",") S %TY=$P(%LIST,",",%I) D
+	.Q:'$D(^DASS(SSNAME,%TY))
+	.S %HEAD=$S(%TY="G":"Global",%TY="R":"Report",1:"")
+	.I %HEAD="" S %HEAD=$S(%TY="RO":"Routine",1:"Screen")
+	.S %CNT="" D
+	..F  S %CNT=$O(^DASS(SSNAME,%TY,%CNT)) Q:%CNT=""  D WRT
+	F %V=1:1:2 D NLN Q:%QT
+	Q
+WRT	;
+	W:%CNT=1 ?-$ZL(%HEAD,%RPKPIT)\2+39,%HEAD D:%CNT=1 NLN Q:%QT  W:%CNT=1 ?19,"-----------------------------------------" D:%CNT=1 NLN Q:%QT
+	D:%CNT=1 NLN Q:%QT
+	W:%TY'="RO" ?29,^DASS(SSNAME,%TY,%CNT) G SEC11:'(%TY="RO")
+	D NPG:$Y>%PL W ?24,$P(^DASS(SSNAME,%TY,%CNT),";",1),?49,$P(^DASS(SSNAME,%TY,%CNT),";",2)
+SEC11	;
+	D NLN Q:%QT
+	K %DES
+	Q
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%S2,%T1
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N SSDESC,SSFORMT,SSNAME,SSTAR
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

@@ -1,0 +1,306 @@
+ROUTINE %DAUDMP [Type=INT,LanguageMode=6]
+%DAUDMP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+EVAL	;
+	K ^DATG($J,"U",%TYPE),%DUM
+	F %1=0:0 S %1=$O(^DATG($J,"S",%L(0),%1)) Q:%1=""  S %WILD=^(%1,"GNDUM1") I %WILD]"" D EXPAND
+	S %DUM="" 
+	F  S %DUM=$O(%DUM(%DUM)) Q:%DUM=""  S ^DATG($J,"U",%TYPE,%DUM)=""
+	K ^DATG($J,"S",%L(0)) S %ITEM=""
+	F %1=1:1 S %ITEM=$O(^DATG($J,"U",%TYPE,%ITEM)) Q:%ITEM=""  D EVAL2
+	K ^DATG($J,"U",%TYPE)
+EXIT	K %DESC,%ITEM,%WILD,%N,%1,%DUM,%OWN,%NDIS 
+	Q
+EVAL2	;
+	S %DESC=$S(",TB,RTN,Q,"'[(","_%TYPE_","):$P(@%GBL@(%ITEM,"A"),";",2),1:"")
+	I %TYPE="Q" D OWNER I '%NDIS S %DESC=$P(@%GBL@(%ITEM,"1A"),";",1)
+	I %TYPE="TB" S %DESC=$P(@%GBL@(%ITEM,"REF"),";",3)
+	S ^DATG($J,"S",%L(0),%1,"GNDUM1")="",^("GNDUM2")=%ITEM,^("GNDUM3")=%DESC
+	Q
+FILE	;
+	K ^DATG($J,"U",%TYPE)
+	F %1=0:0 S %1=$O(^DATG($J,"S",%L(0),%1)) Q:%1=""  D
+	. S %ITEM=^(%1,"GNDUM2")
+	. I %TYPE="Q",%ITEM'="" D OWNER I %NDIS Q
+	. I %ITEM]"" S ^DATG($J,"U",%TYPE,%ITEM)=""
+EXIT2	;
+	K %TYPE,%GBL,%OWN,%NDIS
+	G EXIT
+NXFILE	;
+	K ^DATG($J,"U",%TYPE) S %1=0 D NXF2
+	I '$D(^DATG($J,"U",%TYPE)) S %MSG=%VAR("HEAD")_"が選択されませんでした。" ;	;%%Z1-T
+	G EXIT2
+NXF2	S %1=$O(^DATG($J,"S",%L(0),%1)) Q:%1=""  S %WILD=^(%1,"GNDUM1")
+	I %WILD]"" S ^DATG($J,"U",%TYPE,%1)=%WILD
+	G NXF2
+CONTIN	;
+	S:'$D(%VAR("SDTYPE")) %VAR("SDTYPE")="" S %TYPE="" D CON1
+	G EXIT2
+CON1	S %TYPE=$O(%VAR("EXPD",%TYPE)) Q:%TYPE=""  I '%VAR("EXPD",%TYPE) D CON2
+	G CON1
+CON2	S %GBL=$S(%TYPE="D":"^DADD",%TYPE="S":"^DASD",%TYPE="R":"^DARD",%TYPE="T":"^DADDT",%TYPE="DX":"^DADD",%TYPE="TB":"^DATD",%TYPE="Q":"^DAQD",%TYPE="GBL":"",1:"")
+	K %DUM
+	F %1=0:0 S %1=$O(^DATG($J,"U",%TYPE,%1)) Q:%1=""  S %WILD=^(%1) D EXPAND
+	K ^DATG($J,"U",%TYPE) D CON3
+	Q
+CON3	S %1=$O(%DUM(%1)) Q:%1=""  S ^DATG($J,"U",%TYPE,%1)=""
+	G CON3
+EXPAND	;
+	I %WILD?1"^"1U.ANP G ONE 
+	I %WILD?1A.AN G ONE
+	I %WILD?1A.AN1"("1N.N1")" G ONE
+	I %WILD?1A.AN1"*" G SEQ
+	I $E(%WILD)="@" G GRP
+	I %WILD?1A.AN1"-"1A.AN G RANGE
+	I %WILD?1A.AN1"-"1A.AN1"("1N.N1")" G RANGE
+	I %WILD?1A.AN1"("1N.N1")"1"-"1A.AN G RANGE
+	I %WILD="*" G ALL
+	I %WILD?1"-"1A.AN G DEL
+	I %WILD?1"-"1A.AN1"("1N.N1")" G DEL
+	I %WILD?1"-"1A.AN1"*" G DELSEQ
+	Q
+ONE	I %TYPE="Q" D OWNER I %NDIS Q
+	S %DUM(%WILD)="" 
+	Q
+SEQ	S (%N,%WILD)=$P(%WILD,"*") G SEQR:%TYPE="RTN" 
+	S %WILD=$S($D(@%GBL@(%WILD)):%WILD,1:$O(@%GBL@(%WILD)))
+	F %=0:0 Q:$P(%WILD,%N)]""!(%WILD="")  D SETONE S %WILD=$O(@%GBL@(%WILD))
+	Q
+SEQR	;
+	;**TM**; ^ ()を^$Routineに変換
+	;S %MSG="",%RES=%WILD D VONER I %MSG]"" S %MSG="",%WILD=$O(^ (%WILD))
+	;F %=0:0 Q:$P(%WILD,%N)]""!(%WILD="")   D SETONE S %WILD=$O(^ (%WILD))
+	S %MSG="",%RES=%WILD D VONER I %MSG]"" S %MSG="",%WILD=$O(^$Routine(%WILD))
+	F %=0:0 Q:$P(%WILD,%N)]""!(%WILD="")   D SETONE S %WILD=$O(^$Routine(%WILD))
+	Q
+GRP	S %N=","_$E(%WILD,2,99)_",",%WILD="" D GRP1 
+	Q
+GRP1	S %WILD=$O(@%GBL@(%WILD)) Q:%WILD=""
+	I %TYPE'="TB",","_$P(@%GBL@(%WILD,"A"),";")_","[%N D SETONE
+	I %TYPE="TB",","_$P(@%GBL@(%WILD,"REF"),";")_","[%N D SETONE
+	G GRP1
+RANGE	S %N=$P(%WILD,"-",2),%WILD=$P(%WILD,"-") G RANGER:%TYPE="RTN" 
+	S %WILD=$S($D(@%GBL@(%WILD)):%WILD,1:$O(@%GBL@(%WILD)))
+	F %=0:0 Q:%WILD]%N!(%WILD="")  D SETONE S %WILD=$O(@%GBL@(%WILD))
+	Q
+RANGER	;
+	;**TM**; ^ ()を^$Routineに変換
+	;S %MSG="",%RES=%WILD D VONER I %MSG]"" S %MSG="",%WILD=$O(^ (%WILD))
+	;F %=0:0 Q:%WILD]%N!(%WILD="")  D SETONE S %WILD=$O(^ (%WILD))
+	S %MSG="",%RES=%WILD D VONER I %MSG]"" S %MSG="",%WILD=$O(^$Routine(%WILD))
+	F %=0:0 Q:%WILD]%N!(%WILD="")  D SETONE S %WILD=$O(^$Routine(%WILD))
+	Q
+ALL	S %WILD="" I %TYPE="RTN" G ALLR 
+	F %=0:0 S %WILD=$O(@%GBL@(%WILD)) Q:%WILD=""  D SETONE
+	Q
+	;**TM**; ^ ()を^$Routineに変換
+	;ALLR	F %=0:0 S %WILD=$O(^ (%WILD)) Q:%WILD=""  D SETONE
+ALLR	F %=0:0 S %WILD=$O(^$Routine(%WILD)) Q:%WILD=""  D SETONE
+	Q
+SETONE	;
+	I %TYPE="Q" D OWNER I %NDIS Q
+	I %TYPE'="S"!(%VAR("SDTYPE")="") S %DUM(%WILD)="" Q
+	I $P(^DASD(%WILD,"SCR"),";")=%VAR("SDTYPE") S %DUM(%WILD)=""
+	Q
+DEL	K %DUM($E(%WILD,2,99)) 
+	Q
+DELSEQ	S (%N,%WILD)=$E($P(%WILD,"*"),2,99) 
+	S %WILD=$S($D(%DUM(%WILD)):%WILD,1:$O(%DUM(%WILD))) D DLSEQ1
+	Q
+DLSEQ1	Q:$P(%WILD,%N)]""!(%WILD="")  K %DUM(%WILD) S %WILD=$O(%DUM(%WILD))
+	G DLSEQ1
+SELECT	;
+	;				"Q" for queries
+	;				"TB" for Tables
+	S %TYPE=%VAR("TYPE") K ^DATG($J,"U",%TYPE),%DUM
+	I %TYPE="S",'$D(%VAR("SDTYPE")) S %VAR("SDTYPE")=""
+	S %VAR("HEAD")=$S(%TYPE="S":"Screen",%TYPE="D":"Data",%TYPE="R":"Report",%TYPE="T":"Template",%TYPE="DX":"Data1",%TYPE="TB":"Table",%TYPE="Q":"Query",1:"")
+	F  W !,%VAR("HEAD") R " Names: ",%RES Q:%RES=""  D SEL1
+	S %R="" F  S %R=$O(%DUM(%R)) Q:%R=""  S ^DATG($J,"U",%TYPE,%R)=""
+	W ! K %VAR,%WILD,%DUM,%R,%OWN
+	Q
+SEL1	I %RES="?" D LIST Q
+	D VAL I %MSG]"" W $C(7),"  ",%MSG Q
+	S %WILD=%RES D EXPAND
+	Q
+LIST	;
+	I '$D(%DUM) W %VAR("HEAD"),"名，範囲，グループ，または削除コマンドを入力して下さい。" Q  ;	;%%Z1-T
+	W !,"Selected ",%VAR("HEAD")," items",! S %R=""
+	F %I=0:1 S %R=$O(%DUM(%R)) Q:%R=""  W:%I#8=0 ! W ?%I#8*10,%R
+	W ! K %R,%I
+	Q
+VAL	;
+	S %TYPE=%VAR("TYPE"),%MSG=""
+	S %GBL=$S(%TYPE="D":"^DADD",%TYPE="S":"^DASD",%TYPE="R":"^DARD",%TYPE="T":"^DADDT",%TYPE="DX":"^DADD",%TYPE="TB":"^DATD",%TYPE="Q":"^DAQD",%TYPE="GBL":%RES,1:"")
+	I %TYPE="GBL" D GREF D  Q
+	. I %RES["*" S %MSG="グローバルリファレンスを選択する場合にはワイルドカードが使用できません。" Q  ;;%%Z3-T
+	. I $L(%RES,"(")'=$L(%RES,")") S %MSG="グローバルリファレンスで括弧の対応が取れていません。" Q  ;;%%Z3-T
+	. I $L(%RES,"""")-1#2 S %MSG="グローバルリファレンスで引用符("")の対応が取れていません。" Q  ;;%%Z3-T
+	S:'$D(%VAR("SDTYPE")) %VAR("SDTYPE")=""
+	I $$MODE^%DAZCALL,%RES?1"%".AN G VONE
+	I %RES?1A.AN!(%RES?1A.AN1"("1N.N1")") G VONE 
+	I %RES?1A.AN1"-"1A.AN!(%RES?1A.AN1"*")!(%RES="*") Q
+	I %RES?1A.AN."(".N.")"1"-"1A.AN."(".N.")"!(%RES?1A.AN."(".N.")"1"*") Q
+	I $E(%RES)="@" G VGRP
+	I %RES?1"-"1A.AN S:'$D(@%GBL@($P(%RES,"-",2))) %MSG=%VAR("HEAD")_" "_$P(%RES,"-",2)_"is not defined." Q
+	I %RES?1"-"1A.AN1"("1N.N1")" S:'$D(@%GBL@($P(%RES,"-",2))) %MSG=%VAR("HEAD")_" "_$P(%RES,"-",2)_"is not defined." Q
+	I %RES?1"-"1A.AN1"*" Q
+	I %TYPE="TB" G VONE 
+	S %MSG=%VAR("HEAD")_"名，範囲，グループ，または削除コマンドを入力して下さい。" ;	;%%Z1-T
+	Q
+VONE	;
+	I %TYPE="RTN" G VONER
+	I '$D(@%GBL@(%RES)) S %MSG=%VAR("HEAD")_" "_%RES_" は定義されていません。" Q  ;	;%%Z1-T
+	I %TYPE'="S"!(%VAR("SDTYPE")="") Q
+	I $P(^DASD(%RES,"SCR"),";")'=%VAR("SDTYPE") S %MSG="スクリーンタイプが不適当です。'"_%VAR("SDTYPE")_"'スクリーンを入力して下さい。" ;	;%%Z1-T
+	Q
+VONER	;
+	S $ZT="ERRRTN^%DAUDMP" X "ZL "_%RES 
+	Q
+ERRRTN	;
+	I $ZE["NOSUCHPGM" S %MSG="ルーチン'"_%RES_"'がありません。",$ZE="" Q  ;	;%%Z1-T
+	;**TM**; ZQ動作の変更; ZQ
+	ZQ 1 G @$ZT
+VGRP	;
+	I ",Q,T,RTN,"[(","_%TYPE_",") S %MSG="'"_%VAR("HEAD")_"'ではグループは使用できません。" Q  ;	;%%Z1-T
+	I $S(%RES="@":1,'$D(^DAGR($P(%RES,"@",2))):1,1:0) S %MSG="グループが不適当です。" ;	;%%Z1-T
+	Q
+UDUMP	;
+	K %GRNM D CONTIN,NOW^%DAUDTTM S %UCI=$ZC(%DIRECTORY)
+	C %IOD O %IOD:NEW U %IOD
+	W "DASL definitions saved from ",%UCI," on ",%DTX," at ",%TMX,!
+	W %IOHEAD,! W ^DASY("CONVERT"),! 
+	F %TYPE="D","T","S","R","TB","Q","G","RTN","GBL" D
+	. Q:$D(^DATG($J,"U",%TYPE))=0  S NX=""
+	. W "**",%TYPE,! F  S NX=$O(^DATG($J,"U",%TYPE,NX)) Q:NX=""  W NX,!
+	W "***",!
+	S %TYPE="D",%TL="Data Names",%GBL="^DADD" D DUMP
+	S %TYPE="T",%TL="Templates",%GBL="^DADDT" D DUMP
+	S %TYPE="S",%TL="Screens",%GBL="^DASD" D DUMP
+	S %TYPE="R",%TL="Reports",%GBL="^DARD" D DUMP
+	S %TYPE="TB",%TL="Tables",%GBL="^DATD" D DUMP
+	S %TYPE="Q",%TL="Queries",%GBL="^DAQD" D DUMP
+	S %TYPE="G",%TL="Groups",%GBL="^DAGR" D DUMPG
+	S %TYPE="RTN",%TL="Routines",%GBL="" D DUMP
+	S %TYPE="GBL",%TL="Globals",%GBL="" D DUMP
+	W ! U 0 C:%IOD'=$I %IOD
+DEXIT	;
+	K %TYPE,%GBL,%ITEM,%TL,%IOHEAD,%RF,%NM,%1,%UCI,%UCN,%GRNM
+	Q
+DUMP	;
+	Q:'$D(^DATG($J,"U",%TYPE))  W %TL,! S %ITEM=""
+	;+%%Z3-save
+	F  S %ITEM=$O(^DATG($J,"U",%TYPE,%ITEM)) Q:%ITEM=""  D  
+	. ;;I $ZV["UTLRIX",$G(%KJTOVAX) D DUMP1V Q  ;	;%%Z3-patch 93/2/15
+	. ;**TM**; DSM漢字には変換しない I $ZV["ULTRIX",$G(%KJTOVAX) D DUMP1V Q  ;	;%%Z3-patch 93/2/15
+	. D DUMP1 Q
+	;-%%Z3-save
+	W !
+	Q
+DUMPG	;
+	Q:$D(%GRNM)'=11  W %TL,! S %ITEM=""
+	F  S %ITEM=$O(%GRNM(%ITEM)) Q:%ITEM=""  D DUMP1
+	W !
+	Q
+DUMP1	;
+	W %ITEM,!
+	I %TYPE="RTN" X ("U 0 ZL "_%ITEM_" U %IOD ZP") W ! Q
+	I "DXSR"[%TYPE S %GRNM=$P(@%GBL@(%ITEM,"A"),";") D BLDGRP
+	I %TYPE="GBL" W:$D(@%ITEM) %ITEM,!,@%ITEM,! S %RF=%ITEM 
+	E  I %ITEM'["""" S %RF=%GBL_"("""_%ITEM_""")"
+	E  S %RF=%GBL_"("""_$P(%ITEM,"""",1)_""""""_$P(%ITEM,"""",2)_""""""_$P(%ITEM,"""",3)_""")"
+	S %NM=$E(%RF,1,$L(%RF)-1) 
+	I $$MODE^%DAZCALL S %NM=$E(%NM)_"%"_$E(%NM,2,$L(%NM))
+	F  S %RF=$ZO(@%RF) Q:$E(%RF,1,$L(%NM))'=%NM  W %RF,!,@%RF,!
+	I "DX"[%TYPE D  
+	.S DDNM=%ITEM
+	.S DDREF=$P(^DADD(DDNM,"REF"),";",1)
+	.I DDREF'="" S %EXT=DDREF DO XREF^%DASDUTL 
+	.I DDREF'="",%INT'="" D  
+	. . I %ITEM'["""" W "^DADDX(""DDREF"","""_%INT_""","""_DDNM_""")",!
+	. . E  W "^DADDX(""DDREF"","""_%INT_""","""_$P(DDNM,"""",1)_""""""_$P(DDNM,"""",2)_""""""_$P(DDNM,"""",3)_""")",!
+	. . W %EXT,!
+	I %TYPE="TB" D  
+	. N CLNUM,CLNAM
+	. S %GRNM=$P(@%GBL@(%ITEM,"REF"),";") D BLDGRP
+	. 
+	. F CLNUM=1:1 Q:'$D(^DATD(%ITEM,"C",CLNUM))  D  
+	. . S CLNAM=$P(^DATD(%ITEM,"C",CLNUM),";")
+	. . W "^DATDX(""CT"","""_CLNAM_""","""_%ITEM_""")",!
+	. . W CLNUM,!
+	. . W "^DATDX(""TC"","""_%ITEM_""","""_CLNAM_""","_CLNUM_")",!
+	. . W "",!
+	W !
+	Q
+DUMP1V	;+%%Z3-save; DSM 漢字コードに変換する。
+	;W %ITEM,!
+	;I %TYPE="RTN" D  W ! Q
+	;. N %kjcnv,%i,%l,%ln,%dum
+	;. ;**TM**; S %kjcnv="F %i=1:1 S %l=$T(+%i) Q:%l=""""  S %dum=$ZC(%EUC2DSM,%l,.%ln,0) ZI %ln:+%i ZR +%i"
+	;. S %kjcnv="F %i=1:1 S %l=$T(+%i) Q:%l=""""  S %ln=$ZCVT(%l,""I"",""EUC"") ZI %ln:+%i ZR +%i"
+	;. X ("U 0 ZL "_%ITEM_" X %kjcnv U %IOD ZP") W ! Q
+	;I "DXSR"[%TYPE S %GRNM=$P(@%GBL@(%ITEM,"A"),";") D BLDGRP
+	;;I %TYPE="GBL" W:$D(@%ITEM) %ITEM,!,@%ITEM,! S %RF=%ITEM 
+	;I %TYPE="GBL" D  S %RF=%ITEM ;	;%%Z3-patch 93/2/15
+	;. Q:'$D(@%ITEM)
+	;. N %item,%itemd,%dum
+	;. ;S %dum=$ZC(%EUC2DSM,%ITEM,.%item,0)
+	;. ;S %dum=$ZC(%EUC2DSM,@%ITEM,.%itemd,0)
+	;. ;W %item,!,%itemd,!
+	;E  I %ITEM'["""" S %RF=%GBL_"("""_%ITEM_""")"
+	;E  S %RF=%GBL_"("""_$P(%ITEM,"""",1)_""""""_$P(%ITEM,"""",2)_""""""_$P(%ITEM,"""",3)_""")"
+	;S %NM=$E(%RF,1,$L(%RF)-1) 
+	;I $$MODE^%DAZCALL S %NM=$E(%NM)_"%"_$E(%NM,2,$L(%NM))
+	;F  S %RF=$ZO(@%RF) Q:$E(%RF,1,$L(%NM))'=%NM  D
+	;. N %rf,%rfd,%dum
+	;. S %dum=$ZC(%EUC2DSM,%RF,.%rf,0)
+	;. S %dum=$ZC(%EUC2DSM,@%RF,.%rfd,0)
+	;. W %rf,!,%rfd,!
+	;I "DX"[%TYPE D  
+	;.S DDNM=%ITEM
+	;.S DDREF=$P(^DADD(DDNM,"REF"),";",1)
+	;.I DDREF'="" S %EXT=DDREF DO XREF^%DASDUTL 
+	;.I DDREF'="",%INT'="" D  
+	;. . S %dum=$ZC(%EUC2DSM,%INT,.%INT,0)
+	;. . S %dum=$ZC(%EUC2DSM,%EXT,.%EXT,0)
+	;. . I %ITEM'["""" W "^DADDX(""DDREF"","""_%INT_""","""_DDNM_""")",!
+	;. . E  W "^DADDX(""DDREF"","""_%INT_""","""_$P(DDNM,"""",1)_""""""_$P(DDNM,"""",2)_""""""_$P(DDNM,"""",3)_""")",!
+	;. . W %EXT,!
+	;I %TYPE="TB" D  
+	;. N CLNUM,CLNAM
+	;. S %GRNM=$P(@%GBL@(%ITEM,"REF"),";") D BLDGRP
+	;. 
+	;. F CLNUM=1:1 Q:'$D(^DATD(%ITEM,"C",CLNUM))  D  
+	;. . S CLNAM=$P(^DATD(%ITEM,"C",CLNUM),";")
+	;. . W "^DATDX(""CT"","""_CLNAM_""","""_%ITEM_""")",!
+	;. . W CLNUM,!
+	;. . W "^DATDX(""TC"","""_%ITEM_""","""_CLNAM_""","_CLNUM_")",!
+	;. . W "",!
+	;W !
+	Q
+	;%%Z3-save
+BLDGRP	;
+	F %=1:1:$L(%GRNM,",") S %GRNM($P(%GRNM,",",%))=""
+	Q
+GREF	;
+	N REF
+	S %MSG="グローバル指定が不適当です。" ;	;%%Z1-T
+	S:$E(%RES)'="^" %RES="^"_%RES 
+	S REF=$E(%RES,2,99) 
+	I $E(REF,$L(REF))="*" S REF=$E(REF,1,$L(REF)-1) 
+	I $L($P(%RES,"("))>9 S %MSG="グローバル名が長すぎます。" Q  ;	;%%Z1-T
+	I REF?1U.UN1"("1.ANP1")" S %MSG="" Q
+	I REF?1U.UN1"("1.ANP     S %MSG="" Q
+	I REF?1U.UN1"("          S %MSG="" Q
+	I REF?1U.UN              S %MSG="" Q
+	Q
+OWNER	;
+	S %NDIS=0 D
+	. I $D(%ITEM),%ITEM]"" S %OWN=$P(@%GBL@(%ITEM,"1A"),";",2) Q
+	. I $D(%WILD),%WILD]"" S %OWN=$P(@%GBL@(%WILD,"1A"),";",2) Q
+	. I $D(%1),%1]"" S %OWN=$P(@%GBL@(%1,"1A"),";",2) Q
+	I %PGMR!(%OWN=%USR)!(%USR="AAA") Q
+	I %TYPE="Q"&(%OWN="AAA") Q
+	S %NDIS=1
+	Q

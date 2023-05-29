@@ -1,0 +1,49 @@
+ROUTINE %DAUSCAL [Type=INT,LanguageMode=6]
+%DAUSCAL	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	S %SDNM=""
+	F  S %SDNM=$O(^DATG($J,"U","S",%SDNM)) Q:%SDNM=""  D ACT
+	K %SDNM,ACT,%SDFN,S1,NODE,S2,ARG,ARG1
+	Q
+ACT	;
+	S $ZT="ERROR^%DAUSCAL",$ZE=""
+	I $P(^DASD(%SDNM,"SCR"),";",1)'="DATA" S %MSG="スクリーンタイプが不適当です。" Q  ;	;%%Z1-T
+	S %SDFN=0
+	F ACT=1:1:3 S NODE=^DASD(%SDNM,"D","S","AC",ACT) Q:NODE=""  S S1="AC" D PARSE
+	S %SDFN="" F  S %SDFN=$O(^DASD(%SDNM,"D","F",%SDFN)) Q:%SDFN=""  D ONEFLD
+	Q
+ONEFLD	;
+	S ACT="" F  S ACT=$O(^DASD(%SDNM,"D","F",%SDFN,"AC",ACT)) Q:ACT=""  S S1="AC",NODE=^(ACT) I NODE]"" D PARSE
+	S S1="VA" S NODE=^DASD(%SDNM,"D","F",%SDFN,"VA",1) I NODE]"" D PARSE
+	Q
+PARSE	;
+	I NODE'["DO" Q
+	S S2=$S(S1["AC":"Action",S1["AT":"Attribute",S1="DDN":"Data Name",1:"Validation")
+	S S1=%SDFN
+	F J=1:1 D GETCC D BUILD:$E(%CMONE,1,2)="DO" I NODE="" Q
+	Q
+GETCC	;
+	F J=1:1 Q:$E(NODE,J)'=" "
+	F J=J:1 Q:$E(NODE,J)'=";"
+	S NODE=$E(NODE,J,255),(FLAG,SLIT)=0,%CMONE=""
+	F I=1:1:$L(NODE) S X=$E(NODE,I) D GETCC1 Q:FLAG
+	I 'FLAG S %CMONE=NODE,NODE="" 
+	E  S %CMONE=$E(NODE,1,I-1),NODE=$E(NODE,I+1,255)
+	F J=1:1 Q:$E(%CMONE,J)'=" "
+	F J=J:1 Q:$E(%CMONE,J)'=";"
+	S %CMONE=$E(%CMONE,J,255)
+	Q
+GETCC1	;
+	I 'SLIT,X=";" S FLAG=1 Q
+	I X=$C(34) S SLIT=$S(SLIT:0,1:1)
+	Q
+BUILD	;
+	F J=$L(%CMONE):-1:1 Q:$E(%CMONE,J)'=" "
+	S %CMONE=$E(%CMONE,1,J)
+	S TAG="",ARG=$P(%CMONE," ",2,99) I ARG[":" S ARG=$P(ARG,":",1)
+	S ARG1=ARG I ARG["^" S ARG="^"_$P(ARG,"^",2),TAG=$P(ARG1,"^",1)
+	S ^DATG($J,"R",%SDNM,ARG,S1)=S2_";"_TAG
+	Q
+ERROR	W !!,"Error running report Data Screen DO/DONP on: ",%SDNM,!,$ZE,!!
+	Q

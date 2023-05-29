@@ -1,0 +1,166 @@
+ROUTINE %DCRAAL [Type=INT,LanguageMode=6]
+%DCRAAL	;V6.1;15-Oct-92  3:45 PM;REPORT Print the definition for one DASL report.
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRAAL" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S RPNM=%PARM I $D(^DARD(RPNM)) G K1X
+K1	G K0
+K1X	S %V=RPNM D CVT S %S1=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%CNT)=RPNM
+	G K1
+K0	S ^DATG($J,"R")="REPORT,"_%DTR_","_%TMR_","_%CNT
+	K RPNM,%S1
+PRT	D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRAAL",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S RPNM=^DATG($J,"R",%S1,%S2)
+	I %F1 S:%PC'=1 %HD=0 D C1,H1 S %F1=0 S:%PC'=1 %HD=1 G S0:%QT
+	D D G S0:%QT,S2
+C1	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%S2,%T1,%T2,%T3,%T4,%T5,%T6,%T7,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRAAL",%ECNT=%ECNT+1 G S2
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	Q
+T0	S %HD=0 D NPG:$Y>%PL
+	K %FLAG
+	Q
+H1	I $Y>%PL D NPG Q
+	I '$D(%FLAG("HEADER")) S %FLAG("HEADER")=0
+	I '%HD S:%SCP %SCP=1 D NLN I '%SCP D NPG Q
+	W ?-$ZL("レポート定義: "_RPNM,%RPKPIT)\2+39,"レポート定義: "_RPNM G SEC14:'(%FLAG("HEADER")>0)
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W "Print Item",?66,"Col",?70,"Format"
+SEC14	;
+	D NLN Q:%QT  W "________________________________________________________________________________" D NLN Q:%QT
+	G SEC15:'(%FLAG("HEADER")=0)
+	S %=$D(^DARD(RPNM,"A")),%T2="" S:%#10 %T2=^("A") S RPDES=$P(%T2,";",2),RPGROUP=$P(%T2,";"),%=$D(^DARD(RPNM,"REP")),%T7="" S:%#10 %T7=^("REP") S RPLEN=$P(%T7,";",2),RPWIDTH=$P(%T7,";")
+	S %=$D(^DARD(RPNM,"H")),%T3="" S:%#10 %T3=^("H") S RPHIV=$P(%T3,";"),RPHIC=$P(%T3,";",2),RPHILE=$P(%T3,";",4),RPHIE=$P(%T3,";",3),RPHILC=$P(%T3,";",5),%=$D(^DARD(RPNM,"C","FW",1)),%T4="" S:%#10 %T4=^(1)
+	S RPKEY1=$P(%T4,";")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W "Description: "_RPDES D NLN Q:%QT
+	W "Group(s): "_RPGROUP D NLN Q:%QT
+	W ?19,"Page Length: "_RPLEN,?39,"Page Width: "_RPWIDTH D NLN Q:%QT
+	W "Version: "_RPHIV,?62,"Created by: "_RPHIC D NLN Q:%QT
+	S %DTI=RPHILE D DTIX^%DAUDTTM W "Edited on "_%DTX,?24,"Edited by: "_RPHIE S %DTI=RPHILC D DTIX^%DAUDTTM W ?56,"Compiled on "_%DTX G SEC16:'(RPKEY1]"")
+	S %=$D(^DARD(RPNM,"C","FW",1)),%T4="" S:%#10 %T4=^(1) S RPCOND1=$P(%T4,";",2),%=$D(^DARD(RPNM,"C","FW",2)),%T5="" S:%#10 %T5=^(2) S RPKEY2=$P(%T5,";"),%=$D(^DARD(RPNM,"C","S")),RPSORT="" S:%#10 RPSORT=^("S")
+	I $Y>%PL D NPG Q
+	F %V=1:1:2 D NLN Q:%QT
+	W "For ",RPKEY1 D NLN Q:%QT
+	G SEC17:'(RPCOND1]"")
+	I $Y>%PL D NPG Q
+	W ?2,"With ",RPCOND1
+SEC17	;
+	G SEC18:'(RPKEY2]"")
+	S %=$D(^DARD(RPNM,"C","FW",2)),%T5="" S:%#10 %T5=^(2) S RPCOND2=$P(%T5,";",2),%=$D(^DARD(RPNM,"C","FW",3)),%T6="" S:%#10 %T6=^(3) S RPKEY3=$P(%T6,";")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?1,"then for ",RPKEY2 G SEC19:'(RPCOND2]"")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?2,"with ",RPCOND2
+SEC19	;
+	G SEC20:'(RPKEY3]"")
+	S %=$D(^DARD(RPNM,"C","FW",3)),%T6="" S:%#10 %T6=^(3) S RPCOND3=$P(%T6,";",2)
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?3,"then for ",RPKEY3 G SEC21:'(RPCOND3]"")
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?5,"with ",RPCOND3
+SEC21	;
+SEC20	;
+SEC18	;
+	G SEC22:'(RPSORT]"")
+	I $Y>%PL D NPG Q
+	F %V=1:1:2 D NLN Q:%QT
+	W ?3,"Sort by ",RPSORT
+SEC22	;
+SEC16	;
+	G SEC23:'($D(^DARD(RPNM,"CM")))
+	I $Y>%PL D NPG Q
+	D NLN Q:%QT
+	W ?-$ZL("Comments",%RPKPIT)\2+39,"Comments" D NLN Q:%QT  W ?3,"________________________________________________________________________" D NLN Q:%QT
+	S RPCLC=""
+REPL24	S RPCLC=$O(^DARD(RPNM,"CM",RPCLC)) G REP24:RPCLC="" S %=$D(^DARD(RPNM,"CM",RPCLC)),RPCCOM="" S:%#10 RPCCOM=^(RPCLC)
+	D NLN Q:%QT
+	W RPCCOM
+	G REPL24
+REP24	;
+	D NLN Q:%QT
+SEC23	;
+SEC15	;
+	S %FLAG("HEADER")=1
+	D NLN Q:%QT
+	Q
+T1	Q
+D	S %HD=0 D NPG:$Y>%PL
+	D URPRT^%DARPUTL
+	D NLN Q:%QT
+	S %N=""
+REPL11	S %N=$O(%RPGROUP(%N)) G REP11:%N=""
+	S (RPGP,%RPGP)=%RPGROUP(%N)
+	G SEC12:'($D(^DARD(RPNM,"P",%RPGP)))
+	D NPG:$Y>%PL
+	S %NAME="",%RES=%RPGP D SET^%DARPUTL S %NAME=NAME K NAME
+	D NPG:$Y+4>%PL,NLN Q:%QT
+	W ?-$ZL(%NAME,%RPKPIT)\2+39,%NAME D NLN Q:%QT  W ?4,"______________________________________________________________________" D NLN Q:%QT
+	S RPLC=""
+REPL13	S RPLC=$O(^DARD(RPNM,"P",RPGP,"G",RPLC)) G REP13:RPLC="" S %=$D(^DARD(RPNM,"P",RPGP,"G",RPLC,"I")),RPITEM="" S:%#10 RPITEM=^("I") S %=$D(^DARD(RPNM,"P",RPGP,"G",RPLC,"E")),%T1="" S:%#10 %T1=^("E")
+	S RPCOL=$P(%T1,";"),RPFMT=$P(%T1,";",2)
+	D NLN Q:%QT
+	W RPITEM,?66,RPCOL,?70,RPFMT
+	G REPL13
+REP13	;
+	D NLN Q:%QT
+SEC12	;
+	G REPL11
+REP11	;
+	K %NAME,%RPGRP,%RPGROUP,%N,%HEADER
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%S2,%T1,%T2,%T3,%T4,%T5,%T6,%T7
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N RPCCOM,RPCLC,RPCOL,RPCOND1,RPCOND2,RPCOND3,RPDES,RPFMT,RPGROUP,RPHIC,RPHIE,RPHILC,RPHILE,RPHIV,RPITEM,RPKEY1,RPKEY2,RPKEY3,RPLC,RPLEN
+	N RPNM,RPSORT,RPWIDTH
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

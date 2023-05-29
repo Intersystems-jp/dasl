@@ -1,0 +1,121 @@
+ROUTINE %DAUSCMP [Type=INT,LanguageMode=6]
+%DAUSCMP	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	;
+	K %PRINT,%FIELD
+	S %SDNM1=%PARM("SDNM1"),%SDNM2=%PARM("SDNM2")
+	S %COUNT=0,%FN="",%ITEM="Screen Level: "
+	S %ND1=^DASD(%SDNM1,"A"),%ND2=^DASD(%SDNM2,"A")
+	F %PCE=1:1:3 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Group;Description;Map",";",%PCE) D BUILDW:%PROMPT'="Map",BUILD:%PROMPT="Map"
+	S %ND1=^DASD(%SDNM1,"SCR"),%ND2=^DASD(%SDNM2,"SCR"),%SDTYPE=$P(%ND1,";",1)
+	F %PCE=2,3 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P(";First;Last",";",%PCE)_" Line" D BUILD
+	S %ND1=^DASD(%SDNM1,"H"),%ND2=^DASD(%SDNM2,"H")
+	F %PCE=1:1:6 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Version;Created By;Edited By;Edit Date;Compile Date;Edit Time",";",%PCE) D CVT:%PCE>3,BUILD
+	D @%SDTYPE
+KILL	K %DN1,%DN2,%ND1,%ND2,%SDNM1,%SDNM2,%FIELD,%FN,%PCE,%COUNT
+	K %ITEM,%PROMPT,%SUB,%DUM,%LCNT,%SDLC
+	Q
+CVT	;
+	I %PCE=6 G CVTIME
+	I %DN1]"" S %DTI=%DN1 D DTIX^%DAUDTTM S %DN1=%DTX
+	I %DN2]"" S %DTI=%DN2 D DTIX^%DAUDTTM S %DN2=%DTX
+	Q
+CVTIME	;
+	I %DN1]"" S %TMI=%DN1 D TMIX^%DAUDTTM S %DN1=%TMX
+	I %DN2]"" S %TMI=%DN2 D TMIX^%DAUDTTM S %DN2=%TMX
+	Q
+DATA	;
+	S S1="AT",S2="Screen Attribute "
+	F %SUB=1:1 Q:('$D(^DASD(%SDNM1,"D","S",S1,%SUB))&'$D(^DASD(%SDNM2,"D","S",S1,%SUB)))  D SCREEN
+	S S1="AC",S2="Screen Action "
+	F %SUB=1:1:3 D SCREEN
+	F %SUB=%SDNM1,%SDNM2 S %FN="" F %DUM=1:1 S %FN=$O(^DASD(%SUB,"D","F",%FN)) Q:%FN=""  S %FIELD(%FN)=""
+	S %FN="" F %DUM=1:1 S %FN=$O(%FIELD(%FN)) Q:%FN=""  S %ITEM=%FN D FIELD
+	Q
+SCREEN	;
+	S (%DN1,%DN2)="" S:$D(^DASD(%SDNM1,"D","S",S1,%SUB)) %DN1=^(%SUB)
+	S:$D(^DASD(%SDNM2,"D","S",S1,%SUB)) %DN2=^(%SUB)
+	I %DN1'=%DN2 S %PROMPT=S2_%SUB D BUILDW
+	Q
+FIELD	;
+	I '$D(^DASD(%SDNM1,"D","F",%FN)) S %DN2=%FN,%DN1="Not present" G BUILDM
+	I '$D(^DASD(%SDNM2,"D","F",%FN)) S %DN1=%FN,%DN2="Not present" G BUILDM
+	S %DN2=^(%FN,"D"),%DN1=^DASD(%SDNM1,"D","F",%FN,"D")
+	I %DN1'=%DN2 S %PROMPT="Description" D BUILDW
+	S %ND1=^DASD(%SDNM1,"D","F",%FN,"P"),%ND2=^DASD(%SDNM2,"D","F",%FN,"P")
+	F %PCE=1:1:6 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Line;Column;Length;Data Name;Justification;Prompt",";",%PCE) D BUILD
+	F %SUB="AT","VA" S %DN1=^DASD(%SDNM1,"D","F",%FN,%SUB,1),%DN2=^DASD(%SDNM2,"D","F",%FN,%SUB,1) I %DN1'=%DN2 S %PROMPT=$S(%SUB="AT":"Attributes",1:"Validations") D BUILDW
+	S %SDLC=0 F %LCNT=0:0 S %LCNT=$O(^DASD(%SDNM1,"D","F",%FN,"AC",%LCNT)) Q:%LCNT=""  S %SDLC=%LCNT D FLDA1
+	F %LCNT=%SDLC:0 S %LCNT=$O(^DASD(%SDNM2,"D","F",%FN,"AC",%LCNT)) Q:%LCNT=""  D FLDA2
+	F %SUB="T","S" S %DN1=^DASD(%SDNM1,"D","F",%FN,"H",%SUB),%DN2=^DASD(%SDNM2,"D","F",%FN,"H",%SUB) I %DN1'=%DN2 S %PROMPT="Help "_$S(%SUB="T":"Text",1:"Screen") D BUILD:%SUB="S",BUILDW:%SUB="T"
+	Q
+FLDA1	;
+	I '$D(^DASD(%SDNM2,"D","F",%FN,"AC",%LCNT)) S %DN1="Action "_%LCNT_":",%DN2="Not present" G BUILDA
+	S %DN2=^(%LCNT),%DN1=^DASD(%SDNM1,"D","F",%FN,"AC",%LCNT)
+	I %DN1'=%DN2 S %PROMPT="Action "_%LCNT D BUILDW
+	Q
+FLDA2	;
+	S %DN2="Action "_%LCNT_":",%DN1="Not present"
+BUILDA	;
+	S %COUNT=%COUNT+1
+	S %PRINT(%COUNT,"P1")=%DN1,%PRINT(%COUNT,"P2")=%DN2
+	G BLD1
+BUILDM	;
+	S %COUNT=%COUNT+1
+	S %PRINT(%COUNT,"I1")=%DN1,%PRINT(%COUNT,"I2")=%DN2
+	Q
+BUILD	;
+	S %COUNT=%COUNT+1
+	S %PRINT(%COUNT,"P1")=%PROMPT_": "_%DN1,%PRINT(%COUNT,"P2")=%PROMPT_": "_%DN2
+BLD1	I %ITEM]"" S %PRINT(%COUNT,"I1")=%ITEM,%PRINT(%COUNT,"I2")=%ITEM,%ITEM=""
+	Q
+BUILDW	;
+	S %COUNT=%COUNT+1
+	S %PRINT(%COUNT,"P1")=%PROMPT_":",%PRINT(%COUNT,"P2")=%PROMPT_":"
+BTXT	;
+	I %ITEM]"" S %PRINT(%COUNT,"I1")=%ITEM,%PRINT(%COUNT,"I2")=%ITEM,%ITEM=""
+	S %PRINT(%COUNT,"V1",1)=$E(%DN1,1,$ZP(%DN1,35)),%PRINT(%COUNT,"V2",1)=$E(%DN2,1,$ZP(%DN2,35)) ;	;%%Z1-G
+	I $ZL(%DN1)<36,$ZL(%DN2)<36 Q  ;	;%%Z1-G
+	S %PRINT(%COUNT,"V1",2)=$E(%DN1,$ZP(%DN1,35)+1,$ZP(%DN1,70)),%PRINT(%COUNT,"V2",2)=$E(%DN2,$ZP(%DN2,35)+1,$ZP(%DN2,70)) ;	;%%Z1-G
+	I $ZL(%DN1)>70!($ZL(%DN2)>70) S %PRINT(%COUNT,"V1",3)=$E(%DN1,$ZP(%DN1,70)+1,$ZP(%DN1,105)),%PRINT(%COUNT,"V2",3)=$E(%DN2,$ZP(%DN2,70)+1,$ZP(%DN2,105)) ;	;%%Z1-G
+	Q
+OPTION	;
+	S %DN1=^DASD(%SDNM1,"O","S") I '$D(^DASD(%SDNM2,"O","S")) S %DN2="Not present" G BOPTXM
+	S %ND2=^DASD(%SDNM2,"O","S"),%ND1=^DASD(%SDNM1,"O","S") I %ND1=%ND2 G OPT
+	F %PCE=1,2,3 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Header Screen;Command Flag;Help screen",";",%PCE) D BOPT
+OPT	S %SDLC=0 F %LCNT=0:0 S %LCNT=$O(^DASD(%SDNM1,"O","O",%LCNT)) Q:%LCNT=""  S (%ITEM,%SDLC)=%LCNT D OPT1
+	F %LCNT=%SDLC:0 S %LCNT=$O(^DASD(%SDNM2,"O","O",%LCNT)) Q:%LCNT=""  S %ITEM=%LCNT D BOPTXM2
+	Q
+OPT1	;
+	I '$D(^DASD(%SDNM2,"O","O",%LCNT,"D")) S %DN1=%LCNT,%DN2="Not present" G BOPTXM
+	S %ND2=^DASD(%SDNM2,"O","O",%LCNT,"D"),%ND1=^DASD(%SDNM1,"O","O",%LCNT,"D")
+	I %ND1=%ND2 Q
+	F %PCE=3,4,1,2,5 S %DN1=$P(%ND1,";",%PCE),%DN2=$P(%ND2,";",%PCE) I %DN1'=%DN2 S %PROMPT=$P("Privileges;Screen Name;Option;Key Word;Report Name",";",%PCE) D BOPT
+OPTA	F %LN=0:0 S %LN=$O(^DASD(%SDNM1,"O","O",%LCNT,"AC",%LN)) Q:%LN=""  S %ITEM="Action "_%LN D OPTA1
+	Q
+OPTA1	I '$D(^DASD(%SDNM2,"O","O",%LCNT,"AC",%LN)) S %DN1="Action "_%LN,%DN2="Not present" G BOPTXM
+	S %DN2=^(%LN),%DN1=^DASD(%SDNM1,"O","O",%LCNT,"AC",%LN)
+	I %DN1=%DN2 Q
+	S %PROMPT="Action "_%LN D BOPT
+	Q
+BOPTXM2	;
+	S %DN2=%LCNT,%DN1="Not present"
+BOPTXM	;
+	S %COUNT=%COUNT+1,%PRINT(%COUNT,"I1")=%DN1,%PRINT(%COUNT,"I2")=%DN2
+	Q
+BOPT	;
+	S %COUNT=%COUNT+1
+	I %ITEM]"" S (%PRINT(%COUNT,"I1"),%PRINT(%COUNT,"I2"))=%ITEM,%ITEM=""
+	S %PRINT(%COUNT,"P1")=%PROMPT_": "_%DN1,%PRINT(%COUNT,"P2")=%PROMPT_": "_%DN2
+	Q
+TEXT	;
+	S %SDLC=0 F %LCNT=0:0 S %LCNT=$O(^DASD(%SDNM1,"T","T",%LCNT)) Q:%LCNT=""  S (%ITEM,%SDLC)=%LCNT D TX1
+	F %LCNT=%SDLC:0 S %LCNT=$O(^DASD(%SDNM2,"T","T",%LCNT)) Q:%LCNT=""  S %ITEM=%LCNT D BOPTXM2
+	Q
+TX1	;
+	I '$D(^DASD(%SDNM2,"T","T",%LCNT)) S %DN1=%LCNT,%DN2="Not present" G BOPTXM
+	S %DN2=^(%LCNT),%DN1=^DASD(%SDNM1,"T","T",%LCNT)
+	I %DN1=%DN2 Q
+	S %COUNT=%COUNT+1 D BTXT
+	Q

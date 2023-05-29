@@ -1,0 +1,84 @@
+ROUTINE %DAURCAL [Type=INT,LanguageMode=6]
+%DAURCAL	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+BEGIN	;
+	S %COUNT=0,(%HEAD,%ITEM,%RPNM)=""
+	F  S %RPNM=$O(^DATG($J,"U","R",%RPNM)) Q:%RPNM=""  D READRP
+KILL	K %COUNT,%ITEM,%PROMPT,%LCNT,%RPLC,%RPGP,%PGR,%HEAD,%RPITEM
+	K %ABBR,%APOST,%ARG,%CHAR,%COM,%CPOST,%EXTERN,%FLAG,%MULT,%PCT,%QTF,%POS
+	K %RPNM
+	Q
+READRP	;
+	S $ZT="ERROR^%DAURCAL",%ZE=""
+	S %RPGP="" F  S %RPGP=$O(^DARD(%RPNM,"P",%RPGP)) Q:%RPGP=""  S %RPGP($S(%RPGP="D":"ID",1:%RPGP))=""
+	S %PGR="" F  S %PGR=$O(%RPGP(%PGR)) Q:%PGR=""  D GROUP
+	Q
+GROUP	;
+	S (%RPGP,%HEAD)=$S(%PGR="ID":"D",1:%PGR)
+	S %HEAD=$S(%HEAD="D":"Data",%HEAD["H":"Header",1:"Trailer")_$S(%HEAD?1U1N:" "_$E(%HEAD,2),1:"")
+	S %RPLC=0,%LCNT="" F  S %LCNT=$O(^DARD(%RPNM,"P",%RPGP,"G",%LCNT)) Q:%LCNT=""  S (%ITEM,%RPLC)=%LCNT D ITEM
+	Q
+ITEM	;
+	S %RPITEM=^DARD(%RPNM,"P",%RPGP,"G",%LCNT,"I")
+	I %RPITEM'?." "1"@".E Q
+	S %RPITEM=$P(%RPITEM,"@",2,255)
+	I %RPITEM'?1" ".E S %RPITEM=$P(%RPITEM," ",2,255)
+	I %RPITEM?.E1L.E S %RPITEM=$$UPCASEQ^%DAZCALL(%RPITEM)
+	S %PRINT="",%EXTERN=0
+PARSE	;
+	I %PRINT]"" D BUILD:%EXTERN=1 S %PRINT=""
+	Q:%RPITEM=""
+	F %POS=1:1:$L(%RPITEM) Q:$E(%RPITEM,%POS)'=" "
+	S %RPITEM=$E(%RPITEM,%POS,255) Q:%RPITEM=""
+	D GETCOM G PARSE:%COM=""
+	I %COM'?1A.E G PARSE
+	S %CPOST="" F %POS=1:1 Q:$E(%COM,%POS)'?1A
+	I $E(%COM,%POS)=":" S %CPOST=$E(%COM,%POS+1,255),%COM=$E(%COM,1,%POS-1)
+	S %MULT=0,%ABBR=$E(%COM,1) I %ABBR="Z" S %ABBR=$E(%COM,1,2)
+	I ",G,D,J,ZJ,ZS,ZR,ZP,"'[(","_%ABBR_",") G PARSE
+	S %PRINT=%COM_$S(%CPOST]"":":"_%CPOST,1:"")_" "
+ARG	;
+	D GETARG I %ARG="" G PARSE
+	D PROU I %ARG="" G ARG
+	S %PRINT=%PRINT_%ARG
+	I %MULT S %PRINT=%PRINT_","
+	G ARG
+PROU	;
+	S %APOST="" I "DG"[%ABBR,%ARG[":" S %APOST=$P(%ARG,":",2,255),%ARG=$P(%ARG,":",1)
+	I %ARG["@" S:%APOST]"" %ARG=%ARG_":"_%APOST S %EXTERN=1 Q
+	I %ARG'["^" S %ARG="" Q
+	S %EXTERN=1 I %APOST]"" S %ARG=%ARG_":"_%APOST
+	Q
+GETCOM	;
+	S (%QTF,%FLAG)=0,(%COM,%ARG)="" Q:%RPITEM=""
+	F %POS=1:1:$L(%RPITEM) S %CHAR=$E(%RPITEM,%POS) D GETC1 Q:%FLAG
+	I '%FLAG!(%CHAR=";"&%FLAG) S %COM=%RPITEM,%RPITEM="" Q
+	S %COM=$E(%RPITEM,1,%POS-1),%RPITEM=$E(%RPITEM,%POS+1,255)
+	Q
+GETC1	;
+	I %CHAR=$C(34) S %QTF=1-%QTF
+	I '%QTF," ;"[%CHAR S %FLAG=1 Q
+	Q
+GETARG	;
+	S (%MULT,%QTF,%PCT,%FLAG)=0,%ARG="" Q:%RPITEM=""
+	F %POS=1:1:$L(%RPITEM) S %CHAR=$E(%RPITEM,%POS) D GETA1 Q:%FLAG
+	I %CHAR="," S %MULT=1 
+	I %FLAG,%CHAR=";" S %RPITEM="" Q 
+	I '%FLAG S %ARG=%RPITEM,%RPITEM="" 
+	E  S %ARG=$E(%RPITEM,1,%POS-1),%RPITEM=$E(%RPITEM,%POS+1,255)
+	Q
+GETA1	;
+	I %CHAR=$C(34) S %QTF=1-%QTF
+	I '%QTF,'%PCT," ,;"[%CHAR S %FLAG=1 Q
+	I '%QTF S:%CHAR="(" %PCT=%PCT+1 S:%CHAR=")" %PCT=%PCT-1
+	Q
+BUILD	;
+	S %COUNT=%COUNT+1
+	I %HEAD]"" S ^DATG($J,"R",%RPNM,%COUNT,"G")=%HEAD,%HEAD=""
+	I %ITEM]"" S ^DATG($J,"R",%RPNM,%COUNT,"L")=%ITEM,%ITEM=""
+	I $E(%PRINT,$L(%PRINT))="," S %PRINT=$E(%PRINT,1,$L(%PRINT)-1)
+	S ^DATG($J,"R",%RPNM,%COUNT,"R")=%PRINT
+	Q
+ERROR	W "Error printing report routine calls for: ",%RPNM,!,$ZE,!!
+	Q

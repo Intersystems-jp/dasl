@@ -1,0 +1,141 @@
+ROUTINE %DCRACB [Type=INT,LanguageMode=6]
+%DCRACB	;V6.1;15-Oct-92  3:48 PM;USFDEF Compare Data Screen Field Values to DDN Defaults
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRACB" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S SDNM=""
+K1	S SDNM=$O(^DASD(SDNM)) I SDNM="" G K0
+	S %FND=$D(^DATG($J,"U","S",SDNM))
+	G K1:'%FND
+	S %V=SDNM D CVT S %S1=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%CNT)=SDNM
+	G K1
+K0	S ^DATG($J,"R")="USFDEF,"_%DTR_","_%TMR_","_%CNT
+	K SDNM,%S1
+PRT	D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRACB",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S SDNM=^DATG($J,"R",%S1,%S2)
+	I %F1 S:%PC'=1 %HD=0 D C1,H1 S %F1=0 S:%PC'=1 %HD=1 G S0:%QT
+	D D G S0:%QT,S2
+C1	S %=$D(^DASD(SDNM,"A")),SDDES="" S:%#10 SDDES=$P(^("A"),";",2)
+	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%S2,%T1,%T2,%T3,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRACB",%ECNT=%ECNT+1 G S2
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZL("フィールドとDDNデフォルトの比較",%RPKPIT)\2+39,"フィールドとDDNデフォルトの比較" D NLN0 Q:%QT  W "_______________________________________________________________________________" D NLN0 Q:%QT
+	D NLN0 Q:%QT
+	Q
+T0	Q
+H1	I $Y>%PL D NPG Q
+	I '%HD S:%SCP %SCP=1 D NLN I '%SCP D NPG Q
+	W ?-$ZL("Screen: "_SDNM_" - "_SDDES,%RPKPIT)\2+39,"Screen: "_SDNM_" - "_SDDES D NLN Q:%QT
+	D NLN Q:%QT
+	Q
+T1	Q
+D	S %HD=0 D NPG:$Y>%PL S SDFN=""
+REPL11	S SDFN=$O(^DASD(SDNM,"D","F",SDFN)) G REP11:SDFN="" S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFDN=$P(%T2,";",4),DDNM=$S(SDFDN]"":SDFDN,1:" ")
+	D NPG:$Y+7>%PL G SEC12:'(SDFDN]"") S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFDN=$P(%T2,";",4),DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"B")),DDTMPL=""
+	S:%#10 DDTMPL=$P(^("B"),";",3) S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DASD(SDNM,"D","F",SDFN,"AT",1)),SDFATT1="" S:%#10 SDFATT1=^(1) S %=$D(^DASD(SDNM,"D","F",SDFN,"VA",1)),SDFVAL1="" S:%#10 SDFVAL1=^(1)
+	S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFPR=$P(%T2,";",6),%=$D(^DASD(SDNM,"D","F",SDFN,"H","T")),SDFHT="" S:%#10 SDFHT=^("T") S %=$D(^DASD(SDNM,"D","F",SDFN,"H","S")),SDFHS=""
+	S:%#10 SDFHS=^("S") S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFLEN=$P(%T2,";",3)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Field: "_SDFN,?25,"Data Name: "_SDFDN S %=$D(^DADD(DDNM,"REF")),DDALIAS="" S:%#10 DDALIAS=$P(^("REF"),";",7)
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"REF")),DDALIAS="" S:%#10 DDALIAS=$P(^("REF"),";",7) W:DDALIAS]"" ?54,"Pointer to: "_DDALIAS D NLN Q:%QT
+	W:DDTMPL]"" ?25,"Template: "_DDTMPL D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","AT",1)),DDATT1="" S:%#10 DDATT1=^(1) S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","AT")),TMATT1="" S:%#10 TMATT1=^("AT")
+	G SEC13:'(SDFATT1]""&(DDATT1]""!(TMATT1]""))) S %=$D(^DASD(SDNM,"D","F",SDFN,"AT",1)),SDFATT1="" S:%#10 SDFATT1=^(1)
+	D NPG:$Y>%PL W "Attribute" D NLN Q:%QT
+	W "Field: "_SDFATT1 D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","AT",1)),DDATT1="" S:%#10 DDATT1=^(1) W:DDATT1]"" "  DDN: "_DDATT1 D:DDATT1]"" NLN Q:%QT
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","AT")),TMATT1="" S:%#10 TMATT1=^("AT") W:TMATT1]"" " Temp: "_TMATT1 D:TMATT1]"" NLN Q:%QT
+SEC13	;
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","V",1)),DDVALID="" S:%#10 DDVALID=^(1) S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","V")),TMVALID="" S:%#10 TMVALID=^("V")
+	G SEC14:'(SDFVAL1]""&(DDVALID]""!(TMVALID]""))) S %=$D(^DASD(SDNM,"D","F",SDFN,"VA",1)),SDFVAL1="" S:%#10 SDFVAL1=^(1)
+	D NPG:$Y>%PL W "Validation" D NLN Q:%QT
+	W "Field: "_SDFVAL1 D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","V",1)),DDVALID="" S:%#10 DDVALID=^(1) W:DDVALID]"" "  DDN: "_DDVALID D:DDVALID]"" NLN Q:%QT
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","V")),TMVALID="" S:%#10 TMVALID=^("V") W:TMVALID]"" " Temp: "_TMVALID D:TMVALID]"" NLN Q:%QT
+SEC14	;
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","E")),DDPR="" S:%#10 DDPR=$P(^("E"),";",2) S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","E")),TMPR="" S:%#10 TMPR=$P(^("E"),";",2)
+	G SEC15:'(SDFPR]""&(DDPR]""!(TMPR]""))) S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFPR=$P(%T2,";",6)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Prompt" D NLN Q:%QT
+	W "Field: """_SDFPR_"""" D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","E")),DDPR="" S:%#10 DDPR=$P(^("E"),";",2) W:DDPR]"" "  DDN: """_DDPR_"""" D:DDPR]"" NLN Q:%QT
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","E")),TMPR="" S:%#10 TMPR=$P(^("E"),";",2) W:TMPR]"" " Temp: """_TMPR_"""" D:TMPR]"" NLN Q:%QT
+SEC15	;
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","HT")),DDHELP="" S:%#10 DDHELP=^("HT") S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","HT")),TMHELP="" S:%#10 TMHELP=^("HT")
+	G SEC16:'(SDFHT]""&(DDHELP]""!(TMHELP]""))) S %=$D(^DASD(SDNM,"D","F",SDFN,"H","T")),SDFHT="" S:%#10 SDFHT=^("T")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Help Text" D NLN Q:%QT
+	W "Field: """_SDFHT_"""" D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","HT")),DDHELP="" S:%#10 DDHELP=^("HT") W:DDHELP]"" "  DDN: """_DDHELP_"""" D:DDHELP]"" NLN Q:%QT
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","HT")),TMHELP="" S:%#10 TMHELP=^("HT") W:TMHELP]"" " Temp: """_TMHELP_"""" D:TMHELP]"" NLN Q:%QT
+SEC16	;
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","E")),DDHELPS="" S:%#10 DDHELPS=$P(^("E"),";",3) S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","E")),TMHELPS="" S:%#10 TMHELPS=$P(^("E"),";",3)
+	G SEC17:'(SDFHS]""&(DDHELPS]""!(TMHELPS]""))) S %=$D(^DASD(SDNM,"D","F",SDFN,"H","S")),SDFHS="" S:%#10 SDFHS=^("S")
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Help Screen" D NLN Q:%QT
+	W "Field: "_SDFHS D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","E")),DDHELPS="" S:%#10 DDHELPS=$P(^("E"),";",3) W:DDHELPS]"" "  DDN: "_DDHELPS D:DDHELPS]"" NLN Q:%QT
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","E")),TMHELPS="" S:%#10 TMHELPS=$P(^("E"),";",3) W:TMHELPS]"" " Temp: "_TMHELPS D:TMHELPS]"" NLN Q:%QT
+SEC17	;
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","E")),DDLEN="" S:%#10 DDLEN=$P(^("E"),";") S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","E")),TMLEN="" S:%#10 TMLEN=$P(^("E"),";")
+	G SEC18:'(SDFLEN]""&(DDLEN]""!(TMLEN]""))) S %=$D(^DASD(SDNM,"D","F",SDFN,"P")),%T2="" S:%#10 %T2=^("P") S SDFLEN=$P(%T2,";",3)
+	D NPG:$Y>%PL,NLN Q:%QT
+	W "Length" D NLN Q:%QT
+	W "Field: "_SDFLEN D NLN Q:%QT
+	S DDNM=$S(SDFDN]"":SDFDN,1:" "),%=$D(^DADD(DDNM,"DF","E")),DDLEN="" S:%#10 DDLEN=$P(^("E"),";") W:DDLEN]"" "  DDN: "_DDLEN D:DDLEN]"" NLN Q:%QT
+	S TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DADDT(TMNM,"DF","E")),TMLEN="" S:%#10 TMLEN=$P(^("E"),";") W:TMLEN]"" " Temp: "_TMLEN D:TMLEN]"" NLN Q:%QT
+SEC18	;
+	D NLN Q:%QT  W ?4,"______________________________________________________________________" D NLN Q:%QT
+SEC12	;
+	G REPL11
+REP11	;
+	D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%S2,%T1,%T2,%T3
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N DDALIAS,DDATT1,DDHELP,DDHELPS,DDLEN,DDNM,DDPR,DDTMPL,DDVALID,SDDES,SDFATT1,SDFDN,SDFHS,SDFHT,SDFLEN,SDFN,SDFPR,SDFVAL1,SDNM,TMATT1
+	N TMHELP,TMHELPS,TMLEN,TMNM,TMPR,TMVALID
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

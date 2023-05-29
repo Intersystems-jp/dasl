@@ -1,0 +1,156 @@
+ROUTINE %DAUXBLD [Type=INT,LanguageMode=6]
+%DAUXBLD	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+IMMED	;
+	S $ZT="ERRIMM^%DAUXBLD",($ZE,%MSG)=""
+	S DELIM=$$DELIM^%DASDUTL(^DASY("PARM","DELIM"))
+	I '$D(DB) S DB=0
+	S %CNT="" F  S %CNT=$O(DLN(%CNT)) Q:%CNT=""  D SET
+EXIT	K %DDNM,%DDPIECE,%DDREF,%DDXKEY,%DDXREF,%DDXTRCT,%DDXTYP,ARG,C,DB,F
+	K DELIM,DLN,DN,DNL,FILE,GBL,NEWGBL,H,I,J,L,N,OJ,PIC,PX,ROU,SUB,T,X,XREF
+	Q
+GO	;
+	D IMMED Q:%MSG=""
+	U 0 W !!,"Error running cross reference builder - GO^%DAUXBLD",!
+	W %MSG,!!
+	Q
+ERRIMM	;
+	S %MSG=$S($ZE]"":$ZE,1:"'IMMED^%DAUXBLD'でエラーが起こりました。") ;	;%%Z1-T
+	I $D(FILE),FILE'=0 C FILE:DEL
+	G EXIT
+SET	;
+	Q:DLN(%CNT,"DDNM")=""
+	S %DDNM=DLN(%CNT,"DDNM"),XREF=DLN(%CNT,"DDXREF"),GBL=DLN(%CNT,"GLOBAL")
+	S PIC=DLN(%CNT,"BUILD"),ROU=DLN(%CNT,"ROU")
+	S NEWGBL=$S(XREF'=GBL:GBL,1:"")
+XBLD	;
+	S X=^DADD(%DDNM,"REF"),%DDTRX=^DADD(%DDNM,"TR","X")
+	S %DDREF=$P(X,";",1)
+	S %DDPIECE=^DADD(%DDNM,"PIECE")
+	S %DDXTRCT=$P(X,";",3)
+	S %DDXREF=$P(X,";",4),%DDXTYP=$P(X,";",5),%DDXKEY=$P(X,";",6)
+	S %DDKWIC=$P(^DADD(%DDNM,"REF"),";",9)
+	Q:%DDXREF=""  S J=$F(%DDREF,"(")-1 Q:J<0
+	S DNL="CNT"
+	I DB S FILE=0
+	E  D SFILE U FILE
+	D NOW^%DAUDTTM
+WRITE	;
+	W ROU," ;DASL V1.0 ;",%DTX," ",%TMX,";Cross Reference Builder for Data Name ",%DDNM,!
+	I PIC=0 W " W !!,""Creating Cross Reference Global for: ",%DDNM,""",!",!
+	W " S CNT=0 ",!
+	I NEWGBL="" W " K ",%DDXREF,!
+	F N=1:1 D DEP Q:X=""
+	I DN=%DDNM G FILE
+	S VAR=%DDREF D PIECE^%DASDC(%DDPIECE,.VAR,%DDXTRCT)
+	W " S ",%DDNM,"=",VAR,!
+	S DNL=DNL_","_%DDNM
+FILE	;
+	I NEWGBL]"" S %DDXREF=NEWGBL
+	I %DDXREF["(" S %DDXREF=$E(%DDXREF,1,$L(%DDXREF)-1)_","
+	E  S %DDXREF=%DDXREF_"("
+	D @("X"_$E(%DDXTYP,1,6))
+	W " S CNT=CNT+1",!
+	I PIC=0 W " I CNT#10=0 W:$X>60 ! W "".""",!
+	W " G L",N-1,!
+	W "L0 K ",DNL,!," Q",!
+	S BATCH=0 D UTILSX^%DASDC5 K BATCH,SUB W !!
+	Q:FILE=0
+	U FILE:DISCON X "ZR  F I=1:1 R X ZI:X]"""" X I X="""" ZS @ROU Q"
+	C FILE:DEL
+	U 0 I PIC D ^@ROU
+	Q
+XSTRING	;
+	S SUB("XREFS")=""
+	W " I ",%DDNM,"]"""" S %=",%DDNM," D K2 S ",%DDXREF,"%,",%DDXKEY,")=$S(%=",%DDNM,":"""",1:",%DDNM,")",!
+	Q
+XNUMERI	;
+	S SUB("XREFN")="",SUB("XREFS")=""
+	W " I ",%DDNM,"]"""" S %=",%DDNM," D K1 S ",%DDXREF,"%,",%DDXKEY,")=$S(%=",%DDNM,":"""",1:",%DDNM,")",!
+	Q
+XNAME	;
+	S SUB("NAME")=""
+	W " I ",%DDNM,"]"""" S %X=",%DDNM," D C S ",%DDXREF,"%Z,%Y,",%DDXKEY,")=%X",!
+	Q
+XJNAME	;%%Z1-M
+	S SUB("JNAME")=""
+	W " I ",%DDNM,"]"""" S %X=",%DDNM," D JC S ",%DDXREF,"%Z,%Y,",%DDXKEY,")=%X",!
+	Q
+	;%%Z1-M
+XACR	;
+	S SUB("ACR")=""
+	W " I ",%DDNM,"]"""" S %X=",%DDNM," D D S ",%DDXREF,"%Z,%Y,",%DDXKEY,")=%X",!
+	Q
+XKWIC	;
+	S SUB("KWIC")=""
+	I %DDKWIC'="",%DDKWIC?1"^".AN S %DDKWIC=%DDKWIC_"(%Y)"
+	E  I %DDKWIC'="",%DDKWIC'?1"^".AN S %DDKWIC=$E(%DDKWIC,1,$L(%DDKWIC)-1)_",%Y)"
+	I %DDKWIC="" W " I ",%DDNM,"]"""" F %I=1:1:$L(",%DDNM,","" "") S %X=$P(",%DDNM,","" "",%I) D K I %Y]"""" S ",%DDXREF,"%Y,",%DDXKEY,")=$S(%Y=",%DDNM,":"""",1:",%DDNM,")",!
+	E  W " I ",%DDNM,"]"""" F %I=1:1:$L(",%DDNM,","" "") S %X=$P(",%DDNM,","" "",%I) D K I %Y]"""",'$D("_%DDKWIC_") S ",%DDXREF,"%Y,",%DDXKEY,")=$S(%Y=",%DDNM,":"""",1:",%DDNM,")",!
+	Q
+XTRAN1	;
+	W " I ",%DDNM,"]"""" S %EXT=",%DDNM," ",%DDTRX," S:%INT'="""" ",%DDXREF,"%INT,",%DDXKEY,")=%EXT",!
+	Q
+XTRAN2	;
+	W " Q:",%DDNM,"=""""","  S %EXT=",%DDNM," ",%DDTRX,!
+	W " S:%INT1'=""""&(%INT2'="""") ",%DDXREF,"%INT1,%INT2,",%DDXKEY,")=%EXT",!
+	Q
+DEP	;
+	D SCAN 
+	Q:X=""  S PX=X
+	G DEP:$E(X)'?1A
+	S DN=X I X="#"!(X="*") S DN=%DDNM
+	W " S ",DN,"=""""",!
+	W "L",N," S ",DN,"=$O(",$E(%DDREF,1,OJ),DN,")) I ",DN,"="""" G L",N-1,!
+	S DNL=DNL_","_DN
+	Q
+SCAN	;
+	S J=J+1,X=$E(%DDREF,J) Q:X=""
+	S OJ=J-1
+	I X="""" D STRLIT,SCX Q
+	I X?.".".N D NUM,SCX Q
+	I X?1A D NAME,SCX Q
+	Q
+SCX	;
+	S X=$E(%DDREF,OJ+1,J-1)
+	Q
+STRLIT	;
+	F J=J:0 S J=$F(%DDREF,"""",J+1) Q:$E(%DDREF,J)'=""""
+	Q
+NUM	F J=J+1:1 Q:$E(%DDREF,J)'?1N
+	I $E(%DDREF,J)="." F J=J+1:1 Q:$E(%DDREF,J)'?1N
+	Q
+NAME	;
+	F J=J+1:1 Q:$E(%DDREF,J)'?1AN
+	Q
+VDDN	;
+	S %XS="S:$P(^DADD(DDNM,""REF""),"";"",4)="""" %MSG=1"
+	S %MSG=1
+	Q
+FILES	;
+	S %CNT="" F  S %CNT=$O(DL(%CNT)) Q:%CNT=""  D COPY
+	K GL,BL,RF,NM
+	Q
+COPY	S NM=DL(%CNT,"DDNM") Q:NM=""
+	S DLN(%CNT,"DDNM")=NM,DLN(%CNT,"DDXREF")=DL(%CNT,"DDXREF"),DLN(%CNT,"ROU")=DL(%CNT,"ROU")
+	S DLN(%CNT,"GLOBAL")=DL(%CNT,"GLOBAL"),DLN(%CNT,"BUILD")=DL(%CNT,"BUILD")
+	Q
+SFILE	;
+	S FILE="DSM$DASL_UT"_($H#7)_$P($H,",",2)_".TMP"
+	I $ZV["ULTRIX" S FILE=$TR($ZC(%LOWCASE,FILE),"$","_")  ;;%%Z3-ULTRIX
+	I $ZSE(FILE)]"" G SFILE
+	C FILE O FILE:NEW:10
+	E  S %MSG="処理用ファイルがオープンできません。" ZT %MSG ;	;%%Z1-T
+	Q
+TEST	;
+	R !!,"Data Name: ",%DDNM Q:%DDNM=""
+	I '$D(^DADD(%DDNM)) W *7,"  Data Name not defined." G TEST
+	S XREF=$P(^DADD(%DDNM,"REF"),";",4)
+	I XREF="" W *7,"  Data Name doesn't have a cross reference." G TEST
+TEST1	W !,"Present Xref Global: ",XREF
+	R !,"New Xref: ",NEWGBL
+	I NEWGBL]"",NEWGBL'?1"^"1U.7UN.E W *7,"  Invalid global reference." G TEST1
+TEST2	R !,"Routine Name: ",ROU I ROU'?1U.7UN W *7," 1u.7un" G TEST2
+	S PIC=1,DB=1,DELIM=$$DELIM^%DASDUTL(^DASY("PARM","DELIM")) W !!
+	D XBLD G TEST

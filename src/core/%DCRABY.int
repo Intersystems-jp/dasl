@@ -1,0 +1,80 @@
+ROUTINE %DCRABY [Type=INT,LanguageMode=6]
+%DCRABY	;V6.1;15-Oct-92  3:48 PM;URSEAM Search Multiple Reports
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRABY" G SAVE
+PRT	S %CNT=0 D INIT
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S %CNT=%CNT+1 D EVAL
+K0	S ^DATG($J,"R")="URSEAM,"_%DTR_","_%TMR_","_%CNT
+	D T0
+	G S0
+EVAL	S $ZT="PERR^%DCRABY",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	D D Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+KILLI	K %F0,%S1,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRABY",%ECNT=%ECNT+1 G S0
+ERR	S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL("DASL",%RPKPIT)\2+39,"DASL",?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL("DSM Application Software Library",%RPKPIT)\2+39,"DSM Application Software Library" D NLN0 Q:%QT
+	W ?-$ZL("マルチ レポート 検索",%RPKPIT)\2+39,"マルチ レポート 検索" D NLN0 Q:%QT
+	G SEC14:'(%PG=1)
+	I $Y>%PL D NPG Q
+	D NLN0 Q:%QT
+	S %CNT=""
+REPL15	S %CNT=$O(%RL(%CNT)) G REP15:%CNT="" W:%CNT=1 ?4,"Searching for:" D:%CNT>1 NLN0 Q:%QT
+	W ?19,""""_%RL(%CNT)_""""
+	G REPL15
+REP15	;
+SEC14	;
+	F %V=1:1:2 D NLN0 Q:%QT
+	W ?4,"Line",?12,"Item" D NLN0 Q:%QT  W ?4,"_______________________________________________________________________" D NLN0 Q:%QT
+	Q
+T0	Q
+D	S %HD=0 D NPG:$Y>%PL,NPG:$Y+9>%PL
+	K ^DATG($J,"R") D SEARCH^%DAURLEX
+	S %RPNM=""
+REPL11	S %RPNM=$O(^DATG($J,"R",%RPNM)) G REP11:%RPNM="" D NLN Q:%QT
+	W ?33,"Report: "_%RPNM S %GR=""
+REPL12	S %GR=$O(^DATG($J,"R",%RPNM,%GR)) G REP12:%GR="" D NLN Q:%QT
+	W ?34,"Level: "_%GR S %LN=""
+REPL13	S %LN=$O(^DATG($J,"R",%RPNM,%GR,%LN)) G REP13:%LN="" D NLN Q:%QT
+	W:"HTD"[$E(%GR) ?-$ZL(%LN,%RPKPIT)+8,%LN W ?12,^DATG($J,"R",%RPNM,%GR,%LN)
+	G REPL13
+REP13	;
+	G REPL12
+REP12	;
+	D NLN Q:%QT  W ?4,"_______________________________________________________________________" D NLN Q:%QT
+	G REPL11
+REP11	;
+	K %RPNM,%GR,%LN
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%S1
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	G PRT
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

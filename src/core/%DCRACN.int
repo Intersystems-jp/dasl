@@ -1,0 +1,118 @@
+ROUTINE %DCRACN [Type=INT,LanguageMode=6]
+%DCRACN	;V6.1;15-Oct-92  3:52 PM;UTBOV Table overview for end user
+	;DASL;N
+	;;       Copyright (c) Digital Equipment Corporation
+	;;           1987 - 1992 All rights reserved.
+	D ^%DAUDTTM S %DTR=%DTX,%TMR=%TMX K %DTI,%DTX,%TMX,%TMI
+	S $ZT="ERR^%DCRACN" G SAVE
+START	K ^DATG($J,"R") S %CNT=0
+	S TBNM=""
+K1	S TBNM=$O(^DATD(TBNM)) I TBNM="" G K0
+	S %FND=$D(^DATG($J,"U","TB",TBNM))
+	G K1:'%FND
+	S TBCLN=""
+K2	S TBCLN=$O(^DATD(TBNM,"C",TBCLN)) I TBCLN="" G K1
+	S %V=TBNM D CVT S %S1=%V
+	S %CNT=%CNT+1,^DATG($J,"R",%S1,%CNT)=TBCLN_$C(0)_TBNM
+	G K2
+K0	S ^DATG($J,"R")="UTBOV,"_%DTR_","_%TMR_","_%CNT
+	K TBCLN,TBNM,%S1
+PRT	D INIT
+	S %=$D(^DASYU("I","NAME")),%T2="" S:%#10 %T2=^("NAME") S SYSNAM1=$P(%T2,";"),SYSNAM2=$P(%T2,";",2)
+	S %F0=999 D NPG S %F0=0
+	I %SCP S %=$Y+1,%SCP=23-%,%SCN="l"_%_";23",%LL=80,%PL=1E24,%HF="" W %E,"[",$E(%SCN,2,9),"r",%E,"[",%-1,";1H",!
+	S $ZT="PERR^%DCRACN",%ECNT=0
+	I '%CNT D NLN W ?31,"出力するデータがありません。" D NLN G S0
+	S %S1=""
+S1	S %F1=2,%S1=$O(^DATG($J,"R",%S1)) I %S1="" S %F0=1 D T0 G S0
+	S %S2=""
+S2	S %S2=$O(^DATG($J,"R",%S1,%S2)) I %S2="" S %F1=1 D T1 G S0:%QT,S1
+	S %=^DATG($J,"R",%S1,%S2),TBCLN=$P(%,$C(0),1),TBNM=$P(%,$C(0),2)
+	S %=$D(^DATD(TBNM,"REF")),%T4="" S:%#10 %T4=^("REF") S TBKEY=$P(%T4,";",2),%=$D(^DATD(TBNM,"C",TBCLN)),%T3="" S:%#10 %T3=^(TBCLN) S TBCLDN=$P(%T3,";",3),DDNM=$S(TBCLDN]"":TBCLDN,1:" ")
+	S TBCLNM=$P(%T3,";"),%=$D(^DADD(DDNM,"B")),%T1="" S:%#10 %T1=^("B") S DDTMPL=$P(%T1,";",3),TMNM=$S(DDTMPL]"":DDTMPL,1:" "),%=$D(^DATD(TBNM,"C",TBCLN)),%T3="" S:%#10 %T3=^(TBCLN) S TBCLTYP=$P(%T3,";",6)
+	S TBCLLEN=$P(%T3,";",4),TBCLDES=$P(%T3,";",2)
+	I %F1 D C1,H1 S %F1=0 G S0:%QT
+	D D G S0:%QT,S2
+C1	S %=$D(^DATD(TBNM,"REF")),%T4="" S:%#10 %T4=^("REF") S TBDES=$P(%T4,";",3),%=$D(^DATD(TBNM,"SC1")),TBCSC1="" S:%#10 TBCSC1=^("SC1")
+	Q
+S0	I %ECNT D NLN W "*** ",%ECNT," データ エラー が発生しました。" D NLN
+	D F:'%SCP
+	W:'%SCP # I %SCP S %SCP=1,%QT='%QT D NLN:%QT W %E,"[2J"
+	K ^DATG($J,"R")
+KILLI	K %F0,%F1,%S1,%S2,%T1,%T2,%T3,%T4,%V,%CO,%CNT,%HD,%MA,%MI,%ME,%MED,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD,%INT,%INT1,%INT2,S1,S2,E1,E2
+	U %IOD:NOPACK
+	Q
+PERR	I $D(%PGMR),%PGMR=1 D RESET^%DASL Zquit 1 G @$ZT
+	D ERR^%DAERRT U %IOD
+	D:$X NLN W "** データレコード中のエラー **" W:$ZE]"" $P($ZE,",",$L($ZE,","))
+	D NLN I %ECNT>25 W !!,"** 回復不可能なエラー - レポートは中断されました。 **" G S0
+	S $ZT="PERR^%DCRACN",%ECNT=%ECNT+1 G S2
+ERR	K ^DATG($J,"R") S:$ZE]"" %MSG=$P($ZE,",",$L($ZE,",")) Zquit 1 G @$ZT
+H0	I $Y>%PL D NPG Q
+	W ?5,%DTR,?15,%TMR,?-$ZL(SYSNAM1,%RPKPIT)\2+39,SYSNAM1,?-$ZL("Page "_%PC,%RPKPIT)+75,"Page "_%PC D NLN0 Q:%QT
+	W ?-$ZL(SYSNAM2,%RPKPIT)\2+39,SYSNAM2 D NLN0 Q:%QT
+	W ?-$ZL("Table Overview",%RPKPIT)\2+39,"Table Overview" D NLN0 Q:%QT
+	Q
+T0	Q
+H1	I $Y>%PL D NPG Q
+	I $Y+17>%PL D NPG Q
+	F %V=1:1:3 D NLN Q:%QT
+	W ?4,"Table: ",?12,TBNM D NLN Q:%QT
+	W ?4,"Description: ",?12,TBDES G SEC14:'(TBCSC1]"")
+	S %=$D(^DATD(TBNM,"SC2")),TBCSC2="" S:%#10 TBCSC2=^("SC2") S %=$D(^DATD(TBNM,"SC3")),TBCSC3="" S:%#10 TBCSC3=^("SC3") S %=$D(^DATD(TBNM,"SC4")),TBCSC4="" S:%#10 TBCSC4=^("SC4")
+	S %=$D(^DATD(TBNM,"SC5")),TBCSC5="" S:%#10 TBCSC5=^("SC5")
+	I $Y>%PL D NPG Q
+	F %V=1:1:2 D NLN Q:%QT
+	W ?4,"Comments: " D NLN Q:%QT
+	D NLN Q:%QT
+	W ?6,TBCSC1 D NLN Q:%QT
+	W ?6,TBCSC2 D:TBCSC2]"" NLN Q:%QT
+	W ?6,TBCSC3 D:TBCSC3]"" NLN Q:%QT
+	W ?6,TBCSC4 D:TBCSC4]"" NLN Q:%QT
+	W ?6,TBCSC5 D:TBCSC5]"" NLN Q:%QT
+SEC14	;
+	F %V=1:1:2 D NLN Q:%QT
+	W ?-$ZL("Key",%RPKPIT)+7,"Key" D NLN Q:%QT
+	W ?2,"#",?-$ZL("Seq",%RPKPIT)+7,"Seq",?8,"Column Name ",?29,"Data Type ",?-$ZL("Length ",%RPKPIT)+48,"Length ",?50,"Description " D NLN Q:%QT 
+	W "--------------------------------------------------------------------------------" D NLN Q:%QT
+	D NLN Q:%QT
+	Q
+T1	Q
+D	S %HD=0 D NPG:$Y>%PL W ?-$ZL($J(TBCLN,3),%RPKPIT)+3,$J(TBCLN,3) G SEC11:'($F(TBKEY,TBCLDN))
+	D NPG:$Y>%PL W ?-$ZL($J($L($P(TBKEY,TBCLDN,1),","),2),%RPKPIT)+7,$J($L($P(TBKEY,TBCLDN,1),","),2)
+SEC11	;
+	 B
+	W ?8,TBCLNM S %=$D(^DATD(TBNM,"C",TBCLN)),TBCLDN="" S:%#10 TBCLDN=$P(^(TBCLN),";",3) S DDNM=$S(TBCLDN]"":TBCLDN,1:" ")
+	S %=$D(^DADD(DDNM,"B")),DDTMPL="" S:%#10 DDTMPL=$P(^("B"),";",3) S TMNM=$S(DDTMPL]"":DDTMPL,1:" ")
+	W:TBCLTYP'="" ?29,TBCLTYP G SEC12:'(TBCLTYP="")
+	S %=$D(^DADD(DDNM,"B")),%T1="" S:%#10 %T1=^("B") S DDTYPE=$P(%T1,";",2),%=$D(^DADDT(TMNM,"B")),TMTYPE="" S:%#10 TMTYPE=$P(^("B"),";",2)
+	D NPG:$Y>%PL W:DDTYPE'="" ?29,DDTYPE W:TMTYPE'=""&(DDTYPE="") ?29,TMTYPE
+SEC12	;
+	W:TBCLLEN'="" ?-$ZL(TBCLLEN,%RPKPIT)+46,TBCLLEN G SEC13:'(TBCLLEN="")
+	S %=$D(^DADD(DDNM,"DF","E")),DDLEN="" S:%#10 DDLEN=$P(^("E"),";") S %=$D(^DADDT(TMNM,"DF","E")),TMLEN="" S:%#10 TMLEN=$P(^("E"),";")
+	D NPG:$Y>%PL W:DDLEN'="" ?-$ZL(DDLEN,%RPKPIT)+46,DDLEN W:TMLEN'=""&(DDLEN="") ?-$ZL(TMLEN,%RPKPIT)+46,TMLEN
+SEC13	;
+	W ?50,TBCLDES D NLN Q:%QT
+	Q
+F	Q
+FORM	D INIT S %PL=999 D D G KILLI
+INIT	S:'$D(%PP) %PP=0 S %PW=80,%PL=61,(%PG,%PC)=0,(%SCP,%QT)=0 U %IOD:PACK
+	I %PP
+	E  I $D(%PDV),%IOD=%PDV S %SCP=24,%O=0 W:$E(%SCN)'="l" %E,"[?3l" W:%SCN[";" %E,"[r" W %E,"[2J" F %=1:1:24 S %O(%)=""
+	Q
+SAVE	N %FO,%F1,%S1,%S2,%T1,%T2,%T3,%T4
+	N %V,%CO,%HD,%MA,%MI,%ME,%DEM,%PG,%PL,%PW,%QT,%ST,%TO,%SCP,%ECNT,%MAX,%MCNT,%OLD
+	N DDLEN,DDTMPL,DDTYPE,SYSNAM1,SYSNAM2,TBCLDES,TBCLDN,TBCLLEN,TBCLN,TBCLNM,TBCLTYP,TBCSC1,TBCSC2,TBCSC3,TBCSC4,TBCSC5,TBDES,TBKEY,TBNM,TMLEN
+	N TMTYPE
+	G START
+NPG	D F:%PC S %HD=1,%PC=%PC+1,%PG=%PG+1 W @$S(%PP:"$C(13),*12,$ZC(%SETY,0),$ZC(%SETX,0)",%PC=1&('%SCP):"$C(0)",1:"#,$C(0),$ZC(%SETX,0)")
+	D H0 Q:%F0  D H1
+	Q
+CVT	I %V="" S %V=" " Q
+	I %V?.N S %V=+%V Q
+	I %V'?.UNP S %V=$ZC(%ZUPCASE,%V)
+	Q
+NLN0	W:%PL'=0 $C(0)
+NLN	G NPG:$Y>%PL&(%PL'=0) W ! Q:'%SCP  S %SCP=%SCP-1 Q:%SCP  S %SCP=23-$E(%SCN,2,9)
+	I %PP Q
+	D ^%DARPRD Q

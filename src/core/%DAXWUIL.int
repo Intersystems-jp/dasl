@@ -1,0 +1,9 @@
+ROUTINE %DAXWUIL [Type=INT,LanguageMode=6]
+%DAXWUIL(FILE)	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved
+	O FILE:READ U FILE
+MODULE	;
+	S KEYWORD=$$KEYWORD
+	I KEYWORD'="MODULE" B  
+	S MODNAM=$$NAME

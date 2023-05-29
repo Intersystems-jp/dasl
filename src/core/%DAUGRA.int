@@ -1,0 +1,59 @@
+ROUTINE %DAUGRA [Type=INT,LanguageMode=6]
+%DAUGRA	;TAT/TAK,,UTILITY,DASL;9-NOV-1992;V3.0J Setup Color Local Variables
+	;DASL;Y
+	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	;
+	;       This software is furnished under a license and copies
+	;       thereof may not be provided or otherwise made available
+	;       to any other person.  No title to and ownership of the
+	;       software is hereby transfered.  The information in this
+	;       software is subject to change without notice.
+	;
+	;
+	N %GCRTN
+	I $ZV["ULTRIX" S %GCRTN=$&%GETENV("DSM_DASL_GRAPHIC_SETUP_ROUTINE")
+	E  S %GCRTN=$$TRNLOG^%DAZCALL("DSM$DASL_GRAPHIC_SETUP_ROUTINE")
+	;
+	K %GC
+	I $G(%GCRTN)]"",$D(^ (%GCRTN)) S %GCRTN=$S($E(%GCRTN)="^":%GCRTN,1:"^"_%GCRTN) D @%GCRTN Q
+	;
+	N V,F,B,E,T,I
+	F I=1:1 S T=$T(CTAB+I) Q:T=" ;;"  D
+	. S V=$$BASEDIT^%DAZCALL($P(T,";",4),136) Q:$D(@V)
+	. S F=$E($$BASEDIT^%DAZCALL($P(T,";",5),136),1,3) I '$D(^%DASY("GRAPHIC",F_"F")) S F=""
+	. S B=$E($$BASEDIT^%DAZCALL($P(T,";",6),136),1,3) I '$D(^%DASY("GRAPHIC",B_"B")) S B=""
+	. S E=+$S(F]"":^%DASY("GRAPHIC",F_"F"),1:"")
+	. I B]"" S E=E_$S(E]"":";",1:"")_+$S(B]"":^%DASY("GRAPHIC",B_"B"),1:"")
+	. S @V="["_E_"m"
+	Q
+	;=====================================================================
+	; Color Escape Table
+	;
+	;   変数部は変更してはいけません。
+	;   ForeGroundColor,BackGroundColor に指定できるキーワードは、
+	;
+	;       BLACK,RED,GREEN,YELLOW,BLUE,MAGENTA,CYAN,WHITE
+	;
+	;   の８種類です。
+	;
+	;=====================================================================
+CTAB	;;      カラー表示対象          ;変数     ;ForeGroundColor;BackGroundColor
+	;;エラーメッセージ		;%GC("SM");MAGENTA	  ;
+	;;ルックアップ見出し		;%GC("LL");CYAN           ;
+	;;ルックアップ番号		;%GC("LN");YELLOW         ;
+	;;ルックアップ・プロンプト	;%GC("LP");WHITE          ;
+	;;ルックアップ・テキスト	;%GC("LT");GREEN          ;
+	;;オプション番号		;%GC("ON");GREEN	  ;
+	;;オプション・プロンプト	;%GC("OP");WHITE	  ;
+	;;オプション・テキスト		;%GC("OT");CYAN           ;
+	;;ポップアップ・ボックス	;%GC("PB");GREEN          ;GREEN
+	;;ポップアップ・テキスト	;%GC("PT");MAGENTA        ;CYAN   
+	;;ポップアップ候補		;%GC("PS");GREEN          ;MAGENTA
+	;;テキスト・テキスト		;%GC("TT");MAGENTA        ;
+	;;テキスト・プロンプト		;%GC("TP");WHITE          ;
+	;;データ・プロンプト		;%GC("DP");YELLOW         ;
+	;;データ・ボックス		;%GC("DB");GREEN          ;
+	;;
+	Q

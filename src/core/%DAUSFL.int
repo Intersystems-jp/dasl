@@ -1,0 +1,74 @@
+ROUTINE %DAUSFL [Type=INT,LanguageMode=6]
+%DAUSFL	;
+	;;     Copyright ゥ Digital Equipment Corporation.
+	;;       1987 - 1992  All rights reserved.
+	K ^DATG($J,"R") S %SDNM=""
+	F  S %SDNM=$O(^DATG($J,"U","S",%SDNM)) Q:%SDNM=""  D DRIVE
+	K %1,%2,%X1,%ACNT,%ACT,%SDFN,%NODE,%LEVEL,%PCE,%TOO,%SDNM
+	Q
+DRIVE	;
+	S $ZT="ERROR^%DAUSFL",$ZE="" D SCRACT,ALLFLD,TRACE
+	Q
+SCRACT	;
+	K %FLD,%NEXT S %CNT=0
+	;F %ACNT=1:1:3 S %NODE=^DASD(%SDNM,"D","S","AC",%ACNT) I %NODE["NXTFLD "!(%NODE["NF ") D FSTFLD2
+	F %ACNT=1:1:3 S %NODE=$P(^DASD(%SDNM,"D","S","AC",%ACNT),"!",1) I %NODE["NXTFLD "!(%NODE["NF ") D FSTFLD2 ;	;%%Z1-Y
+	Q
+FSTFLD2	;
+	F %PCE=1:1 S %ACT=$P(%NODE,";",%PCE) Q:%ACT=""  D
+	. D SPACES
+	. I $E(%ACT)'["!",%ACT["NXTFLD "!(%ACT?." "1"NF"1." "1U.E) D FSTFLD3
+	Q
+FSTFLD3	;
+	S %X1=$P(%ACT,":",1)
+	S %X1=$S(%X1["NXTFLD ":$P(%X1,"NXTFLD ",2),%X1?." "1"NF"1." "1U.6UN:$P(%X1,"NF ",2),1:"")
+	D STRIP I %X1]"" S %CNT=%CNT+1,^DATG($J,"R",%SDNM,"T",1,%CNT,"Fr")="First Fld",^DATG($J,"R",%SDNM,"T",1,%CNT,"To")=%X1_$S(%ACT'[":":"",1:":"_$P(%ACT,":",2,99))
+	Q
+ALLFLD	;
+	S %SDFN="" F  S %SDFN=$O(^DASD(%SDNM,"D","F",%SDFN)) Q:%SDFN=""  D ONEFLD
+	Q
+ONEFLD	;
+	S %FLD(%SDFN)=0,%CNT=0
+	;S %ACNT="" F  S %ACNT=$O(^DASD(%SDNM,"D","F",%SDFN,"AC",%ACNT)) Q:%ACNT=""  S %NODE=^(%ACNT) I %NODE["NXTFLD "!(%NODE["NF ") D ACTION
+	S %ACNT="" F  S %ACNT=$O(^DASD(%SDNM,"D","F",%SDFN,"AC",%ACNT)) Q:%ACNT=""  S %NODE=$P(^(%ACNT),"!",1) I %NODE["NXTFLD "!(%NODE["NF ") D ACTION ;	;%%Z1-Y
+	Q
+ACTION	;
+	F %PCE=1:1 S %ACT=$P(%NODE,";",%PCE) Q:%ACT=""  D
+	. D SPACES
+	. I $E(%ACT)'["!",%ACT["NXTFLD "!(%ACT?." "1"NF"1." "1U.E) D ACTION1
+	Q
+ACTION1	;
+	S %X1=$P(%ACT,":",1)
+	S %X1=$S(%X1["NXTFLD ":$P(%X1,"NXTFLD ",2),%X1?." "1"NF"1." "1U.6UN:$P(%X1,"NF ",2),1:"")
+	D STRIP I %X1]"" S %CNT=%CNT+1,%NEXT(%SDFN,%CNT)=%X1_$S(%ACT'[":":"",1:":"_$P(%ACT,":",2,99))
+	Q
+STRIP	;
+	F %1=1:1:$L(%X1) Q:$E(%X1,%1)'=" "
+	F %2=$L(%X1):-1:1 Q:$E(%X1,%2)'=" "
+	S %X1=$E(%X1,%1,%2)
+	Q
+TRACE	;
+	F %LEVEL=1:1 Q:'$D(^DATG($J,"R",%SDNM,"T",%LEVEL))  D TRACE1
+	S %SDFN="" F  S %SDFN=$O(%NEXT(%SDFN)) Q:%SDFN=""  S ^DATG($J,"R",%SDNM,"L",%SDFN)=%FLD(%SDFN)
+	Q
+TRACE1	;
+	S %CNT="" F  S %CNT=$O(^DATG($J,"R",%SDNM,"T",%LEVEL,%CNT)) Q:%CNT=""  S %SDFN=^DATG($J,"R",%SDNM,"T",%LEVEL,%CNT,"To") D TRACE2
+	Q
+TRACE2	;
+	I %SDFN[":" S %SDFN=$P(%SDFN,":",1)
+	Q:%FLD(%SDFN)
+	S %TOO="" F  S %TOO=$O(%NEXT(%SDFN,%TOO)) Q:%TOO=""  D TRACE3
+	S %FLD(%SDFN)=%LEVEL
+	Q
+TRACE3	;
+	I '$D(^DATG($J,"R",%SDNM,"T",%LEVEL+1)) S ^DATG($J,"R",%SDNM,"T",%LEVEL+1)=0
+	S (%X1,^DATG($J,"R",%SDNM,"T",%LEVEL+1))=^DATG($J,"R",%SDNM,"T",%LEVEL+1)+1
+	S ^DATG($J,"R",%SDNM,"T",%LEVEL+1,%X1,"Fr")=%SDFN
+	S ^DATG($J,"R",%SDNM,"T",%LEVEL+1,%X1,"To")=%NEXT(%SDFN,%TOO)
+	Q
+SPACES	S %LINE="" F I=1:1 Q:$E(%ACT,I)?.UN  D  S %ACT=%LINE
+	. I $E(%ACT,I)=" " S %LINE=$E(%ACT,2,$L(%ACT))
+	K %LINE
+	Q
+ERROR	W !!,"Error running Field Branching Logic Report on: ",%SDNM,!,$ZE,!!
+	Q
