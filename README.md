@@ -37,7 +37,8 @@ DASLの初期化時にアプリケーションパラメータにapplication-para
 
 [localhost:52774/csp/sys/%25CSP.Portal.Home.zen?IRISUsername=_system&IRISPassword=SYS](http://localhost:52774/csp/sys/%25CSP.Portal.Home.zen?IRISUsername=_system&IRISPassword=SYS)
 
-##　　ローカルセットアップ
+
+##　ローカルセットアップ
 
 
 src/setupの下のDASL.Utility.clsをDASLをセットアップしたいネームスペースにロードする
