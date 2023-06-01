@@ -52,3 +52,7 @@ src/setupの下のDASL.Utility.clsをDASLをセットアップしたいネーム
 ```>write ##class(DASL.Utility).SetupLocal(dir)```
 
 DASLの初期化時にアプリケーションパラメータにapplication-params.pngに表示されているものと同じ内容を入力
+
+## 注記
+
+Opeｎ Exchangeで公開されているWebterminalでは、DASLは動作しません
