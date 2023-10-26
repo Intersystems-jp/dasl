@@ -1,9 +1,9 @@
 # DASL DEMO
 
-DASL DEMOのDocker Build
+DASL DEMOをIRISで動作させる
 
 
-## ビルドプロセス
+## Dockerビルドプロセス
 
 ### Build & Run
 * ```docker-compose up -d --build```
@@ -41,7 +41,7 @@ Screen: ADBOOK
 [localhost:52774/csp/sys/%25CSP.Portal.Home.zen?IRISUsername=_system&IRISPassword=SYS](http://localhost:52774/csp/sys/%25CSP.Portal.Home.zen?IRISUsername=_system&IRISPassword=SYS)
 
 
-## ローカルセットアップ
+## ローカルセットアップ(WindowsやMacOS上にインストールしたIRIS上でセットアップ)
 
 
 src/setupの下のDASL.Utility.clsをDASLをセットアップしたいネームスペースにロードする
@@ -53,7 +53,7 @@ src/setupの下のDASL.Utility.clsをDASLをセットアップしたいネーム
 >write ##class(DASL.Utility).SetupLocal(dir)
 ```
 
-DASLの初期化時にアプリケーションパラメータにapplication-params.pngに表示されているものと同じ内容を入力
+DASLのセットアップは、上記のDockerでのセットアップを参照してください
 
 ## 注記
 
