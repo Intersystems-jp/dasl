@@ -47,6 +47,8 @@ Screen: ADBOOK
 src/setupの下のDASL.Utility.clsをDASLをセットアップしたいネームスペースにロードする
 
 ```
+
+if $zv [ "UNIX" Do ##class(Config.NLS.Locales).Install("jpuw")
 >set file = "C:\git\dasl\src\setup\DASL\utility.cls"
 >do $System.OBJ.Load(file,"ck",,1)
 >set dir = "c:\git\dasl"
