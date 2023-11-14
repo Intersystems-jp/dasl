@@ -102,7 +102,6 @@ EVALD	;
 	Q
 READ	D INFO R D:300 Q:'$T  S %T=$ZB#256,%F=$ZB\256
 	;**TM**;READ	D INFO R D:300 Q:'$T  S %T=$extract($ZB),%F=$$Function^%DASLIN($piece($ZB,"[",2))
-	set ^mina($I(^mina))="READ^%DASDIM:%T="_%T_" %F="_%F_" $ZB="_$ZB
 	I %T=23 D CLRSCN,R G READ
 	G READ:%T'=27,READ:$T(@%F)="" S QF=1 D @%F G READ:QF
 	Q

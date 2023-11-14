@@ -4,6 +4,6 @@ ROUTINE %DAXWUIL [Type=INT,LanguageMode=6]
 	;;       1987 - 1992  All rights reserved
 	O FILE:READ U FILE
 MODULE	;
-	S KEYWORD=$$KEYWORD
-	I KEYWORD'="MODULE" B  
-	S MODNAM=$$NAME
+	;S KEYWORD=$$KEYWORD  %%ISJ for IRIS
+	;I KEYWORD'="MODULE" B  %%ISJ for IRIS
+	;S MODNAM=$$NAME %%ISJ for IRIS

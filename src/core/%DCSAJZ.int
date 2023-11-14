@@ -275,7 +275,8 @@ I8	S %=%OLD G G
 	Q
 I9	U 0 I $ZE'["CTRAP",$ZE'["ESCAPE",$ZE'["READERR" Zquit 1 G @$ZT
 	;**TM**;I5	S %MSG="不適当な文字が入力されました。" D M,I8 G I0
-I5	S %MSG="不適当な文字が入力されました。" S ^mina($I(^mina))="ERROR:"_$ZE D M,I8 G I0
+I5	;S %MSG="不適当な文字が入力されました。" S ^mina($I(^mina))="ERROR:"_$ZE D M,I8 G I0
+    S %MSG="不適当な文字が入力されました。" D M,I8 G I0
 I10	R %#1:%TM I  S %T=$ZB#256,%F=$ZB\256
 	E  S %F="41" G I11
 	I %T=27 G I10:%F=32 G I11:%F&(%F="25"!(%F="26")) S:%F="33"&%F %F="48" I %F="48"&%F&($T(+0)'="%DCSAVR") S %RES="%DCSAVR" G I3

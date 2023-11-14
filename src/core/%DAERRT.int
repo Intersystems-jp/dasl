@@ -128,7 +128,6 @@ MSG0	; Write an "unexpected error" message (in %9) to terminal
 	K %9
 	Q
 ERRTRAP	;  Trap error during logging process, write message, halt out of MUMPS.
-	S ^mina($I(^mina))="ERRTRAP^%DAERRT:"_$ZE
 	S %9=$ZE D MSG0
 	U 0 W !,"Error in error logging process",!
 	W "$ZE=",$ZE,!,"$ZH=",$H

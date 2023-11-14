@@ -3,7 +3,6 @@ ROUTINE %DADEVC [Type=INT,LanguageMode=6]
 	;;     Copyright ゥ Digital Equipment Corporation.
 	;;       1987 - 1992  All rights reserved.
 	;**TM**; ルーチン使用チェック; おそらくVMSしか対応していない模様
-	set ^mina($I(^mina))="%DADEVC"
 	ZT "FORCE ERROR - This routine is a stub."
 	S KEYSIZ=63,DEVF=$$TRNLOG^%DAZCALL("DEVICES") S:DEVF="" DEVF="DEVICES.COM"
 	S ALF="SYSALF.DAT",SALF="SYS$SYSTEM:"_ALF
@@ -20,7 +19,6 @@ ROUTINE %DADEVC [Type=INT,LanguageMode=6]
 COPEND	I $ZE'["ENDOFFILE" ZQ 1 G @$ZT
 COPCLS	U 0 S $ZT="ERROR^%DADEVC" C SALF
 	;**TM**; ルーチン使用チェック; おそらくVMSしか対応していない模様
-	set ^mina($I(^mina))="COPCLS^%DADEVC"
 	S DEV="" F I=0:0 S DEV=$O(^DASYU("D","D",DEV)) Q:DEV=""  D DEV
 	S PORT="" 
 	F I=0:0 S PORT=$O(MOD(PORT)) Q:PORT=""  S ATR="" D TIED K MOD(PORT)

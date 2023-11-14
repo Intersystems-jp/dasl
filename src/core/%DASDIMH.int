@@ -3,7 +3,8 @@ ROUTINE %DASDIMH [Type=INT,LanguageMode=6]
 	;;     Copyright ゥ Digital Equipment Corporation.
 	;;       1987 - 1992  All rights reserved.
 HELP	U 0:PACK W %E,"[2H" 
-	I $E(SAT)'="l" W $C(27),"[?3l" S %LL=80 U 0:EXINPUT=(PARAM="WIDTH=80")  ;;%%Z1-E
+	;I $E(SAT)'="l" W $C(27),"[?3l" S %LL=80 U 0:EXINPUT=(PARAM="WIDTH=80")  ;;%%Z1-E %ISJ for IRIS
+	I $E(SAT)'="l" W $C(27),"[?3l" S %LL=80 U 0  ;;%%ISJ for IRIS
 	W %E,"[1mAttach/Advance",%E,"[m - フィールドへのアタッチ        ",%E,"(0lqqqqqqqwqqqqqqqwqqqqqqqwqqqqqqqk",%E,"(B",!  ;;%%Z3-T
 	W "                 および 次フィールドへの移動   ",%E,"(0x       x       x       x       x",%E,"(B",!  ;;%%Z3-T
 	W "                                               ",%E,"(0x",%E,"(B "

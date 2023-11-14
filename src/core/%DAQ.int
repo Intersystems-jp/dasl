@@ -84,12 +84,14 @@ NEW	;
 	. D PROG^%DADEV 
 	S %TMO=300,%CALL=1,QUNM="" 
 	S:'$D(%PP) %PP=0 S:'$D(%IOD) %IOD=0
-ROU	S %QROU="DAQ"_$R(1000) L +^ (%QROU):9 G:'$T ROU
+ROU	;S %QROU="DAQ"_$R(1000) L +^ (%QROU):9 G:'$T ROU %%ISJ For IRIS
+    S %QROU="DAQ"_$R(1000)  ;%%ISJ for IRIS
 	D ^%DAQC G:%MSG]"" EXIT
 	I %IOD'=0 S $ZT="ERR2^%DAQ" O %IOD:NEW
 	U %IOD D ^@%QROU
 	C:%IOD'=0 %IOD X ("ZR  ZS "_%QROU)
-	L -^ (%QROU) G EXIT
+	;L -^ (%QROU) G EXIT  %%ISJ for IRIS
+	G EXIT  ;%%ISJ for IRIS
 EXIT	;
 	S @%QERR=%MSG
 	Q

@@ -48,7 +48,8 @@ PROG	; Initialize programmer mode variables
 	I '$D(%PGMR) S %PGMR=1
 	Q
 RESET	; Handle run time errors. Reset device/terminal parameters.
-	U 0:(WIDTH=80:NOESCAPE:NOCONVERT:NOPACK:ECHO:CTRAP="",TERM="":NOEXINPUT) ;	;%%Z1-E
+	;U 0:(WIDTH=80:NOESCAPE:NOCONVERT:NOPACK:ECHO:CTRAP="",TERM="":NOEXINPUT) ;	;%%Z1-E %%ISJ for IRIS
+	U 0:(WIDTH=80:NOESCAPE:NOCONVERT:NOPACK:ECHO:CTRAP="",TERM="") ;	;%%ISJ for IRIS
 	S %E=$C(27)
 	W %E,"[?25h",%E,"[r",%E,"[0m",%E,"(B",%E,">",%E,"[?3l",%E,"[H",%E,"[2J"
 	W:$ZE]"" !!,%E,"[1m","Error - ",$ZE,%E,"[0m"

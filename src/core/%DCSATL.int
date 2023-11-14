@@ -91,7 +91,8 @@ Q0	S %SCN=$E(%SCN) W %E,"[2J" F %slE=1:1:24 S %O(%slE)=0
 Q	Q:%EX  U 0:PACK D Q1:$E(%SCN)'=$S(%POPS=80:"l",1:"h") F %Z=1:1:24 I '%O(%Z),%L(%Z)]"" D @("R^"_%L(%Z))
 	U 0:NOPACK S %O=1 Q
 Q1	W:$E(%SCN)'=$S(%POPS=80:"l",1:"h") %E,"[2J",%E,"[?3"_$S(%POPS=80:"l",1:"h")
-	U 0:EXIN=PARAM="WIDTH="_%POPS W:%SCN[";" %E,"[r" S %SCN=$S(%POPS=80:"l",1:"h"),%LL=%POPS Q
+	;U 0:EXIN=PARAM="WIDTH="_%POPS W:%SCN[";" %E,"[r" S %SCN=$S(%POPS=80:"l",1:"h"),%LL=%POPS Q %%ISJ for IRIS
+	U 0:WIDTH=%POPS  ;%%ISJ for IRIS
 I	U 0:NOECHO
 I0	S (%F,%Z,%ZB)=0 I %EX S %F="41",(%MSG,%RES)="" G I3
 	S %INP="",%INPP=1

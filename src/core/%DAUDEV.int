@@ -12,7 +12,6 @@ PIMMED	O %IOD:NEW:10 E  S %MSG="出力デバイス'"_%IOD_"'がオープンで�
 	I $D(%VAR("EXPD")) D CONTIN^%DAUDMP 
 	;**TM**;U %IOD:(KANJI:KPITCH=%RPKPIT:KCODE=%RPKTYP) U:%RPKTYP="JIS" %IOD:(KON=%RPKON:KOFF=%RPKOF) I $D(%PP),%PP W %E,"[5i",%E,"[6i",%E,"[66t" ;      ;%%Z1-F
 	; ピッチ等はNLSコマンドを使用
-	set ^mina($I(^mina))="%DAUDEV:%RPKPIT="_%RPKPIT_" %RPKTYP="_%RPKTYP
 	U %IOD D SetPitch^%NLS(%RPKPIT) D SetIO^%NLS(%RPKTYP) I $D(%PP),%PP W %E,"[5i",%E,"[6i",%E,"[66t" ;      ;%%Z1-F
 	I %ENTRY="R" S %NAME=%RPNAME D REPORT^%DARUN 
 	I %ENTRY="Q" S %NAME=%QUNAME D QUERY^%DARUN 
@@ -39,7 +38,6 @@ BATCH	;
 	;*** Cache,IRISの場合デフォルトディレクトリとする
 	; $SYSTEM.Taskを使用する予定
 	; 
-	S ^mina($I(^mina))="BATCH^%DAUDEV"
 	S %DEFAULT=""
 COMFILE	;
 	;I $ZV["VAX DSM" D
